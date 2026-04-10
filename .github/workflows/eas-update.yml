@@ -1,0 +1,39 @@
+# Publishes an EAS Update to a branch per PR for OTA testing.
+# Requires a linked Expo project and repository secrets (see README).
+name: EAS Update (PR preview)
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  update:
+    name: eas update
+    runs-on: ubuntu-latest
+    env:
+      EXPO_PUBLIC_API_URL: http://localhost:3000
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - uses: expo/expo-github-action@v8
+        with:
+          expo-version: latest
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Publish update
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            eas update --non-interactive --branch "pr-${{ github.event.pull_request.number }}" --message "PR #${{ github.event.pull_request.number }} @ ${{ github.sha }}"
+          else
+            eas update --non-interactive --branch "manual-${{ github.run_id }}" --message "workflow_dispatch ${{ github.sha }}"
+          fi
