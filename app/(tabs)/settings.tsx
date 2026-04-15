@@ -1,20 +1,67 @@
-import { Link } from 'expo-router';
-import { Pressable, Text, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { Text } from 'react-native';
+import { useRouter } from 'expo-router';
+
+import { useAuth } from '@/components/auth/auth-provider';
+import { AppScreen } from '@/components/layout/app-screen';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { logAppError } from '@/lib/app-errors';
+import { getMe } from '@/lib/api';
+import { signOutUser } from '@/lib/firebase-auth';
+import type { GetMeResponse } from '@/types';
 
 export default function SettingsScreen() {
+  const { user } = useAuth();
+  const router = useRouter();
+  const [profile, setProfile] = useState<GetMeResponse>(null);
+
+  useEffect(() => {
+    if (!user) {
+      setProfile(null);
+      return;
+    }
+    void getMe()
+      .then(setProfile)
+      .catch((err) => {
+        logAppError('settings/getMe', err);
+        setProfile(null);
+      });
+  }, [user]);
+
+  async function handleSignOut() {
+    await signOutUser();
+    router.replace('/(auth)/login');
+  }
+
   return (
-    <View className="flex-1 items-center justify-center bg-slate-100 px-4 dark:bg-slate-900">
-      <Text className="text-xl font-semibold text-slate-900 dark:text-slate-100">Settings</Text>
-      <Text className="mt-2 text-center text-slate-600 dark:text-slate-400">
-        Profile and notifications will use PATCH /api/v1/me.
+    <AppScreen>
+      <Text className="text-lg font-semibold text-foreground dark:text-darkForeground">Settings</Text>
+      <Text className="text-sm text-muted-foreground dark:text-darkMutedForeground">
+        Account and preferences
       </Text>
-      <Link href="/(auth)/login" asChild>
-        <Pressable>
-          <Text className="mt-6 text-base text-blue-600 dark:text-blue-400">
-            Open log in (auth shell)
-          </Text>
-        </Pressable>
-      </Link>
-    </View>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Profile</CardTitle>
+          <CardDescription>Signed in as {user?.email ?? '—'}</CardDescription>
+        </CardHeader>
+        <CardContent className="gap-2">
+          {profile?.goalCalories != null ? (
+            <Text className="text-sm text-foreground dark:text-darkForeground">
+              Daily goal: {profile.goalCalories} kcal
+            </Text>
+          ) : (
+            <Text className="text-sm text-muted-foreground dark:text-darkMutedForeground">
+              Set a goal in the backend or future profile editor.
+            </Text>
+          )}
+        </CardContent>
+      </Card>
+
+      <Button variant="destructive" className="w-full" onPress={handleSignOut}>
+        Sign out
+      </Button>
+    </AppScreen>
   );
 }

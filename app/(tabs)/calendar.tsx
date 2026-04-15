@@ -1,12 +1,18 @@
 import { Text, View } from 'react-native';
 
+import { CalorieCalendar } from '@/components/calendar/calorie-calendar';
+import { AppScreen } from '@/components/layout/app-screen';
+
 export default function CalendarScreen() {
   return (
-    <View className="flex-1 items-center justify-center bg-slate-100 px-4 dark:bg-slate-900">
-      <Text className="text-xl font-semibold text-slate-900 dark:text-slate-100">Calendar</Text>
-      <Text className="mt-2 text-center text-slate-600 dark:text-slate-400">
-        Weekly trends and day detail will connect to GET /api/v1/me/entries.
-      </Text>
-    </View>
+    <AppScreen>
+      <View className="gap-1">
+        <Text className="text-lg font-semibold text-foreground dark:text-darkForeground">Calendar</Text>
+        <Text className="text-sm text-muted-foreground dark:text-darkMutedForeground">
+          Tap a day to see meals and totals.
+        </Text>
+      </View>
+      <CalorieCalendar />
+    </AppScreen>
   );
 }

@@ -26,27 +26,38 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
   const base = getApiBaseUrl();
   const url = `${base}/api/v1${path.startsWith('/') ? path : `/${path}`}`;
 
-  const headers = new Headers(initHeaders);
-  if (!headers.has('Content-Type') && json !== undefined) {
-    headers.set('Content-Type', 'application/json');
-  }
-
-  if (auth) {
-    const token = await getFirebaseIdTokenForApi();
-    if (!token) {
-      throw new ApiError(
-        401,
-        'Not authenticated: no Firebase ID token or EXPO_PUBLIC_MOCK_ID_TOKEN'
-      );
+  async function fetchWithToken(forceRefresh: boolean): Promise<Response> {
+    const headers = new Headers(initHeaders);
+    if (!headers.has('Content-Type') && json !== undefined) {
+      headers.set('Content-Type', 'application/json');
     }
-    headers.set('Authorization', `Bearer ${token}`);
+
+    if (auth) {
+      const token = await getFirebaseIdTokenForApi(
+        forceRefresh ? { forceRefresh: true } : undefined
+      );
+      if (!token) {
+        throw new ApiError(
+          401,
+          'Not authenticated: no Firebase ID token or EXPO_PUBLIC_MOCK_ID_TOKEN',
+          undefined,
+          url
+        );
+      }
+      headers.set('Authorization', `Bearer ${token}`);
+    }
+
+    return fetch(url, {
+      ...rest,
+      headers,
+      body: json !== undefined ? JSON.stringify(json) : undefined,
+    });
   }
 
-  const res = await fetch(url, {
-    ...rest,
-    headers,
-    body: json !== undefined ? JSON.stringify(json) : undefined,
-  });
+  let res = await fetchWithToken(false);
+  if (auth && res.status === 401) {
+    res = await fetchWithToken(true);
+  }
 
   const text = await res.text();
   const parsed = text ? await parseJsonSafe(text) : undefined;
@@ -60,7 +71,7 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
       typeof parsed === 'object' && parsed !== null && 'error' in parsed
         ? String((parsed as { error?: unknown }).error)
         : res.statusText;
-    throw new ApiError(res.status, msg || 'Request failed', parsed);
+    throw new ApiError(res.status, msg || 'Request failed', parsed, url);
   }
 
   return parsed as T;
