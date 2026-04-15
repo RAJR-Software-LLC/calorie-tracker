@@ -1,10 +1,10 @@
-import { ScrollView, View, type ViewProps } from 'react-native';
-
 import { AppHeader } from '@/components/layout/app-header';
+import { ScrollView, View, type ViewProps } from 'react-native';
 
 type AppScreenProps = ViewProps & {
   children: React.ReactNode;
   scroll?: boolean;
+  showHeader?: boolean;
 };
 
 const contentPad = {
@@ -17,10 +17,10 @@ const contentPad = {
   alignSelf: 'center' as const,
 };
 
-export function AppScreen({ children, scroll = true, className, ...rest }: AppScreenProps) {
+export function AppScreen({ children, scroll = true, showHeader = true, className, ...rest }: AppScreenProps) {
   return (
     <View className={`flex-1 bg-background dark:bg-darkBackground ${className ?? ''}`} {...rest}>
-      <AppHeader />
+      {showHeader ? <AppHeader /> : null}
       {scroll ? (
         <ScrollView
           className="flex-1"

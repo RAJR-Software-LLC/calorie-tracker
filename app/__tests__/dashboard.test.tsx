@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { AuthProvider } from '@/components/auth/auth-provider';
+import { DashboardProvider } from '@/components/dashboard/dashboard-context';
 
 import DashboardScreen from '@/app/(tabs)/index';
 
@@ -10,7 +11,9 @@ describe('DashboardScreen', () => {
     render(
       <SafeAreaProvider>
         <AuthProvider>
-          <DashboardScreen />
+          <DashboardProvider>
+            <DashboardScreen />
+          </DashboardProvider>
         </AuthProvider>
       </SafeAreaProvider>
     );

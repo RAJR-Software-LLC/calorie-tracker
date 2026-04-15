@@ -1,4 +1,5 @@
 import { ApiError } from '@/lib/api/errors';
+import { captureMonitoringError } from '@/lib/monitoring';
 
 const LOG_PREFIX = '[calorie-tracker]';
 
@@ -87,6 +88,12 @@ export function logAppError(context: string, err: unknown, meta?: Record<string,
       payload.devHint = FIREBASE_AUTH_DEV_HINTS[code];
     }
   }
+
+  captureMonitoringError(err, context, {
+    errorName: payload.errorName as string | undefined,
+    httpStatus: payload.httpStatus as number | undefined,
+    firebaseAuthCode: payload.firebaseAuthCode as string | undefined,
+  });
 
   console.error(`${LOG_PREFIX}`, payload);
   if (__DEV__ && err instanceof Error && err.stack) {

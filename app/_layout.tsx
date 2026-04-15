@@ -11,6 +11,7 @@ import '../global.css';
 
 import { AuthProvider, useAuth } from '@/components/auth/auth-provider';
 import { useColorScheme } from '@/components/useColorScheme';
+import { initMonitoring } from '@/lib/monitoring';
 import { useThemePalette } from '@/lib/use-theme-palette';
 
 export { ErrorBoundary } from 'expo-router';
@@ -28,6 +29,10 @@ export default function RootLayout() {
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
     ...FontAwesome.font,
   });
+
+  useEffect(() => {
+    initMonitoring();
+  }, []);
 
   useEffect(() => {
     if (error) throw error;

@@ -1,9 +1,8 @@
-import { Text, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Leaf } from 'lucide-react-native';
-
 import { useAuth } from '@/components/auth/auth-provider';
 import { useThemePalette } from '@/lib/use-theme-palette';
+import { Leaf } from 'lucide-react-native';
+import { Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 function getGreeting(): string {
   const hour = new Date().getHours();
@@ -25,8 +24,12 @@ export function AppHeader() {
     >
       <View className="mx-auto w-full max-w-lg flex-row items-center justify-between px-4 py-3">
         <View>
-          <Text className="text-sm text-muted-foreground dark:text-darkMutedForeground">{getGreeting()},</Text>
-          <Text className="text-lg font-semibold text-foreground dark:text-darkForeground">{displayName}</Text>
+          <Text className="text-sm text-muted-foreground dark:text-darkMutedForeground">
+            {getGreeting()},
+          </Text>
+          <Text className="text-lg font-semibold text-foreground dark:text-darkForeground">
+            {displayName}
+          </Text>
         </View>
         <View className="h-9 w-9 items-center justify-center rounded-lg bg-primary/10 dark:bg-darkPrimary/10">
           <Leaf size={20} color={p.primary} />

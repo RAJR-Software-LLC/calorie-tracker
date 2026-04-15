@@ -26,3 +26,12 @@ jest.mock('firebase/auth', () => ({
     return jest.fn();
   }),
 }));
+
+jest.mock('@sentry/react-native', () => ({
+  init: jest.fn(),
+  withScope: (callback: (scope: { setTag: jest.Mock; setExtras: jest.Mock }) => void) => {
+    callback({ setTag: jest.fn(), setExtras: jest.fn() });
+  },
+  captureException: jest.fn(),
+  captureMessage: jest.fn(),
+}));

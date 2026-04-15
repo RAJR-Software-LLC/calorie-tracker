@@ -7,17 +7,29 @@ import path from 'node:path';
  * overwrite existing env vars, so empty or stale EXPO_PUBLIC_* in the shell can hide .env.
  */
 const { env: fileEnv } = parseProjectEnv(path.resolve(process.cwd()), { silent: true });
+const buildProfile = process.env.EAS_BUILD_PROFILE ?? '';
+const isProductionBuild = buildProfile === 'production';
 
 function envPublic(name: string): string | undefined {
   const fromFile = fileEnv[name];
   if (typeof fromFile === 'string' && fromFile.trim() !== '') {
     return fromFile.trim();
   }
+  // Fallback reads the same validated EXPO_PUBLIC_* key dynamically from shell env.
+  // eslint-disable-next-line expo/no-dynamic-env-var
   const fromShell = process.env[name];
   if (typeof fromShell === 'string' && fromShell.trim() !== '') {
     return fromShell.trim();
   }
   return undefined;
+}
+
+function requirePublic(name: string): string {
+  const value = envPublic(name);
+  if (!value) {
+    throw new Error(`[app.config] Missing required env var for production build: ${name}`);
+  }
+  return value;
 }
 
 const googleOAuthExtra = {
@@ -34,6 +46,30 @@ const firebaseExtra = {
   messagingSenderId: envPublic('EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID') ?? '000000000000',
   appId: envPublic('EXPO_PUBLIC_FIREBASE_APP_ID') ?? '1:000000000000:web:placeholder',
 };
+
+const legalExtra = {
+  privacyPolicyUrl: envPublic('EXPO_PUBLIC_PRIVACY_POLICY_URL'),
+  termsOfUseUrl: envPublic('EXPO_PUBLIC_TERMS_OF_USE_URL'),
+  accountDeletionUrl: envPublic('EXPO_PUBLIC_ACCOUNT_DELETION_URL'),
+};
+
+if (isProductionBuild) {
+  const requiredVars = [
+    'EXPO_PUBLIC_FIREBASE_API_KEY',
+    'EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN',
+    'EXPO_PUBLIC_FIREBASE_PROJECT_ID',
+    'EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET',
+    'EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID',
+    'EXPO_PUBLIC_FIREBASE_APP_ID',
+    'EXPO_PUBLIC_PRIVACY_POLICY_URL',
+    'EXPO_PUBLIC_TERMS_OF_USE_URL',
+    'EXPO_PUBLIC_ACCOUNT_DELETION_URL',
+    'EXPO_PUBLIC_SENTRY_DSN',
+  ];
+  for (const requiredVar of requiredVars) {
+    requirePublic(requiredVar);
+  }
+}
 
 if (
   firebaseExtra.apiKey !== 'placeholder' &&
@@ -81,13 +117,14 @@ const config: ExpoConfig = {
     output: 'static',
     favicon: './assets/images/favicon.png',
   },
-  plugins: ['expo-router', 'expo-apple-authentication', 'expo-web-browser'],
+  plugins: ['expo-router', 'expo-apple-authentication', 'expo-web-browser', '@sentry/react-native/expo'],
   experiments: {
     typedRoutes: true,
   },
   extra: {
     firebase: firebaseExtra,
     google: googleOAuthExtra,
+    legal: legalExtra,
     eas: {
       projectId: '436fb9c4-ab3d-4020-8a6d-126575b631f5',
     },

@@ -29,6 +29,12 @@ npm test
 npx expo-doctor
 ```
 
+### ESLint disable policy
+
+- Any `eslint-disable` directive must have a specific explanation comment on the line immediately above it.
+- The explanation must describe why the disable is required in that code location (not just restate the rule name).
+- Project hook enforcement lives in `.cursor/hooks.json` and `.cursor/hooks/require-eslint-disable-reason.sh`.
+
 ## Environment variables
 
 | Variable                    | Purpose                                                                                                                          |
@@ -51,6 +57,17 @@ Copy [.env.example](.env.example) to `.env` and adjust. Never commit secrets.
 | [types/index.d.ts](types/index.d.ts)       | Shared API/domain types (keep in sync with backend)                |
 
 More detail: [docs/architecture.md](docs/architecture.md), [docs/types.md](docs/types.md), [docs/contributing.md](docs/contributing.md).
+
+## Production compliance docs
+
+- [docs/privacy-policy.md](docs/privacy-policy.md)
+- [docs/terms-of-use.md](docs/terms-of-use.md)
+- [docs/account-deletion.md](docs/account-deletion.md)
+- [docs/store-listing-language.md](docs/store-listing-language.md)
+- [docs/health-policy-mapping.md](docs/health-policy-mapping.md)
+- [docs/monitoring-and-alerts.md](docs/monitoring-and-alerts.md)
+- [docs/release-test-checklist.md](docs/release-test-checklist.md)
+- [docs/store-submission-runbook.md](docs/store-submission-runbook.md)
 
 ## EAS (builds and OTA updates)
 
