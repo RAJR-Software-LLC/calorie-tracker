@@ -5,6 +5,7 @@ import { Sparkles } from 'lucide-react-native';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { SegmentedControl } from '@/components/ui/segmented-control';
 import { useThemePalette } from '@/lib/use-theme-palette';
 import {
   feetInchesToCm,
@@ -111,36 +112,15 @@ export function AdvancedCalculator({ onResult }: AdvancedCalculatorProps) {
             onChangeText={setWeight}
             className="flex-1"
           />
-          <View className="flex-row overflow-hidden rounded-lg border border-input dark:border-darkBorder">
-            <Pressable
-              className={`px-3 py-2 ${weightUnit === 'lbs' ? 'bg-primary dark:bg-darkPrimary' : ''}`}
-              onPress={() => setWeightUnit('lbs')}
-            >
-              <Text
-                className={
-                  weightUnit === 'lbs'
-                    ? 'text-primary-foreground dark:text-darkPrimaryForeground'
-                    : 'text-muted-foreground dark:text-darkMutedForeground'
-                }
-              >
-                lbs
-              </Text>
-            </Pressable>
-            <Pressable
-              className={`px-3 py-2 ${weightUnit === 'kg' ? 'bg-primary dark:bg-darkPrimary' : ''}`}
-              onPress={() => setWeightUnit('kg')}
-            >
-              <Text
-                className={
-                  weightUnit === 'kg'
-                    ? 'text-primary-foreground dark:text-darkPrimaryForeground'
-                    : 'text-muted-foreground dark:text-darkMutedForeground'
-                }
-              >
-                kg
-              </Text>
-            </Pressable>
-          </View>
+          <SegmentedControl
+            value={weightUnit}
+            onChange={setWeightUnit}
+            options={[
+              { value: 'lbs', label: 'lbs' },
+              { value: 'kg', label: 'kg' },
+            ]}
+            className="w-28"
+          />
         </View>
       </View>
 

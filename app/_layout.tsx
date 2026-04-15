@@ -19,7 +19,9 @@ export const unstable_settings = {
   initialRouteName: '(tabs)',
 };
 
-SplashScreen.preventAutoHideAsync();
+void SplashScreen.preventAutoHideAsync().catch(() => {
+  // In some navigation/view-controller transitions there may be no splash to control.
+});
 
 export default function RootLayout() {
   const [loaded, error] = useFonts({
@@ -33,7 +35,9 @@ export default function RootLayout() {
 
   useEffect(() => {
     if (loaded) {
-      SplashScreen.hideAsync();
+      void SplashScreen.hideAsync().catch(() => {
+        // Ignore if native splash is not registered for this view controller.
+      });
     }
   }, [loaded]);
 

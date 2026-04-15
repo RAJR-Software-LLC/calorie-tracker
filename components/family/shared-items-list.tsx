@@ -1,13 +1,13 @@
+import { Share2, Users, UtensilsCrossed } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Modal, Pressable, ScrollView, Text, View } from 'react-native';
-import { Share2, UtensilsCrossed, Users } from 'lucide-react-native';
 
 import { useAuth } from '@/components/auth/auth-provider';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { logAppError, toUserErrorMessage } from '@/lib/app-errors';
 import { getFamily, getFamilySharedItems, getSavedItems, postFamilySharedItem } from '@/lib/api';
+import { logAppError, toUserErrorMessage } from '@/lib/app-errors';
 import { showToast } from '@/lib/toast';
 import { useThemePalette } from '@/lib/use-theme-palette';
 
@@ -63,7 +63,9 @@ export function SharedItemsList({ familyId }: SharedItemsListProps) {
             <Users size={20} color={p.primary} />
           </View>
           <View>
-            <Text className="font-semibold text-foreground dark:text-darkForeground">{family?.name ?? 'Family'}</Text>
+            <Text className="font-semibold text-foreground dark:text-darkForeground">
+              {family?.name ?? 'Family'}
+            </Text>
             <Text className="text-xs text-muted-foreground dark:text-darkMutedForeground">
               {family?.members?.length ?? 0} member{(family?.members?.length ?? 0) !== 1 ? 's' : ''}
             </Text>
@@ -71,7 +73,9 @@ export function SharedItemsList({ familyId }: SharedItemsListProps) {
         </View>
         {family?.inviteCode ? (
           <View className="items-end">
-            <Text className="text-xs text-muted-foreground dark:text-darkMutedForeground">Invite code</Text>
+            <Text className="text-xs text-muted-foreground dark:text-darkMutedForeground">
+              Invite code
+            </Text>
             <Text className="text-sm font-bold tracking-wider text-foreground dark:text-darkForeground">
               {family.inviteCode}
             </Text>
@@ -82,17 +86,23 @@ export function SharedItemsList({ familyId }: SharedItemsListProps) {
       <Button className="w-full" onPress={() => setShareOpen(true)}>
         <View className="flex-row items-center justify-center gap-2">
           <Share2 size={16} color={p.primaryForeground} />
-          <Text className="font-semibold text-primary-foreground dark:text-darkPrimaryForeground">Share an item</Text>
+          <Text className="font-semibold text-primary-foreground dark:text-darkPrimaryForeground">
+            Share an item
+          </Text>
         </View>
       </Button>
 
       <View className="gap-3">
-        <Text className="text-sm font-semibold text-foreground dark:text-darkForeground">Shared items</Text>
+        <Text className="text-sm font-semibold text-foreground dark:text-darkForeground">
+          Shared items
+        </Text>
         {sharedItems.length === 0 ? (
           <View className="items-center gap-2 rounded-xl border border-dashed border-border py-8 dark:border-darkBorder">
             <UtensilsCrossed size={32} color={p.mutedForeground} />
             <Text className="text-center text-sm text-muted-foreground dark:text-darkMutedForeground">
-              No shared items yet. Share your favorite meals with the family!
+              No shared items yet.
+              {'\n'}
+              Share your favorite meals with the family!
             </Text>
           </View>
         ) : (
@@ -103,7 +113,9 @@ export function SharedItemsList({ familyId }: SharedItemsListProps) {
                 className="flex-row items-center justify-between rounded-xl border border-border/50 bg-card px-4 py-3 shadow-sm dark:border-darkBorder dark:bg-darkCard"
               >
                 <View className="gap-0.5">
-                  <Text className="text-sm font-medium text-foreground dark:text-darkForeground">{item.itemName}</Text>
+                  <Text className="text-sm font-medium text-foreground dark:text-darkForeground">
+                    {item.itemName}
+                  </Text>
                   <Text className="text-xs text-muted-foreground dark:text-darkMutedForeground">
                     Shared by {item.sharedByName}
                   </Text>
@@ -182,15 +194,25 @@ function ShareItemModal({
   }
 
   return (
-    <Modal visible={open} animationType="slide" transparent onRequestClose={() => onOpenChange(false)}>
+    <Modal
+      visible={open}
+      animationType="slide"
+      transparent
+      onRequestClose={() => onOpenChange(false)}
+    >
       <Pressable className="flex-1 justify-end bg-black/40" onPress={() => onOpenChange(false)}>
-        <Pressable className="max-h-[85%] rounded-t-3xl bg-card p-4 dark:bg-darkCard" onPress={(e) => e.stopPropagation()}>
-          <Text className="text-xl font-semibold text-foreground dark:text-darkForeground">Share an item</Text>
+        <Pressable
+          className="h-[80%] rounded-t-3xl bg-card p-4 dark:bg-darkCard"
+          onPress={(e) => e.stopPropagation()}
+        >
+          <Text className="text-xl font-semibold text-foreground dark:text-darkForeground">
+            Share an item
+          </Text>
           <Text className="mt-1 text-sm text-muted-foreground dark:text-darkMutedForeground">
             Share a food item with your family. Only the item name and calories are shared.
           </Text>
 
-          <ScrollView className="mt-4 max-h-96" keyboardShouldPersistTaps="handled">
+          <ScrollView className="mt-4 flex-1" keyboardShouldPersistTaps="handled">
             {myItems.length > 0 ? (
               <View className="mb-4 gap-2">
                 <Label>From my items</Label>
@@ -205,7 +227,9 @@ function ShareItemModal({
                       }`}
                       onPress={() => selectMyItem(item)}
                     >
-                      <Text className="text-xs font-medium text-foreground dark:text-darkForeground">{item.itemName}</Text>
+                      <Text className="text-xs font-medium text-foreground dark:text-darkForeground">
+                        {item.itemName}
+                      </Text>
                     </Pressable>
                   ))}
                 </View>
@@ -215,7 +239,11 @@ function ShareItemModal({
             <View className="gap-4">
               <View className="gap-2">
                 <Label>Item name</Label>
-                <Input placeholder="e.g. Chicken sandwich" value={itemName} onChangeText={setItemName} />
+                <Input
+                  placeholder="e.g. Chicken sandwich"
+                  value={itemName}
+                  onChangeText={setItemName}
+                />
               </View>
               <View className="flex-row gap-3">
                 <View className="flex-1 gap-2">
@@ -224,7 +252,12 @@ function ShareItemModal({
                 </View>
                 <View className="flex-1 gap-2">
                   <Label>Calories</Label>
-                  <Input keyboardType="number-pad" placeholder="e.g. 400" value={calories} onChangeText={setCalories} />
+                  <Input
+                    keyboardType="number-pad"
+                    placeholder="e.g. 400"
+                    value={calories}
+                    onChangeText={setCalories}
+                  />
                 </View>
               </View>
             </View>
@@ -234,7 +267,11 @@ function ShareItemModal({
             <Button variant="outline" className="flex-1" onPress={() => onOpenChange(false)}>
               Cancel
             </Button>
-            <Button className="flex-1" disabled={loading || !itemName.trim() || !calories} onPress={handleShare}>
+            <Button
+              className="flex-1"
+              disabled={loading || !itemName.trim() || !calories}
+              onPress={handleShare}
+            >
               {loading ? 'Sharing...' : 'Share'}
             </Button>
           </View>

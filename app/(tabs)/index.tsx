@@ -1,6 +1,6 @@
 import { Text, View } from 'react-native';
 
-import { DashboardProvider, useDashboard } from '@/components/dashboard/dashboard-context';
+import { useDashboard } from '@/components/dashboard/dashboard-context';
 import { DailySummary } from '@/components/dashboard/daily-summary';
 import { EncouragementCard } from '@/components/dashboard/encouragement-card';
 import { EntryList } from '@/components/dashboard/entry-list';
@@ -29,10 +29,8 @@ function DashboardBody() {
 
 export default function DashboardScreen() {
   return (
-    <DashboardProvider>
-      <AppScreen>
-        <DashboardBody />
-      </AppScreen>
-    </DashboardProvider>
+    <AppScreen>
+      <DashboardBody />
+    </AppScreen>
   );
 }
