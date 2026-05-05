@@ -9,17 +9,12 @@ import {
 } from 'react';
 
 import { useAuth } from '@/components/auth/auth-provider';
-import {
-  getEntries,
-  getExerciseForDate,
-  getMe,
-  getSavedItems,
-} from '@/lib/api';
+import { getEntries, getExerciseForDate, getMe, getSavedItems } from '@/lib/api';
 import { logAppError, toUserErrorMessage } from '@/lib/app-errors';
 import { formatDate } from '@/lib/date';
 import { getFirebaseIdTokenForApi } from '@/lib/firebase';
 import { showToast } from '@/lib/toast';
-import type { CalorieEntryWithId, ExerciseWithId, SavedItemWithId } from '@/types';
+import type { CalorieEntryWithId, CalorieGoal, ExerciseWithId, SavedItemWithId } from '@/types';
 
 interface DashboardContextType {
   entries: CalorieEntryWithId[];
@@ -27,7 +22,7 @@ interface DashboardContextType {
   savedItems: SavedItemWithId[];
   totalCalories: number;
   exerciseCalories: number;
-  goalCalories: number | null;
+  calorieGoal: CalorieGoal | null;
   maintenanceCalories: number | null;
   loading: boolean;
   refreshEntries: () => Promise<void>;
@@ -43,7 +38,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   const [entries, setEntries] = useState<CalorieEntryWithId[]>([]);
   const [exercises, setExercises] = useState<ExerciseWithId[]>([]);
   const [savedItems, setSavedItems] = useState<SavedItemWithId[]>([]);
-  const [goalCalories, setGoalCalories] = useState<number | null>(null);
+  const [calorieGoal, setCalorieGoal] = useState<CalorieGoal | null>(null);
   const [maintenanceCalories, setMaintenanceCalories] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -81,11 +76,14 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       setEntries(entriesData);
       setExercises(exercisesData);
       setSavedItems(savedData);
-      setGoalCalories(profile?.goalCalories ?? null);
+      setCalorieGoal(profile?.calorieGoal ?? null);
       setMaintenanceCalories(profile?.maintenanceCalories ?? null);
     } catch (err) {
       logAppError('dashboard/refreshAll', err);
-      showToast(toUserErrorMessage(err, "Couldn't load today's data. Pull to refresh or try again."), 'error');
+      showToast(
+        toUserErrorMessage(err, "Couldn't load today's data. Pull to refresh or try again."),
+        'error'
+      );
     } finally {
       setLoading(false);
     }
@@ -96,7 +94,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       setEntries([]);
       setExercises([]);
       setSavedItems([]);
-      setGoalCalories(null);
+      setCalorieGoal(null);
       setMaintenanceCalories(null);
       setLoading(false);
       return;
@@ -114,7 +112,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       savedItems,
       totalCalories,
       exerciseCalories,
-      goalCalories,
+      calorieGoal,
       maintenanceCalories,
       loading,
       refreshEntries,
@@ -128,7 +126,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       savedItems,
       totalCalories,
       exerciseCalories,
-      goalCalories,
+      calorieGoal,
       maintenanceCalories,
       loading,
       refreshEntries,

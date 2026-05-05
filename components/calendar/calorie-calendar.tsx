@@ -17,17 +17,21 @@ import { DayDetailModal } from '@/components/calendar/day-detail-modal';
 import { WeeklyTrendChart } from '@/components/calendar/weekly-trend-chart';
 import { logAppError, toUserErrorMessage } from '@/lib/app-errors';
 import { getEntries, getMe } from '@/lib/api';
+import { getCalorieGoalUpperTarget } from '@/lib/calorie-goal';
 import { formatDate } from '@/lib/date';
 import { showToast } from '@/lib/toast';
 import { useThemePalette } from '@/lib/use-theme-palette';
+import type { CalorieGoal } from '@/types';
 
 export function CalorieCalendar() {
   const p = useThemePalette();
   const { user } = useAuth();
   const [month, setMonth] = useState(new Date());
-  const [daySummaries, setDaySummaries] = useState<Record<string, { date: string; total: number }>>({});
+  const [daySummaries, setDaySummaries] = useState<Record<string, { date: string; total: number }>>(
+    {}
+  );
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
-  const [goalCalories, setGoalCalories] = useState<number | null>(null);
+  const [calorieGoal, setCalorieGoal] = useState<CalorieGoal | null>(null);
   const [loading, setLoading] = useState(true);
 
   const loadMonth = useCallback(async () => {
@@ -44,7 +48,7 @@ export function CalorieCalendar() {
         getEntries({ startDate: weekStart, endDate: weekEnd }),
         getMe(),
       ]);
-      setGoalCalories(profile?.goalCalories ?? null);
+      setCalorieGoal(profile?.calorieGoal ?? null);
 
       const grouped: Record<string, { date: string; total: number }> = {};
       const seen = new Set<string>();
@@ -74,7 +78,7 @@ export function CalorieCalendar() {
     const dateStr = formatDate(d);
     const summary = daySummaries[dateStr];
     if (!summary || summary.total === 0) return 'none';
-    const goal = goalCalories || 2000;
+    const goal = getCalorieGoalUpperTarget(calorieGoal) || 2000;
     if (summary.total <= goal * 1.1) return 'on-track';
     return 'over';
   }
@@ -88,20 +92,23 @@ export function CalorieCalendar() {
       return {
         date: format(date, 'EEE'),
         calories: summary?.total || 0,
-        goal: goalCalories || 2000,
+        goal: getCalorieGoalUpperTarget(calorieGoal) || 2000,
       };
     });
-  }, [daySummaries, goalCalories]);
+  }, [daySummaries, calorieGoal]);
 
   const calendarDays = useMemo(() => {
     const start = startOfMonth(month);
     const end = endOfMonth(month);
     const startWeekday = start.getDay();
-    const days: (Date | null)[] = [];
+    const monthKey = format(start, 'yyyy-MM');
+    const days: { key: string; date: Date | null }[] = [];
     for (let i = 0; i < startWeekday; i++) {
-      days.push(null);
+      days.push({ key: `empty-${monthKey}-${i + 1}`, date: null });
     }
-    eachDayOfInterval({ start, end }).forEach((d) => days.push(d));
+    eachDayOfInterval({ start, end }).forEach((d) => {
+      days.push({ key: formatDate(d), date: d });
+    });
     return days;
   }, [month]);
 
@@ -117,7 +124,7 @@ export function CalorieCalendar() {
 
   return (
     <View className="gap-5">
-      <WeeklyTrendChart data={last7Days} goal={goalCalories || 2000} />
+      <WeeklyTrendChart data={last7Days} goal={calorieGoal} />
 
       <View className="flex-row items-center justify-between px-2">
         <Pressable hitSlop={12} onPress={() => setMonth((m) => subMonths(m, 1))}>
@@ -143,14 +150,14 @@ export function CalorieCalendar() {
           ))}
         </View>
         <View className="flex-row flex-wrap">
-          {calendarDays.map((d, i) => {
-            if (!d) {
-              return <View key={`empty-${i}`} className="aspect-square w-[14.28%] p-1" />;
+          {calendarDays.map(({ key, date: calendarDate }) => {
+            if (!calendarDate) {
+              return <View key={key} className="aspect-square w-[14.28%] p-1" />;
             }
-            const dateStr = formatDate(d);
+            const dateStr = formatDate(calendarDate);
             const summary = daySummaries[dateStr];
-            const status = getDayStatus(d);
-            const disabled = isAfter(d, today);
+            const status = getDayStatus(calendarDate);
+            const disabled = isAfter(calendarDate, today);
             const dot =
               summary && summary.total > 0
                 ? status === 'over'
@@ -160,7 +167,7 @@ export function CalorieCalendar() {
 
             return (
               <Pressable
-                key={dateStr}
+                key={key}
                 disabled={disabled}
                 className={`aspect-square w-[14.28%] items-center justify-center rounded-lg p-1 ${
                   selectedDate === dateStr ? 'bg-primary/10 dark:bg-darkPrimary/10' : ''
@@ -169,10 +176,12 @@ export function CalorieCalendar() {
               >
                 <Text
                   className={`text-sm ${
-                    isSameMonth(d, month) ? 'text-foreground dark:text-darkForeground' : 'text-muted-foreground'
+                    isSameMonth(calendarDate, month)
+                      ? 'text-foreground dark:text-darkForeground'
+                      : 'text-muted-foreground'
                   }`}
                 >
-                  {format(d, 'd')}
+                  {format(calendarDate, 'd')}
                 </Text>
                 {dot ? <View className={`mt-0.5 h-1.5 w-1.5 rounded-full ${dot}`} /> : null}
               </Pressable>
@@ -187,7 +196,7 @@ export function CalorieCalendar() {
           if (!open) setSelectedDate(null);
         }}
         date={selectedDate || ''}
-        goal={goalCalories}
+        goal={calorieGoal}
         onEntryChange={loadMonth}
       />
     </View>

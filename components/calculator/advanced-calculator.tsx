@@ -67,8 +67,8 @@ export function AdvancedCalculator({ onResult }: AdvancedCalculatorProps) {
       <View className="flex-row items-start gap-3 rounded-xl border border-primary/10 bg-primary/5 px-4 py-3 dark:border-darkPrimary/10 dark:bg-darkPrimary/5">
         <Sparkles size={16} color={p.primary} style={{ marginTop: 2 }} />
         <Text className="flex-1 text-sm leading-relaxed text-foreground dark:text-darkForeground">
-          The Mifflin-St Jeor equation is the gold standard for estimating daily calorie needs. More inputs means a
-          more personalized result.
+          The Mifflin-St Jeor equation is the gold standard for estimating daily calorie needs. More
+          inputs means a more personalized result.
         </Text>
       </View>
 
@@ -87,7 +87,9 @@ export function AdvancedCalculator({ onResult }: AdvancedCalculatorProps) {
             >
               <Text
                 className={`text-center text-sm font-medium capitalize ${
-                  sex === s ? 'text-foreground dark:text-darkForeground' : 'text-muted-foreground dark:text-darkMutedForeground'
+                  sex === s
+                    ? 'text-foreground dark:text-darkForeground'
+                    : 'text-muted-foreground dark:text-darkMutedForeground'
                 }`}
               >
                 {s}
@@ -127,7 +129,9 @@ export function AdvancedCalculator({ onResult }: AdvancedCalculatorProps) {
       <View className="gap-2">
         <View className="flex-row items-center justify-between">
           <Label>Height</Label>
-          <Pressable onPress={() => setHeightUnit(heightUnit === 'imperial' ? 'metric' : 'imperial')}>
+          <Pressable
+            onPress={() => setHeightUnit(heightUnit === 'imperial' ? 'metric' : 'imperial')}
+          >
             <Text className="text-xs text-primary dark:text-darkPrimary">
               Switch to {heightUnit === 'imperial' ? 'cm' : 'ft/in'}
             </Text>
@@ -136,16 +140,31 @@ export function AdvancedCalculator({ onResult }: AdvancedCalculatorProps) {
         {heightUnit === 'imperial' ? (
           <View className="flex-row gap-2">
             <View className="flex-1 flex-row items-center gap-1">
-              <Input keyboardType="number-pad" placeholder="5" value={heightFeet} onChangeText={setHeightFeet} />
+              <Input
+                keyboardType="number-pad"
+                placeholder="5"
+                value={heightFeet}
+                onChangeText={setHeightFeet}
+              />
               <Text className="text-sm text-muted-foreground">ft</Text>
             </View>
             <View className="flex-1 flex-row items-center gap-1">
-              <Input keyboardType="number-pad" placeholder="8" value={heightInches} onChangeText={setHeightInches} />
+              <Input
+                keyboardType="number-pad"
+                placeholder="8"
+                value={heightInches}
+                onChangeText={setHeightInches}
+              />
               <Text className="text-sm text-muted-foreground">in</Text>
             </View>
           </View>
         ) : (
-          <Input keyboardType="number-pad" placeholder="e.g. 173" value={heightCm} onChangeText={setHeightCm} />
+          <Input
+            keyboardType="number-pad"
+            placeholder="e.g. 173"
+            value={heightCm}
+            onChangeText={setHeightCm}
+          />
         )}
       </View>
 

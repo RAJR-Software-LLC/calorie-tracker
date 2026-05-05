@@ -40,7 +40,9 @@ export default function FamilyScreen() {
   return (
     <AppScreen>
       <View className="gap-1">
-        <Text className="text-lg font-semibold text-foreground dark:text-darkForeground">Family</Text>
+        <Text className="text-lg font-semibold text-foreground dark:text-darkForeground">
+          Family
+        </Text>
         <Text className="text-sm text-muted-foreground dark:text-darkMutedForeground">
           Share saved items with your household.
         </Text>

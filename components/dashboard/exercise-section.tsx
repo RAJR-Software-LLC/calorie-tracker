@@ -1,12 +1,5 @@
 import { useState } from 'react';
-import {
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
-  Pressable,
-  Text,
-  View,
-} from 'react-native';
+import { KeyboardAvoidingView, Modal, Platform, Pressable, Text, View } from 'react-native';
 import { Dumbbell, Plus, Trash2 } from 'lucide-react-native';
 
 import { useAuth } from '@/components/auth/auth-provider';
@@ -44,10 +37,14 @@ export function ExerciseSection({ date }: ExerciseSectionProps) {
   return (
     <View className="gap-3">
       <View className="flex-row items-center justify-between">
-        <Text className="text-sm font-semibold text-foreground dark:text-darkForeground">Exercise</Text>
+        <Text className="text-sm font-semibold text-foreground dark:text-darkForeground">
+          Exercise
+        </Text>
         <Pressable className="flex-row items-center gap-1" onPress={() => setOpen(true)}>
           <Plus size={16} color={p.primary} />
-          <Text className="text-sm font-medium text-primary dark:text-darkPrimary">Log exercise</Text>
+          <Text className="text-sm font-medium text-primary dark:text-darkPrimary">
+            Log exercise
+          </Text>
         </Pressable>
       </View>
 
@@ -60,10 +57,14 @@ export function ExerciseSection({ date }: ExerciseSectionProps) {
             >
               <View className="flex-row items-center gap-2">
                 <Dumbbell size={16} color={p.mutedForeground} />
-                <Text className="text-sm font-medium text-foreground dark:text-darkForeground">{ex.name}</Text>
+                <Text className="text-sm font-medium text-foreground dark:text-darkForeground">
+                  {ex.name}
+                </Text>
               </View>
               <View className="flex-row items-center gap-3">
-                <Text className="text-sm font-semibold text-primary dark:text-darkPrimary">-{ex.caloriesBurned} cal</Text>
+                <Text className="text-sm font-semibold text-primary dark:text-darkPrimary">
+                  -{ex.caloriesBurned} cal
+                </Text>
                 <Button
                   variant="ghost"
                   size="icon"
@@ -121,14 +122,21 @@ function ExerciseModal({
   }
 
   return (
-    <Modal visible={open} animationType="slide" transparent onRequestClose={() => onOpenChange(false)}>
+    <Modal
+      visible={open}
+      animationType="slide"
+      transparent
+      onRequestClose={() => onOpenChange(false)}
+    >
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         className="flex-1 justify-end bg-black/40"
       >
         <Pressable className="flex-1" onPress={() => onOpenChange(false)} />
         <View className="rounded-t-3xl bg-card p-4 dark:bg-darkCard">
-          <Text className="text-xl font-semibold text-foreground dark:text-darkForeground">Log exercise</Text>
+          <Text className="text-xl font-semibold text-foreground dark:text-darkForeground">
+            Log exercise
+          </Text>
           <Text className="mt-1 text-sm text-muted-foreground dark:text-darkMutedForeground">
             Add calories you burned
           </Text>

@@ -71,10 +71,7 @@ if (isProductionBuild) {
   }
 }
 
-if (
-  firebaseExtra.apiKey !== 'placeholder' &&
-  !firebaseExtra.appId.includes(':web:')
-) {
+if (firebaseExtra.apiKey !== 'placeholder' && !firebaseExtra.appId.includes(':web:')) {
   console.warn(
     '[app.config] EXPO_PUBLIC_FIREBASE_APP_ID must be the Web app ID (contains ":web:"). Using an iOS/Android app ID causes auth/configuration-not-found with the Firebase JS SDK.'
   );
@@ -117,7 +114,12 @@ const config: ExpoConfig = {
     output: 'static',
     favicon: './assets/images/favicon.png',
   },
-  plugins: ['expo-router', 'expo-apple-authentication', 'expo-web-browser', '@sentry/react-native/expo'],
+  plugins: [
+    'expo-router',
+    'expo-apple-authentication',
+    'expo-web-browser',
+    '@sentry/react-native/expo',
+  ],
   experiments: {
     typedRoutes: true,
   },

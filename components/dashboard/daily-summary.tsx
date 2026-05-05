@@ -2,17 +2,20 @@ import { Text, View } from 'react-native';
 import Svg, { Circle, G } from 'react-native-svg';
 import { Dumbbell, Flame } from 'lucide-react-native';
 
+import { formatCalorieGoal, getCalorieGoalUpperTarget } from '@/lib/calorie-goal';
 import { useThemePalette } from '@/lib/use-theme-palette';
+import type { CalorieGoal } from '@/types';
 
 type DailySummaryProps = {
   consumed: number;
-  goal: number | null;
+  goal: CalorieGoal | null;
   burned: number;
 };
 
 export function DailySummary({ consumed, goal, burned }: DailySummaryProps) {
   const p = useThemePalette();
-  const effectiveGoal = goal || 2000;
+  const effectiveGoal = getCalorieGoalUpperTarget(goal) || 2000;
+  const goalDisplay = formatCalorieGoal(goal);
   const remaining = effectiveGoal - consumed + burned;
   const progress = Math.min((consumed / effectiveGoal) * 100, 100);
   const circumference = 2 * Math.PI * 56;
@@ -44,7 +47,7 @@ export function DailySummary({ consumed, goal, burned }: DailySummaryProps) {
             {consumed.toLocaleString()}
           </Text>
           <Text className="text-xs text-muted-foreground dark:text-darkMutedForeground">
-            of {effectiveGoal.toLocaleString()} cal
+            of {goalDisplay ?? effectiveGoal.toLocaleString()} cal
           </Text>
         </View>
       </View>

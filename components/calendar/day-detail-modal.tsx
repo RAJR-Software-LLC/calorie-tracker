@@ -17,16 +17,17 @@ import { LogEntryModal } from '@/components/dashboard/log-entry-modal';
 import { Button } from '@/components/ui/button';
 import { logAppError, toUserErrorMessage } from '@/lib/app-errors';
 import { deleteEntry, getEntries } from '@/lib/api';
+import { formatCalorieGoal, getCalorieGoalUpperTarget } from '@/lib/calorie-goal';
 import { showToast } from '@/lib/toast';
 import { useThemePalette } from '@/lib/use-theme-palette';
 
-import type { CalorieEntryWithId } from '@/types';
+import type { CalorieEntryWithId, CalorieGoal } from '@/types';
 
 type DayDetailModalProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   date: string;
-  goal: number | null;
+  goal: CalorieGoal | null;
   onEntryChange: () => void;
 };
 
@@ -81,22 +82,28 @@ export function DayDetailModal({
   const parsedDate = parseISO(date);
   const dateLabel = isToday(parsedDate) ? 'Today' : format(parsedDate, 'EEEE, MMM d');
   const total = entries.reduce((sum, e) => sum + (e.estimatedCalories || 0), 0);
-  const effectiveGoal = goal || 2000;
+  const effectiveGoal = getCalorieGoalUpperTarget(goal) || 2000;
+  const goalDisplay = formatCalorieGoal(goal) ?? effectiveGoal.toLocaleString();
 
   return (
     <>
-      <Modal visible={open} animationType="slide" transparent onRequestClose={() => onOpenChange(false)}>
+      <Modal
+        visible={open}
+        animationType="slide"
+        transparent
+        onRequestClose={() => onOpenChange(false)}
+      >
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
           className="flex-1 justify-end bg-black/40"
         >
           <Pressable className="flex-1" onPress={() => onOpenChange(false)} />
           <View className="max-h-[80%] rounded-t-3xl bg-card p-4 dark:bg-darkCard">
-            <Text className="text-xl font-semibold text-foreground dark:text-darkForeground">{dateLabel}</Text>
+            <Text className="text-xl font-semibold text-foreground dark:text-darkForeground">
+              {dateLabel}
+            </Text>
             <Text className="mt-1 text-sm text-muted-foreground dark:text-darkMutedForeground">
-              {total > 0
-                ? `${total.toLocaleString()} of ${effectiveGoal.toLocaleString()} cal`
-                : 'No entries yet'}
+              {total > 0 ? `${total.toLocaleString()} of ${goalDisplay} cal` : 'No entries yet'}
             </Text>
 
             <ScrollView className="mt-4 max-h-80">
@@ -140,8 +147,10 @@ export function DayDetailModal({
               {total > 0 ? (
                 <View className="mt-3 gap-1.5">
                   <View className="flex-row justify-between">
-                    <Text className="text-xs text-muted-foreground">{total.toLocaleString()} cal</Text>
-                    <Text className="text-xs text-muted-foreground">{effectiveGoal.toLocaleString()} cal goal</Text>
+                    <Text className="text-xs text-muted-foreground">
+                      {total.toLocaleString()} cal
+                    </Text>
+                    <Text className="text-xs text-muted-foreground">{goalDisplay} cal goal</Text>
                   </View>
                   <View className="h-2 w-full overflow-hidden rounded-full bg-muted dark:bg-darkMuted">
                     <View

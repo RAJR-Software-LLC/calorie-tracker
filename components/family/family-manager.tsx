@@ -61,7 +61,9 @@ export function FamilyManager({ onFamilyJoined }: FamilyManagerProps) {
           <View className="mb-3 h-12 w-12 items-center justify-center rounded-xl bg-primary/10 dark:bg-darkPrimary/10">
             <Users size={24} color={p.primary} />
           </View>
-          <Text className="text-lg font-semibold text-foreground dark:text-darkForeground">Family sharing</Text>
+          <Text className="text-lg font-semibold text-foreground dark:text-darkForeground">
+            Family sharing
+          </Text>
           <Text className="mt-1 text-center text-sm text-muted-foreground dark:text-darkMutedForeground">
             Share food items with your family. Daily entries and calorie totals stay private.
           </Text>
@@ -70,7 +72,9 @@ export function FamilyManager({ onFamilyJoined }: FamilyManagerProps) {
         <Button size="lg" className="w-full flex-row gap-3 py-6" onPress={() => setMode('create')}>
           <Plus size={20} color={p.primaryForeground} />
           <View className="flex-1 items-start">
-            <Text className="font-semibold text-primary-foreground dark:text-darkPrimaryForeground">Create a family</Text>
+            <Text className="font-semibold text-primary-foreground dark:text-darkPrimaryForeground">
+              Create a family
+            </Text>
             <Text className="text-xs text-primary-foreground/80 dark:text-darkPrimaryForeground/80">
               Start a new group and invite others
             </Text>
@@ -84,8 +88,12 @@ export function FamilyManager({ onFamilyJoined }: FamilyManagerProps) {
         >
           <UserPlus size={20} color={p.primary} />
           <View className="flex-1 items-start">
-            <Text className="font-semibold text-foreground dark:text-darkForeground">Join a family</Text>
-            <Text className="text-xs text-muted-foreground dark:text-darkMutedForeground">Enter an invite code</Text>
+            <Text className="font-semibold text-foreground dark:text-darkForeground">
+              Join a family
+            </Text>
+            <Text className="text-xs text-muted-foreground dark:text-darkMutedForeground">
+              Enter an invite code
+            </Text>
           </View>
         </Button>
       </View>
@@ -108,7 +116,11 @@ export function FamilyManager({ onFamilyJoined }: FamilyManagerProps) {
             <Button variant="outline" className="flex-1" onPress={() => setMode('choose')}>
               Back
             </Button>
-            <Button className="flex-1" disabled={loading || !familyName.trim()} onPress={handleCreate}>
+            <Button
+              className="flex-1"
+              disabled={loading || !familyName.trim()}
+              onPress={handleCreate}
+            >
               {loading ? 'Creating...' : 'Create'}
             </Button>
           </View>

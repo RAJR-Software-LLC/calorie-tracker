@@ -35,14 +35,21 @@ export function LogEntryModal({ open, onOpenChange, date, onLogged }: LogEntryMo
   const dateLabel = isToday ? 'today' : format(parseISO(date), 'MMM d');
 
   return (
-    <Modal visible={open} animationType="slide" transparent onRequestClose={() => onOpenChange(false)}>
+    <Modal
+      visible={open}
+      animationType="slide"
+      transparent
+      onRequestClose={() => onOpenChange(false)}
+    >
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         className="flex-1 justify-end bg-black/40"
       >
         <Pressable className="flex-1" onPress={() => onOpenChange(false)} />
         <View className="max-h-[90%] rounded-t-3xl bg-card p-4 dark:bg-darkCard">
-          <Text className="text-2xl font-semibold text-foreground dark:text-darkForeground">Log a meal</Text>
+          <Text className="text-2xl font-semibold text-foreground dark:text-darkForeground">
+            Log a meal
+          </Text>
           <Text className="mt-1 text-sm text-muted-foreground dark:text-darkMutedForeground">
             Logging for {dateLabel}
           </Text>
@@ -169,7 +176,9 @@ function LogEntryForm({ date, onSuccess }: { date: string; onSuccess: () => void
                 className="flex-row items-center justify-between px-3 py-2"
                 onPress={() => selectSavedItem(item)}
               >
-                <Text className="text-sm text-foreground dark:text-darkForeground">{item.itemName}</Text>
+                <Text className="text-sm text-foreground dark:text-darkForeground">
+                  {item.itemName}
+                </Text>
                 <Text className="text-xs text-muted-foreground dark:text-darkMutedForeground">
                   ~{item.defaultCalories} cal
                 </Text>

@@ -10,16 +10,18 @@ import { AppScreen } from '@/components/layout/app-screen';
 import { formatDate } from '@/lib/date';
 
 function DashboardBody() {
-  const { totalCalories, exerciseCalories, goalCalories } = useDashboard();
+  const { totalCalories, exerciseCalories, calorieGoal } = useDashboard();
   const today = formatDate(new Date());
 
   return (
     <>
       <View className="flex-row items-center justify-between">
-        <Text className="text-lg font-semibold text-foreground dark:text-darkForeground">Dashboard</Text>
+        <Text className="text-lg font-semibold text-foreground dark:text-darkForeground">
+          Dashboard
+        </Text>
       </View>
-      <DailySummary consumed={totalCalories} goal={goalCalories} burned={exerciseCalories} />
-      <EncouragementCard consumed={totalCalories} goal={goalCalories} />
+      <DailySummary consumed={totalCalories} goal={calorieGoal} burned={exerciseCalories} />
+      <EncouragementCard consumed={totalCalories} goal={calorieGoal} />
       <QuickLogButton date={today} />
       <EntryList />
       <ExerciseSection date={today} />

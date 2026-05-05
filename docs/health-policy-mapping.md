@@ -10,12 +10,12 @@ Last updated: 2026-04-15
 
 ## Feature-To-Policy Mapping
 
-| App feature | Apple guideline alignment | Google Play alignment | Required action |
-| --- | --- | --- | --- |
-| Calorie logging and summaries | Health data is sensitive under 5.1.3 | Health Apps policy in scope | Keep wellness-only claims and privacy disclosures |
-| Calorie planning calculators | Avoid medical diagnosis/treatment claims | No misleading medical functionality | Include non-medical disclaimer |
-| Family/shared tracking | Personal data minimization and clear purpose | Privacy + sensitive data disclosures | Document data sharing intent and controls |
-| Auth and profile data | Data collection/storage transparency | Data Safety + Health declaration | Keep store and in-app policy text consistent |
+| App feature                   | Apple guideline alignment                    | Google Play alignment                | Required action                                   |
+| ----------------------------- | -------------------------------------------- | ------------------------------------ | ------------------------------------------------- |
+| Calorie logging and summaries | Health data is sensitive under 5.1.3         | Health Apps policy in scope          | Keep wellness-only claims and privacy disclosures |
+| Calorie planning calculators  | Avoid medical diagnosis/treatment claims     | No misleading medical functionality  | Include non-medical disclaimer                    |
+| Family/shared tracking        | Personal data minimization and clear purpose | Privacy + sensitive data disclosures | Document data sharing intent and controls         |
+| Auth and profile data         | Data collection/storage transparency         | Data Safety + Health declaration     | Keep store and in-app policy text consistent      |
 
 ## Mandatory Store Text Controls
 

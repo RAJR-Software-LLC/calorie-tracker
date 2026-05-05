@@ -17,7 +17,13 @@ const contentPad = {
   alignSelf: 'center' as const,
 };
 
-export function AppScreen({ children, scroll = true, showHeader = true, className, ...rest }: AppScreenProps) {
+export function AppScreen({
+  children,
+  scroll = true,
+  showHeader = true,
+  className,
+  ...rest
+}: AppScreenProps) {
   return (
     <View className={`flex-1 bg-background dark:bg-darkBackground ${className ?? ''}`} {...rest}>
       {showHeader ? <AppHeader /> : null}

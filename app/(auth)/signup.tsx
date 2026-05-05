@@ -6,7 +6,14 @@ import Svg, { Path } from 'react-native-svg';
 import { GoogleSignInButton } from '@/components/auth/google-sign-in-button';
 import { isGoogleAuthConfigured } from '@/components/auth/use-google-auth';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { logAppError, toUserErrorMessage } from '@/lib/app-errors';
@@ -66,7 +73,9 @@ export default function SignupScreen() {
             </View>
           </View>
           <CardTitle className="text-center">Join NourishLog</CardTitle>
-          <CardDescription className="text-center">Start your journey to mindful eating</CardDescription>
+          <CardDescription className="text-center">
+            Start your journey to mindful eating
+          </CardDescription>
         </CardHeader>
         <CardContent className="gap-4">
           {error ? (
@@ -116,10 +125,17 @@ export default function SignupScreen() {
               <View className="gap-3">
                 <GoogleSignInButton loading={loading} setLoading={setLoading} setError={setError} />
                 {Platform.OS === 'ios' ? (
-                  <Button variant="outline" className="w-full" disabled={loading} onPress={handleApple}>
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    disabled={loading}
+                    onPress={handleApple}
+                  >
                     <View className="flex-row items-center justify-center gap-2">
                       <AppleMark size={18} color={p.foreground} />
-                      <Text className="font-semibold text-foreground dark:text-darkForeground">Apple</Text>
+                      <Text className="font-semibold text-foreground dark:text-darkForeground">
+                        Apple
+                      </Text>
                     </View>
                   </Button>
                 ) : null}
@@ -134,7 +150,9 @@ export default function SignupScreen() {
             </Text>
             <Link href="/(auth)/login" asChild>
               <Pressable>
-                <Text className="text-sm font-medium text-primary dark:text-darkPrimary">Sign in</Text>
+                <Text className="text-sm font-medium text-primary dark:text-darkPrimary">
+                  Sign in
+                </Text>
               </Pressable>
             </Link>
           </View>

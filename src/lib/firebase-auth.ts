@@ -65,11 +65,9 @@ export async function signInWithApple(): Promise<User> {
 
   const nonce =
     Math.random().toString(36).substring(2, 10) + Math.random().toString(36).substring(2, 10);
-  const hashedNonce = await Crypto.digestStringAsync(
-    Crypto.CryptoDigestAlgorithm.SHA256,
-    nonce,
-    { encoding: Crypto.CryptoEncoding.HEX }
-  );
+  const hashedNonce = await Crypto.digestStringAsync(Crypto.CryptoDigestAlgorithm.SHA256, nonce, {
+    encoding: Crypto.CryptoEncoding.HEX,
+  });
 
   const apple = await AppleAuthentication.signInAsync({
     requestedScopes: [
@@ -99,4 +97,3 @@ export async function signInWithApple(): Promise<User> {
   await bootstrapUserProfile(cred.user);
   return cred.user;
 }
-

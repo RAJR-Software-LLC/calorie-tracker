@@ -40,3 +40,8 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+
+# Ignore Codacy
+.cursor/rules/codacy.mdc
+.codacy

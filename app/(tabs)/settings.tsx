@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { logAppError } from '@/lib/app-errors';
 import { getMe } from '@/lib/api';
+import { formatCalorieGoal } from '@/lib/calorie-goal';
 import { getLegalLinks } from '@/lib/env';
 import { signOutUser } from '@/lib/firebase-auth';
 import type { GetMeResponse } from '@/types';
@@ -18,6 +19,7 @@ export default function SettingsScreen() {
   const router = useRouter();
   const [profile, setProfile] = useState<GetMeResponse>(null);
   const legalLinks = getLegalLinks();
+  const goalDisplay = formatCalorieGoal(profile?.calorieGoal ?? null);
 
   useEffect(() => {
     if (!user) {
@@ -39,7 +41,9 @@ export default function SettingsScreen() {
 
   return (
     <AppScreen>
-      <Text className="text-lg font-semibold text-foreground dark:text-darkForeground">Settings</Text>
+      <Text className="text-lg font-semibold text-foreground dark:text-darkForeground">
+        Settings
+      </Text>
       <Text className="text-sm text-muted-foreground dark:text-darkMutedForeground">
         Account and preferences
       </Text>
@@ -50,13 +54,13 @@ export default function SettingsScreen() {
           <CardDescription>Signed in as {user?.email ?? '—'}</CardDescription>
         </CardHeader>
         <CardContent className="gap-2">
-          {profile?.goalCalories != null ? (
+          {goalDisplay != null ? (
             <Text className="text-sm text-foreground dark:text-darkForeground">
-              Daily goal: {profile.goalCalories} kcal
+              Daily goal: {goalDisplay} kcal
             </Text>
           ) : (
             <Text className="text-sm text-muted-foreground dark:text-darkMutedForeground">
-              Set a goal in the backend or future profile editor.
+              No calorie goal set yet. A flexible range can be a great starting point.
             </Text>
           )}
         </CardContent>
@@ -72,17 +76,26 @@ export default function SettingsScreen() {
             View legal disclosures
           </Button>
           {legalLinks.privacyPolicyUrl ? (
-            <ExternalLink href={legalLinks.privacyPolicyUrl} className="text-sm text-primary underline">
+            <ExternalLink
+              href={legalLinks.privacyPolicyUrl}
+              className="text-sm text-primary underline"
+            >
               Privacy Policy
             </ExternalLink>
           ) : null}
           {legalLinks.termsOfUseUrl ? (
-            <ExternalLink href={legalLinks.termsOfUseUrl} className="text-sm text-primary underline">
+            <ExternalLink
+              href={legalLinks.termsOfUseUrl}
+              className="text-sm text-primary underline"
+            >
               Terms of Use
             </ExternalLink>
           ) : null}
           {legalLinks.accountDeletionUrl ? (
-            <ExternalLink href={legalLinks.accountDeletionUrl} className="text-sm text-primary underline">
+            <ExternalLink
+              href={legalLinks.accountDeletionUrl}
+              className="text-sm text-primary underline"
+            >
               Account deletion instructions
             </ExternalLink>
           ) : null}

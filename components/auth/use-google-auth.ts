@@ -53,8 +53,7 @@ export function useGoogleIdTokenAuthRequest() {
     webClientId: web,
   });
 
-  const platformId =
-    Platform.OS === 'web' ? web : Platform.OS === 'ios' ? ios : android;
+  const platformId = Platform.OS === 'web' ? web : Platform.OS === 'ios' ? ios : android;
   const ready = Boolean(request && platformId);
 
   return { request, response, promptAsync, ready };

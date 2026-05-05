@@ -29,7 +29,9 @@ export function EntryList() {
   if (loading) {
     return (
       <View className="gap-3">
-        <Text className="text-sm font-semibold text-foreground dark:text-darkForeground">Today&apos;s meals</Text>
+        <Text className="text-sm font-semibold text-foreground dark:text-darkForeground">
+          Today&apos;s meals
+        </Text>
         {[1, 2].map((i) => (
           <View key={i} className="h-16 rounded-xl bg-muted dark:bg-darkMuted" />
         ))}
@@ -39,7 +41,9 @@ export function EntryList() {
 
   return (
     <View className="gap-3">
-      <Text className="text-sm font-semibold text-foreground dark:text-darkForeground">Today&apos;s meals</Text>
+      <Text className="text-sm font-semibold text-foreground dark:text-darkForeground">
+        Today&apos;s meals
+      </Text>
 
       {entries.length === 0 ? (
         <View className="items-center gap-2 rounded-xl border border-dashed border-border py-8 dark:border-darkBorder">
@@ -56,7 +60,9 @@ export function EntryList() {
               className="flex-row items-center justify-between rounded-xl border border-border/50 bg-card px-4 py-3 shadow-sm dark:border-darkBorder dark:bg-darkCard"
             >
               <View className="gap-0.5">
-                <Text className="text-sm font-medium text-foreground dark:text-darkForeground">{entry.itemName}</Text>
+                <Text className="text-sm font-medium text-foreground dark:text-darkForeground">
+                  {entry.itemName}
+                </Text>
                 <Text className="text-xs text-muted-foreground dark:text-darkMutedForeground">
                   Qty: {entry.quantity}
                 </Text>

@@ -22,13 +22,13 @@ export default function LegalScreen() {
           Wellness disclaimer
         </Text>
         <Text className="text-sm leading-6 text-muted-foreground dark:text-darkMutedForeground">
-          Calorie Tracker is intended for general wellness, nutrition awareness, and informational use
-          only. It is not a medical device and does not diagnose, treat, cure, or prevent any disease or
-          medical condition.
+          Calorie Tracker is intended for general wellness, nutrition awareness, and informational
+          use only. It is not a medical device and does not diagnose, treat, cure, or prevent any
+          disease or medical condition.
         </Text>
         <Text className="text-sm leading-6 text-muted-foreground dark:text-darkMutedForeground">
-          Always seek advice from a licensed healthcare professional for medical questions, diagnosis, or
-          treatment decisions.
+          Always seek advice from a licensed healthcare professional for medical questions,
+          diagnosis, or treatment decisions.
         </Text>
       </View>
 
@@ -37,8 +37,8 @@ export default function LegalScreen() {
           Health data use
         </Text>
         <Text className="text-sm leading-6 text-muted-foreground dark:text-darkMutedForeground">
-          We use nutrition and activity-related information you provide to power core app features such as
-          logging, summaries, and goal tracking.
+          We use nutrition and activity-related information you provide to power core app features
+          such as logging, summaries, and goal tracking.
         </Text>
         <Text className="text-sm leading-6 text-muted-foreground dark:text-darkMutedForeground">
           We do not sell personal health-related data and do not use it for advertising profiling or

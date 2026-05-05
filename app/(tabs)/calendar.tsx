@@ -7,7 +7,9 @@ export default function CalendarScreen() {
   return (
     <AppScreen>
       <View className="gap-1">
-        <Text className="text-lg font-semibold text-foreground dark:text-darkForeground">Calendar</Text>
+        <Text className="text-lg font-semibold text-foreground dark:text-darkForeground">
+          Calendar
+        </Text>
         <Text className="text-sm text-muted-foreground dark:text-darkMutedForeground">
           Tap a day to see meals and totals.
         </Text>

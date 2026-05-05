@@ -35,11 +35,7 @@ export function initMonitoring(): void {
   initialized = true;
 }
 
-export function captureMonitoringError(
-  err: unknown,
-  context: string,
-  meta?: EventMeta
-): void {
+export function captureMonitoringError(err: unknown, context: string, meta?: EventMeta): void {
   if (!initialized) return;
   Sentry.withScope((scope) => {
     scope.setTag('context', context);

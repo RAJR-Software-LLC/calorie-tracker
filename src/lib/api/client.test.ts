@@ -51,7 +51,9 @@ describe('apiRequest', () => {
       text: async () => '{"error":"Validation failed"}',
     }) as unknown as typeof fetch;
 
-    await expect(apiRequest('/entries', { method: 'POST', json: { calories: -1 } })).rejects.toMatchObject({
+    await expect(
+      apiRequest('/entries', { method: 'POST', json: { calories: -1 } })
+    ).rejects.toMatchObject({
       status: 422,
       requestUrl: 'https://api.example.com/api/v1/entries',
     });

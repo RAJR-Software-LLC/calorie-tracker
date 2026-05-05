@@ -16,6 +16,10 @@ export type Sex = 'male' | 'female';
 
 export type GoalType = 'lose' | 'gain' | 'maintain';
 
+export type CalorieGoal =
+  | { mode: 'single'; target: number }
+  | { mode: 'range'; min: number; max: number };
+
 export interface UserProfileFields {
   heightCm: number | null;
   weightKg: number | null;
@@ -36,7 +40,7 @@ export interface UserDocument {
   createdAt: ApiTimestamp | unknown;
   profile: UserProfileFields;
   maintenanceCalories: number | null;
-  goalCalories: number | null;
+  calorieGoal: CalorieGoal | null;
   goalType: GoalType | null;
   familyId: string | null;
   notifications: NotificationsSettings;
@@ -111,7 +115,7 @@ export interface PatchMeBody {
   email?: string | null;
   profile?: Partial<UserProfileFields>;
   maintenanceCalories?: number | null;
-  goalCalories?: number | null;
+  calorieGoal?: CalorieGoal | null;
   goalType?: GoalType | null;
   familyId?: string | null;
   notifications?: Partial<NotificationsSettings>;

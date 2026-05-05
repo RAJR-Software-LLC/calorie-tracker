@@ -20,13 +20,19 @@ export function CardHeader({ className, ...props }: ViewProps) {
 
 export function CardTitle({ className, ...props }: TextProps) {
   return (
-    <Text className={cn('text-2xl font-semibold text-foreground dark:text-darkForeground', className)} {...props} />
+    <Text
+      className={cn('text-2xl font-semibold text-foreground dark:text-darkForeground', className)}
+      {...props}
+    />
   );
 }
 
 export function CardDescription({ className, ...props }: TextProps) {
   return (
-    <Text className={cn('text-sm text-muted-foreground dark:text-darkMutedForeground', className)} {...props} />
+    <Text
+      className={cn('text-sm text-muted-foreground dark:text-darkMutedForeground', className)}
+      {...props}
+    />
   );
 }
 
@@ -35,5 +41,7 @@ export function CardContent({ className, ...props }: ViewProps) {
 }
 
 export function CardFooter({ className, ...props }: ViewProps) {
-  return <View className={cn('flex-row items-center justify-center p-6 pt-0', className)} {...props} />;
+  return (
+    <View className={cn('flex-row items-center justify-center p-6 pt-0', className)} {...props} />
+  );
 }
