@@ -19,12 +19,45 @@ async function parseJsonSafe(text: string): Promise<unknown> {
 }
 
 /**
+ * Resolve `{EXPO_PUBLIC_API_URL}/api/v1/{path}` with validation so `path` cannot redirect
+ * fetch to another origin (mitigates SSRF / "user-controlled URL" findings on `fetch(url)`).
+ */
+function resolveApiRequestUrl(path: string): string {
+  const baseHref = getApiBaseUrl();
+  let originUrl: URL;
+  try {
+    originUrl = new URL(baseHref);
+  } catch {
+    throw new Error('EXPO_PUBLIC_API_URL is not a valid URL');
+  }
+  if (originUrl.protocol !== 'http:' && originUrl.protocol !== 'https:') {
+    throw new Error('EXPO_PUBLIC_API_URL must use http or https');
+  }
+
+  const apiRoot = new URL('/api/v1/', originUrl);
+  const relative = path.startsWith('/') ? path.slice(1) : path;
+  if (
+    relative === '' ||
+    relative.startsWith('//') ||
+    relative.includes('..') ||
+    /^[a-zA-Z][a-zA-Z\d+.-]*:/.test(relative)
+  ) {
+    throw new Error(`Invalid API path: ${path}`);
+  }
+
+  const resolved = new URL(relative, apiRoot);
+  if (resolved.origin !== originUrl.origin) {
+    throw new Error('Resolved API URL left configured origin');
+  }
+  return resolved.href;
+}
+
+/**
  * Low-level fetch to `{EXPO_PUBLIC_API_URL}/api/v1{path}` with optional Bearer token.
  */
 export async function apiRequest<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const { auth = true, json, headers: initHeaders, ...rest } = options;
-  const base = getApiBaseUrl();
-  const url = `${base}/api/v1${path.startsWith('/') ? path : `/${path}`}`;
+  const url = resolveApiRequestUrl(path);
 
   async function fetchWithToken(forceRefresh: boolean): Promise<Response> {
     const headers = new Headers(initHeaders);
@@ -47,11 +80,13 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
       headers.set('Authorization', `Bearer ${token}`);
     }
 
-    return fetch(url, {
+    const request = new Request(url, {
+      cache: 'no-store',
       ...rest,
       headers,
       body: json !== undefined ? JSON.stringify(json) : undefined,
     });
+    return fetch(request);
   }
 
   let res = await fetchWithToken(false);

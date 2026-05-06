@@ -227,9 +227,10 @@ function TimePickerRow({ icon, label, value, onChange, onRemove }: TimePickerRow
   const date = useMemo(() => hhmmToDate(value), [value]);
 
   const onPick = useCallback(
-    (_event: unknown, selected?: Date) => {
-      if (Platform.OS === 'android') {
+    (event: { type?: string }, selected?: Date) => {
+      if (Platform.OS === 'android' && event?.type === 'dismissed') {
         setShow(false);
+        return;
       }
       if (selected) {
         onChange(dateToHHMM(selected));
@@ -470,26 +471,17 @@ export function NotificationsSettings({
     const t = setTimeout(() => {
       void (async () => {
         const body = buildPatchBody(local);
+        let merged: NotificationPrefs;
         try {
           const me = await patchMe({ notifications: body });
           await clearPendingNotificationPatch(user.uid);
-          const merged = withNotificationDefaults(me?.notifications);
+          merged = withNotificationDefaults(me?.notifications ?? undefined);
           lastGoodRef.current = merged;
           lastSyncedJson.current = JSON.stringify(merged);
           setLocal(merged);
           setQuietHoursEnabled(merged.quietHours !== null);
           setSyncError(false);
           onSavedRef.current?.(me);
-          await syncLocalMealReminders(merged);
-          if (merged.enabled) {
-            await registerPushToken(user.uid);
-          } else {
-            try {
-              await unregisterPushToken(user.uid);
-            } catch {
-              /* pending delete */
-            }
-          }
         } catch (e) {
           captureMonitoringError(e, 'notifications/settings_patch', { uid: user.uid });
           setLocal(lastGoodRef.current);
@@ -502,6 +494,28 @@ export function NotificationsSettings({
             msg = e.message || msg;
           }
           showToast(msg, 'error');
+          return;
+        }
+
+        try {
+          await syncLocalMealReminders(merged);
+        } catch (e) {
+          captureMonitoringError(e, 'notifications/sync_local_meal_reminders', { uid: user.uid });
+        }
+        try {
+          if (merged.enabled) {
+            await registerPushToken(user.uid);
+          } else {
+            try {
+              await unregisterPushToken(user.uid);
+            } catch {
+              /* pending delete */
+            }
+          }
+        } catch (e) {
+          captureMonitoringError(e, 'notifications/settings_push_token_after_patch', {
+            uid: user.uid,
+          });
         }
       })();
     }, 500);

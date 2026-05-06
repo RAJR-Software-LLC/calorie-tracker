@@ -1,4 +1,4 @@
-import type { NotificationsSettings } from '@/types';
+import type { NotificationsSettings, PatchNotificationsBody } from '@/types';
 
 export function getDeviceTimezone(): string {
   try {
@@ -29,7 +29,7 @@ export function getDefaultNotifications(): NotificationsSettings {
  * Backfill legacy API shapes and defaults so UI always receives a full object.
  */
 export function withNotificationDefaults(
-  partial: Partial<NotificationsSettings> | null | undefined
+  partial: (Partial<NotificationsSettings> | PatchNotificationsBody) | null | undefined
 ): NotificationsSettings {
   const d = getDefaultNotifications();
   if (!partial) return d;
@@ -47,3 +47,4 @@ export function withNotificationDefaults(
     goalStatusTime: partial.goalStatusTime ?? d.goalStatusTime,
   };
 }
+
