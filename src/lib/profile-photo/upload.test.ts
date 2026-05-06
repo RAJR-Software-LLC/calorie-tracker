@@ -244,6 +244,8 @@ describe('uploadProfilePhoto', () => {
       .fn()
       .mockResolvedValueOnce({ ok: true, blob: async () => smallBlob })
       .mockResolvedValueOnce({ ok: false, status: 403 })
+      .mockResolvedValueOnce({ ok: false, status: 403 })
+      .mockResolvedValueOnce({ ok: false, status: 403 })
       .mockResolvedValueOnce({ ok: false, status: 403 }) as unknown as typeof fetch;
 
     await expect(uploadProfilePhoto()).rejects.toMatchObject({
@@ -303,6 +305,56 @@ describe('uploadProfilePhoto', () => {
       method: 'PUT',
     });
     expect(fetchMock.mock.calls[2][1].headers).toBeUndefined();
+  });
+
+  it('falls back to ArrayBuffer PUT after Blob 403 retries', async () => {
+    (ImagePicker.requestMediaLibraryPermissionsAsync as jest.Mock).mockResolvedValue({
+      status: 'granted',
+    });
+    (ImagePicker.launchImageLibraryAsync as jest.Mock).mockResolvedValue({
+      canceled: false,
+      assets: [{ uri: 'file://picked.jpg' }],
+    });
+
+    const me = makeUser({
+      profilePhoto: {
+        storagePath: 'profile-photos/u1/x.jpg',
+        contentType: 'image/jpeg',
+        updatedAt: '2026-01-02T00:00:00.000Z',
+        downloadUrl: 'https://signed-read.example/img',
+      },
+    });
+    const { postProfilePhotoUploadUrl, postProfilePhotoComplete } = jest.requireMock(
+      '@/lib/api'
+    ) as {
+      postProfilePhotoUploadUrl: jest.Mock;
+      postProfilePhotoComplete: jest.Mock;
+    };
+    postProfilePhotoUploadUrl.mockResolvedValue({
+      uploadUrl: 'https://signed-put.example/put',
+      storagePath: 'profile-photos/u1/x.jpg',
+      contentType: 'image/jpeg',
+      expiresAt: new Date(Date.now() + 60_000).toISOString(),
+    });
+    postProfilePhotoComplete.mockResolvedValue(me);
+
+    const smallBlob = new Blob([new Uint8Array(100)]);
+    global.fetch = jest
+      .fn()
+      .mockResolvedValueOnce({ ok: true, blob: async () => smallBlob })
+      .mockResolvedValueOnce({ ok: false, status: 403 })
+      .mockResolvedValueOnce({ ok: false, status: 403 })
+      .mockResolvedValueOnce({ ok: true, status: 200 }) as unknown as typeof fetch;
+
+    const result = await uploadProfilePhoto();
+    expect(result).toEqual(me);
+
+    const fetchMock = global.fetch as jest.Mock;
+    expect(fetchMock).toHaveBeenCalledTimes(4);
+    const thirdCallOptions = fetchMock.mock.calls[3][1];
+    expect(thirdCallOptions.method).toBe('PUT');
+    expect(thirdCallOptions.headers).toEqual({ 'Content-Type': 'image/jpeg' });
+    expect(thirdCallOptions.body).toBeInstanceOf(ArrayBuffer);
   });
 });
 

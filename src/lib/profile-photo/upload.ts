@@ -119,10 +119,32 @@ async function putToSignedUploadUrl(
     if (retryAttempt.ok) {
       return retryAttempt;
     }
-    return retryAttempt;
+    if (retryAttempt.status !== 400 && retryAttempt.status !== 403) {
+      return retryAttempt;
+    }
   }
 
-  return firstAttempt;
+  // Some React Native runtimes work more reliably with ArrayBuffer payloads
+  // on signed URLs than Blob payloads.
+  const bodyBytes = await body.arrayBuffer();
+  const thirdAttempt = await fetch(uploadUrl, {
+    method: 'PUT',
+    headers: { 'Content-Type': contentType },
+    body: bodyBytes,
+  });
+  if (thirdAttempt.ok) {
+    return thirdAttempt;
+  }
+
+  if (thirdAttempt.status === 400 || thirdAttempt.status === 403) {
+    const fourthAttempt = await fetch(uploadUrl, {
+      method: 'PUT',
+      body: bodyBytes,
+    });
+    return fourthAttempt;
+  }
+
+  return thirdAttempt;
 }
 
 function assertFreshUploadUrl(expiresAtIso: string): void {
