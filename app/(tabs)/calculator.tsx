@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
 import { AdvancedCalculator } from '@/components/calculator/advanced-calculator';
@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { patchMe } from '@/lib/api';
+import { getMe, patchMe } from '@/lib/api';
 import { logAppError, toUserErrorMessage } from '@/lib/app-errors';
 import { showToast } from '@/lib/toast';
 import type { CalorieGoal } from '@/types';
@@ -28,8 +28,41 @@ export default function CalculatorScreen() {
   const [rangeError, setRangeError] = useState<string | null>(null);
   const [savingCalculated, setSavingCalculated] = useState(false);
   const [savingManualGoal, setSavingManualGoal] = useState(false);
+  const [calculatorDefaults, setCalculatorDefaults] = useState<{
+    weightKg: number | null;
+    heightCm: number | null;
+    age: number | null;
+    sex: 'male' | 'female' | null;
+    activityLevel: 'sedentary' | 'light' | 'moderate' | 'active' | 'very_active' | null;
+    heightUnit: 'cm' | 'ft_in';
+    weightUnit: 'kg' | 'lb';
+  } | null>(null);
 
   const roundedMaintenance = maintenance != null ? Math.round(maintenance) : null;
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const me = await getMe();
+        if (cancelled || !me) return;
+        setCalculatorDefaults({
+          weightKg: me.profile.weightKg,
+          heightCm: me.profile.heightCm,
+          age: me.profile.age,
+          sex: me.profile.sex,
+          activityLevel: me.profile.activityLevel,
+          heightUnit: me.profile.heightUnit,
+          weightUnit: me.profile.weightUnit,
+        });
+      } catch (err) {
+        logAppError('calculator/getMeDefaults', err);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   function parseIntegerInput(value: string): number | null {
     const trimmed = value.trim();
@@ -182,7 +215,7 @@ export default function CalculatorScreen() {
       {tab === 'quick' ? (
         <QuickCalculator onResult={setMaintenance} />
       ) : (
-        <AdvancedCalculator onResult={setMaintenance} />
+        <AdvancedCalculator onResult={setMaintenance} defaults={calculatorDefaults} />
       )}
 
       {maintenance != null ? (

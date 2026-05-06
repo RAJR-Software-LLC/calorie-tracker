@@ -14,8 +14,8 @@ jest.mock('expo-router', () => ({
 
 jest.mock('@react-navigation/native', () => ({
   useFocusEffect: (callback: EffectCallback) => {
-    const React = require('react');
-    React.useEffect(() => {
+    const { useEffect: useReactEffect } = jest.requireActual<typeof import('react')>('react');
+    useReactEffect(() => {
       focusCallbacks.push(callback);
       const cleanup = callback();
       return () => {
@@ -35,15 +35,15 @@ jest.mock('@/lib/api', () => ({
 
 jest.mock('lucide-react-native', () => ({
   Leaf: () => {
-    const { Text } = require('react-native');
-    return <Text>LeafIcon</Text>;
+    const { Text: RNText } = jest.requireActual<typeof import('react-native')>('react-native');
+    return <RNText>LeafIcon</RNText>;
   },
 }));
 
 jest.mock('@/components/ui/avatar', () => ({
   Avatar: () => {
-    const { Text } = require('react-native');
-    return <Text>AvatarImage</Text>;
+    const { Text: RNText } = jest.requireActual<typeof import('react-native')>('react-native');
+    return <RNText>AvatarImage</RNText>;
   },
 }));
 
@@ -94,7 +94,7 @@ describe('AppHeader', () => {
     expect(mockPush).toHaveBeenCalledWith('/(tabs)/settings');
   });
 
-  it('shows leaf when forceLeaf is set even if a profile photo exists', async () => {
+  it('shows leaf when forceLeaf is set even if a profile photo exists', () => {
     mockGetMe.mockResolvedValue({
       profilePhoto: {
         storagePath: 'users/u/profile-photo.jpg',

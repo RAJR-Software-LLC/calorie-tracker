@@ -72,6 +72,8 @@ export function logAppError(context: string, err: unknown, meta?: Record<string,
   if (err instanceof Error) {
     payload.errorName = err.name;
     payload.errorMessage = err.message;
+  } else if (typeof err === 'string') {
+    payload.detail = err;
   }
   if (err instanceof ApiError) {
     payload.httpStatus = err.status;

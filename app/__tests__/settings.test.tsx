@@ -60,6 +60,8 @@ function makeMe(overrides: Partial<UserDocument> = {}): UserDocument {
     profile: {
       heightCm: null,
       weightKg: null,
+      heightUnit: 'cm',
+      weightUnit: 'kg',
       age: null,
       sex: null,
       activityLevel: null,
@@ -87,14 +89,66 @@ function makeMe(overrides: Partial<UserDocument> = {}): UserDocument {
   };
 }
 
+/** Simulates backend: maps unit-aware height/weight patch into canonical profile fields. */
+function applyProfilePatch(
+  profile: UserDocument['profile'],
+  patch: Record<string, unknown>
+): UserDocument['profile'] {
+  const next: UserDocument['profile'] = { ...profile };
+  for (const key of Object.keys(patch)) {
+    const val = patch[key];
+    if (key === 'height') {
+      if (val && typeof val === 'object' && 'unit' in val) {
+        const u = val as { unit: string; value?: number; feet?: number; inches?: number };
+        if (u.unit === 'cm' && typeof u.value === 'number') next.heightCm = u.value;
+        if (
+          u.unit === 'ft_in' &&
+          typeof u.feet === 'number' &&
+          typeof u.inches === 'number'
+        ) {
+          next.heightCm = (u.feet * 12 + u.inches) * 2.54;
+        }
+      } else if (val === null) {
+        next.heightCm = null;
+      }
+    } else if (key === 'weight') {
+      if (val && typeof val === 'object' && 'unit' in val) {
+        const u = val as { unit: string; value: number };
+        if (u.unit === 'kg') next.weightKg = u.value;
+        if (u.unit === 'lb') next.weightKg = u.value * 0.45359237;
+      } else if (val === null) {
+        next.weightKg = null;
+      }
+    } else if (
+      key === 'age' ||
+      key === 'sex' ||
+      key === 'activityLevel' ||
+      key === 'heightUnit' ||
+      key === 'weightUnit'
+    ) {
+      (next as unknown as Record<string, unknown>)[key] = val;
+    }
+  }
+  return next;
+}
+
 describe('SettingsScreen profile editing', () => {
+  let serverMe: UserDocument;
+
   beforeEach(() => {
     jest.clearAllMocks();
     mockUseAuth.mockReturnValue({ user: { uid: 'u1', email: 'test@example.com' } });
-    mockGetMe.mockResolvedValue(makeMe({ goalType: 'lose' }));
-    mockPatchMe.mockImplementation(async (body: { profile?: Record<string, unknown> }) =>
-      makeMe({ goalType: 'lose', profile: { ...makeMe().profile, ...(body.profile ?? {}) } })
-    );
+    serverMe = makeMe({ goalType: 'lose' });
+    mockGetMe.mockImplementation(async () => ({ ...serverMe }));
+    mockPatchMe.mockImplementation(async (body: { profile?: Record<string, unknown> }) => {
+      if (body.profile) {
+        serverMe = makeMe({
+          ...serverMe,
+          profile: applyProfilePatch(serverMe.profile, body.profile),
+        });
+      }
+      return { ...serverMe };
+    });
   });
 
   it('shows goal type in profile card', async () => {
@@ -102,34 +156,62 @@ describe('SettingsScreen profile editing', () => {
 
     await waitFor(() => expect(mockGetMe).toHaveBeenCalled());
     expect(screen.getByText('Weight Goal')).toBeTruthy();
-    expect(screen.getByText('Lose weight')).toBeTruthy();
+    expect(screen.getByText('Lose weight (coming soon)')).toBeTruthy();
     expect(screen.getByText('Legal Disclosures')).toBeTruthy();
   });
 
-  it('autosaves numeric profile fields on blur', async () => {
+  it('saves unit-aware anthropometric profile fields from settings form', async () => {
     render(<SettingsScreen />);
 
     await waitFor(() => expect(mockGetMe).toHaveBeenCalled());
     const heightInput = screen.getByLabelText('Height (cm)');
     fireEvent.changeText(heightInput, '170');
-    fireEvent(heightInput, 'blur');
+    const weightInput = screen.getByLabelText('Weight (kg)');
+    fireEvent.changeText(weightInput, '70.2');
+    fireEvent.press(screen.getByText('Save profile'));
 
     await waitFor(() => {
-      expect(mockPatchMe).toHaveBeenCalledWith({ profile: { heightCm: 170 } });
+      expect(mockPatchMe).toHaveBeenCalledWith({
+        profile: {
+          height: { unit: 'cm', value: 170 },
+          weight: { unit: 'kg', value: 70.2 },
+        },
+      });
     });
   });
 
-  it('sends null when a profile numeric field is cleared', async () => {
-    mockGetMe.mockResolvedValue(makeMe({ profile: { ...makeMe().profile, age: 31 } }));
+  it('stages age and sex changes until save is clicked', async () => {
     render(<SettingsScreen />);
 
     await waitFor(() => expect(mockGetMe).toHaveBeenCalled());
-    const ageInput = screen.getByLabelText('Age');
-    fireEvent.changeText(ageInput, '');
-    fireEvent(ageInput, 'blur');
+    fireEvent.changeText(screen.getByLabelText('Age'), '31');
+    fireEvent.press(screen.getByText('female'));
+    expect(mockPatchMe).not.toHaveBeenCalled();
 
+    fireEvent.press(screen.getByText('Save profile'));
     await waitFor(() => {
-      expect(mockPatchMe).toHaveBeenCalledWith({ profile: { age: null } });
+      expect(mockPatchMe).toHaveBeenCalledWith(
+        expect.objectContaining({
+          profile: expect.objectContaining({
+            age: 31,
+            sex: 'female',
+          }),
+        })
+      );
     });
+  });
+
+  it('blocks invalid imperial inches and does not submit malformed height payload', async () => {
+    serverMe = makeMe({
+      goalType: 'lose',
+      profile: { ...makeMe().profile, heightCm: 180, heightUnit: 'ft_in' },
+    });
+    render(<SettingsScreen />);
+
+    await waitFor(() => expect(mockGetMe).toHaveBeenCalled());
+    fireEvent.changeText(screen.getByLabelText('Height feet'), '5');
+    fireEvent.changeText(screen.getByLabelText('Height inches'), '12');
+    fireEvent.press(screen.getByText('Save profile'));
+    expect(mockPatchMe).not.toHaveBeenCalled();
   });
 });

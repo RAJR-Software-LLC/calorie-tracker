@@ -1,22 +1,14 @@
-import { useFocusEffect } from '@react-navigation/native';
-import { useRouter } from 'expo-router';
-import {
-  Bell,
-  Camera,
-  ChevronRight,
-  Mail,
-  Shield,
-} from 'lucide-react-native';
-import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Modal, Pressable, Text, TextInput, View } from 'react-native';
-
 import { useAuth } from '@/components/auth/auth-provider';
 import { ExternalLink } from '@/components/ExternalLink';
 import { AppScreen } from '@/components/layout/app-screen';
 import { NotificationsSettings } from '@/components/settings/notifications-settings';
 import { Avatar } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { SegmentedControl } from '@/components/ui/segmented-control';
 import { getMe, patchMe } from '@/lib/api';
+import { ApiError } from '@/lib/api/errors';
 import { logAppError } from '@/lib/app-errors';
 import { formatCalorieGoal } from '@/lib/calorie-goal';
 import { getLegalLinks } from '@/lib/env';
@@ -31,7 +23,21 @@ import {
 import { showToast } from '@/lib/toast';
 import { useThemePalette } from '@/lib/use-theme-palette';
 import { cn } from '@/src/lib/cn';
-import type { ActivityLevel, GetMeResponse, GoalType, Sex, UserProfileFields } from '@/types';
+import {
+  buildAnthropometricPatch,
+  cmToFeetInches,
+  feetInchesToCm,
+  formatDisplayHeightFromCm,
+  formatDisplayWeightFromKg,
+  kgToLb,
+  lbToKg,
+} from '@/src/lib/utils/profile-measurements';
+import type { ActivityLevel, GetMeResponse, GoalType, HeightUnit, Sex, WeightUnit } from '@/types';
+import { useFocusEffect } from '@react-navigation/native';
+import { useRouter } from 'expo-router';
+import { Bell, Camera, ChevronRight, LogOut, Mail, Shield } from 'lucide-react-native';
+import { useCallback, useEffect, useState } from 'react';
+import { ActivityIndicator, Modal, Pressable, Text, View } from 'react-native';
 
 type SettingsRowProps = {
   icon?: React.ReactNode;
@@ -90,8 +96,9 @@ type ProfileFieldInputProps = {
   accessibilityLabel: string;
   keyboardType?: 'default' | 'numeric' | 'decimal-pad';
   onChangeText: (next: string) => void;
-  onBlur: () => void;
   disabled: boolean;
+  onBlur?: () => void;
+  errorText?: string | null;
 };
 
 function ProfileFieldInput({
@@ -103,12 +110,15 @@ function ProfileFieldInput({
   onChangeText,
   onBlur,
   disabled,
+  errorText,
 }: ProfileFieldInputProps) {
   const p = useThemePalette();
   return (
     <View className="py-3">
-      <Text className="mb-1 text-base font-medium text-foreground dark:text-darkForeground">{label}</Text>
-      <TextInput
+      <Text className="mb-1 text-base font-medium text-foreground dark:text-darkForeground">
+        {label}
+      </Text>
+      <Input
         value={value}
         onChangeText={onChangeText}
         onBlur={onBlur}
@@ -117,8 +127,9 @@ function ProfileFieldInput({
         placeholder={placeholder}
         placeholderTextColor={p.mutedForeground}
         accessibilityLabel={accessibilityLabel}
-        className="rounded-xl border border-border px-3 py-2 text-base text-foreground dark:border-darkBorder dark:text-darkForeground"
+        className="border-border px-3 dark:border-darkBorder"
       />
+      {errorText ? <Text className="mt-1 text-sm text-destructive">{errorText}</Text> : null}
     </View>
   );
 }
@@ -138,20 +149,86 @@ export default function SettingsScreen() {
   const [showNotifications, setShowNotifications] = useState(false);
   const [photoSheetOpen, setPhotoSheetOpen] = useState(false);
   const [photoUploading, setPhotoUploading] = useState(false);
+  const [heightUnit, setHeightUnit] = useState<HeightUnit>('cm');
+  const [weightUnit, setWeightUnit] = useState<WeightUnit>('kg');
   const [heightCmInput, setHeightCmInput] = useState('');
-  const [weightKgInput, setWeightKgInput] = useState('');
+  const [heightFeetInput, setHeightFeetInput] = useState('');
+  const [heightInchesInput, setHeightInchesInput] = useState('');
+  const [weightInput, setWeightInput] = useState('');
   const [ageInput, setAgeInput] = useState('');
+  const [sexInput, setSexInput] = useState<Sex | null>(null);
+  const [activityLevelInput, setActivityLevelInput] = useState<ActivityLevel | null>(null);
   const [profileSaving, setProfileSaving] = useState(false);
+  const [profileFieldErrors, setProfileFieldErrors] = useState<
+    Partial<Record<'height' | 'weight' | 'age', string>>
+  >({});
+  const [anthropometricBaseline, setAnthropometricBaseline] = useState({
+    heightUnit: 'cm' as HeightUnit,
+    weightUnit: 'kg' as WeightUnit,
+    heightCm: '',
+    heightFeet: '',
+    heightInches: '',
+    weight: '',
+    age: '',
+    sex: null as Sex | null,
+    activityLevel: null as ActivityLevel | null,
+  });
   const legalLinks = getLegalLinks();
   const goalDisplay = formatCalorieGoal(profile?.calorieGoal ?? null);
   const goalTypeDisplay = formatGoalType(profile?.goalType);
-  const sex = profile?.profile.sex ?? null;
-  const activityLevel = profile?.profile.activityLevel ?? null;
-
   const syncProfileInputs = useCallback((me: GetMeResponse) => {
-    setHeightCmInput(me?.profile.heightCm != null ? String(me.profile.heightCm) : '');
-    setWeightKgInput(me?.profile.weightKg != null ? String(me.profile.weightKg) : '');
-    setAgeInput(me?.profile.age != null ? String(me.profile.age) : '');
+    if (!me?.profile) {
+      setHeightUnit('cm');
+      setWeightUnit('kg');
+      setHeightCmInput('');
+      setHeightFeetInput('');
+      setHeightInchesInput('');
+      setWeightInput('');
+      setAgeInput('');
+      setSexInput(null);
+      setActivityLevelInput(null);
+      setProfileFieldErrors({});
+      setAnthropometricBaseline({
+        heightUnit: 'cm',
+        weightUnit: 'kg',
+        heightCm: '',
+        heightFeet: '',
+        heightInches: '',
+        weight: '',
+        age: '',
+        sex: null,
+        activityLevel: null,
+      });
+      return;
+    }
+
+    const prof = me.profile;
+    const nextHeightUnit = prof.heightUnit ?? 'cm';
+    const nextWeightUnit = prof.weightUnit ?? 'kg';
+    const displayHeight = formatDisplayHeightFromCm(prof.heightCm ?? null, nextHeightUnit);
+    const displayWeight = formatDisplayWeightFromKg(prof.weightKg ?? null, nextWeightUnit);
+
+    setHeightUnit(nextHeightUnit);
+    setWeightUnit(nextWeightUnit);
+    setHeightCmInput(displayHeight.cm);
+    setHeightFeetInput(displayHeight.feet);
+    setHeightInchesInput(displayHeight.inches);
+    setWeightInput(displayWeight);
+    setAgeInput(prof.age != null ? String(prof.age) : '');
+    setSexInput(prof.sex ?? null);
+    setActivityLevelInput(prof.activityLevel ?? null);
+    setProfileFieldErrors({});
+    setAnthropometricBaseline({
+      heightUnit: nextHeightUnit,
+      weightUnit: nextWeightUnit,
+      heightCm: displayHeight.cm,
+      heightFeet: displayHeight.feet,
+      heightInches: displayHeight.inches,
+      weight: displayWeight,
+      age: prof.age != null ? String(prof.age) : '',
+      sex: prof.sex ?? null,
+      activityLevel: prof.activityLevel ?? null,
+    });
   }, []);
 
   useEffect(() => {
@@ -206,62 +283,197 @@ export default function SettingsScreen() {
       .catch((err) => logAppError('settings/refreshProfilePhoto', err));
   }, [syncProfileInputs, user]);
 
-  const patchProfileField = useCallback(
-    async <K extends keyof UserProfileFields>(field: K, value: UserProfileFields[K]) => {
-      if (!user) return;
-      setProfileSaving(true);
-      try {
-        const me = await patchMe({ profile: { [field]: value } });
-        setProfile(me);
-        syncProfileInputs(me);
-      } catch (err) {
-        logAppError('settings/patchProfileField', err, { field });
-        showToast('Could not save profile updates', 'error');
-        syncProfileInputs(profile);
-      } finally {
-        setProfileSaving(false);
-      }
+  const mapValidationErrors = useCallback((err: unknown) => {
+    if (!(err instanceof ApiError) || err.status !== 400) return null;
+    const next: Partial<Record<'height' | 'weight' | 'age', string>> = {};
+    const bodyText = JSON.stringify(err.body ?? '').toLowerCase();
+    if (bodyText.includes('height')) next.height = 'Please correct the height values.';
+    if (bodyText.includes('weight')) next.weight = 'Please correct the weight value.';
+    if (!next.height && err.message.toLowerCase().includes('height')) {
+      next.height = 'Please correct the height values.';
+    }
+    if (!next.weight && err.message.toLowerCase().includes('weight')) {
+      next.weight = 'Please correct the weight value.';
+    }
+    if (bodyText.includes('age') || err.message.toLowerCase().includes('age')) {
+      next.age = 'Please enter a valid age.';
+    }
+    if (!next.height && !next.weight) {
+      next.height = 'Please review your measurement inputs.';
+    }
+    return next;
+  }, []);
+
+  const hasAnthropometricChanges =
+    anthropometricBaseline.heightUnit !== heightUnit ||
+    anthropometricBaseline.weightUnit !== weightUnit ||
+    anthropometricBaseline.heightCm !== heightCmInput ||
+    anthropometricBaseline.heightFeet !== heightFeetInput ||
+    anthropometricBaseline.heightInches !== heightInchesInput ||
+    anthropometricBaseline.weight !== weightInput ||
+    anthropometricBaseline.age !== ageInput ||
+    anthropometricBaseline.sex !== sexInput ||
+    anthropometricBaseline.activityLevel !== activityLevelInput;
+
+  const currentAnthropometricValidation = buildAnthropometricPatch({
+    initialProfile: profile?.profile,
+    current: {
+      heightUnit,
+      weightUnit,
+      heightCm: heightCmInput,
+      heightFeet: heightFeetInput,
+      heightInches: heightInchesInput,
+      weight: weightInput,
     },
-    [profile, syncProfileInputs, user]
+  });
+
+  const ageValidationError = (() => {
+    const trimmed = ageInput.trim();
+    if (!trimmed) return null;
+    const parsed = Number(trimmed);
+    if (!Number.isFinite(parsed) || !Number.isInteger(parsed) || parsed < 0 || parsed > 130) {
+      return 'Enter a valid age.';
+    }
+    return null;
+  })();
+
+  const canSaveProfile =
+    !profileSaving &&
+    !ageValidationError &&
+    Object.keys(currentAnthropometricValidation.errors).length === 0 &&
+    hasAnthropometricChanges;
+
+  const handleSaveProfile = useCallback(async () => {
+    if (!user || !profile?.profile) return;
+    const { profilePatch, errors } = currentAnthropometricValidation;
+    setProfileFieldErrors({
+      ...errors,
+      age: ageValidationError ?? undefined,
+    });
+    if (Object.keys(errors).length > 0) return;
+    if (ageValidationError) return;
+
+    const changedPatch = { ...profilePatch };
+    if (anthropometricBaseline.heightUnit === heightUnit) {
+      delete changedPatch.heightUnit;
+    }
+    if (anthropometricBaseline.weightUnit === weightUnit) {
+      delete changedPatch.weightUnit;
+    }
+
+    const heightChanged =
+      anthropometricBaseline.heightCm !== heightCmInput ||
+      anthropometricBaseline.heightFeet !== heightFeetInput ||
+      anthropometricBaseline.heightInches !== heightInchesInput ||
+      anthropometricBaseline.heightUnit !== heightUnit;
+    const weightChanged =
+      anthropometricBaseline.weight !== weightInput ||
+      anthropometricBaseline.weightUnit !== weightUnit;
+    const ageChanged = anthropometricBaseline.age !== ageInput;
+    const sexChanged = anthropometricBaseline.sex !== sexInput;
+    const activityChanged = anthropometricBaseline.activityLevel !== activityLevelInput;
+
+    if (!heightChanged) delete changedPatch.height;
+    if (!weightChanged) delete changedPatch.weight;
+    if (ageChanged) {
+      changedPatch.age = ageInput.trim() ? Number(ageInput.trim()) : null;
+    }
+    if (sexChanged) {
+      changedPatch.sex = sexInput;
+    }
+    if (activityChanged) {
+      changedPatch.activityLevel = activityLevelInput;
+    }
+    if (Object.keys(changedPatch).length === 0) return;
+
+    setProfileSaving(true);
+    try {
+      let me: GetMeResponse = await patchMe({ profile: changedPatch });
+      if (!me?.profile) {
+        me = await getMe();
+      }
+      setProfile(me);
+      syncProfileInputs(me);
+      showToast('Profile updated', 'success');
+    } catch (err) {
+      logAppError('settings/patchProfile', err);
+      setProfileFieldErrors(mapValidationErrors(err) ?? {});
+      showToast('Could not save profile updates', 'error');
+    } finally {
+      setProfileSaving(false);
+    }
+  }, [
+    anthropometricBaseline.heightCm,
+    anthropometricBaseline.heightFeet,
+    anthropometricBaseline.heightInches,
+    anthropometricBaseline.heightUnit,
+    anthropometricBaseline.weight,
+    anthropometricBaseline.weightUnit,
+    anthropometricBaseline.age,
+    anthropometricBaseline.sex,
+    anthropometricBaseline.activityLevel,
+    heightCmInput,
+    heightFeetInput,
+    heightInchesInput,
+    heightUnit,
+    mapValidationErrors,
+    ageInput,
+    ageValidationError,
+    profile?.profile,
+    sexInput,
+    activityLevelInput,
+    syncProfileInputs,
+    user,
+    weightInput,
+    weightUnit,
+    currentAnthropometricValidation,
+  ]);
+
+  const handleChangeHeightUnit = useCallback(
+    (next: HeightUnit) => {
+      if (next === heightUnit) return;
+      if (next === 'ft_in') {
+        const parsedCm = Number(heightCmInput.trim());
+        if (Number.isFinite(parsedCm) && parsedCm > 0) {
+          const converted = cmToFeetInches(parsedCm);
+          setHeightFeetInput(String(converted.feet));
+          setHeightInchesInput(String(converted.inches));
+          setHeightCmInput('');
+        }
+      } else {
+        const feet = Number(heightFeetInput.trim());
+        const inches = Number(heightInchesInput.trim());
+        if (
+          Number.isInteger(feet) &&
+          Number.isInteger(inches) &&
+          feet >= 0 &&
+          inches >= 0 &&
+          inches <= 11 &&
+          (feet > 0 || inches > 0)
+        ) {
+          setHeightCmInput(String(Math.round(feetInchesToCm(feet, inches) * 10) / 10));
+        }
+        setHeightFeetInput('');
+        setHeightInchesInput('');
+      }
+      setHeightUnit(next);
+      setProfileFieldErrors((prev) => ({ ...prev, height: undefined }));
+    },
+    [heightCmInput, heightFeetInput, heightInchesInput, heightUnit]
   );
 
-  const parseAndPatchNumber = useCallback(
-    async (field: 'heightCm' | 'weightKg' | 'age', raw: string, max: number, integer = false) => {
-      const trimmed = raw.trim();
-      if (!trimmed) {
-        await patchProfileField(field, null);
-        return;
+  const handleChangeWeightUnit = useCallback(
+    (next: WeightUnit) => {
+      if (next === weightUnit) return;
+      const parsed = Number(weightInput.trim());
+      if (Number.isFinite(parsed) && parsed > 0) {
+        const converted = next === 'kg' ? lbToKg(parsed) : kgToLb(parsed);
+        setWeightInput(String(Math.round(converted * 10) / 10));
       }
-      const parsed = Number(trimmed);
-      const invalid =
-        !Number.isFinite(parsed) ||
-        parsed < 0 ||
-        parsed > max ||
-        (integer && !Number.isInteger(parsed));
-      if (invalid) {
-        showToast(`Enter a valid ${field === 'age' ? 'age' : field === 'heightCm' ? 'height' : 'weight'}`, 'error');
-        syncProfileInputs(profile);
-        return;
-      }
-      await patchProfileField(field, parsed);
+      setWeightUnit(next);
+      setProfileFieldErrors((prev) => ({ ...prev, weight: undefined }));
     },
-    [patchProfileField, profile, syncProfileInputs]
-  );
-
-  const handlePickSex = useCallback(
-    (next: Sex) => {
-      if (sex === next || profileSaving) return;
-      void patchProfileField('sex', next);
-    },
-    [patchProfileField, profileSaving, sex]
-  );
-
-  const handlePickActivityLevel = useCallback(
-    (next: ActivityLevel) => {
-      if (activityLevel === next || profileSaving) return;
-      void patchProfileField('activityLevel', next);
-    },
-    [activityLevel, patchProfileField, profileSaving]
+    [weightInput, weightUnit]
   );
 
   const handleChooseProfilePhoto = useCallback(() => {
@@ -369,33 +581,89 @@ export default function SettingsScreen() {
             showChevron
           />
           <SettingsDivider />
-          <SettingsRow label="Weight Goal" value={goalTypeDisplay} onPress={() => router.push('/(tabs)/calculator')} showChevron />
+          <SettingsRow label="Weight Goal" value={`${goalTypeDisplay} (coming soon)`} />
           <SettingsDivider />
-          <ProfileFieldInput
-            label="Height (cm)"
-            accessibilityLabel="Height (cm)"
-            value={heightCmInput}
-            placeholder="e.g. 170"
-            keyboardType="decimal-pad"
-            disabled={!user || profileSaving}
-            onChangeText={setHeightCmInput}
-            onBlur={() => {
-              void parseAndPatchNumber('heightCm', heightCmInput, 300);
-            }}
-          />
+          <View className="py-3">
+            <View className="mb-2 flex-row items-center justify-between">
+              <Text className="text-base font-medium text-foreground dark:text-darkForeground">
+                Height
+              </Text>
+              <SegmentedControl
+                value={heightUnit}
+                onChange={(next) => handleChangeHeightUnit(next as HeightUnit)}
+                options={[
+                  { value: 'cm', label: 'cm' },
+                  { value: 'ft_in', label: 'ft/in' },
+                ]}
+                className="w-32"
+              />
+            </View>
+            {heightUnit === 'cm' ? (
+              <ProfileFieldInput
+                label="Height (cm)"
+                accessibilityLabel="Height (cm)"
+                value={heightCmInput}
+                placeholder="e.g. 170"
+                keyboardType="decimal-pad"
+                disabled={!user || profileSaving}
+                onChangeText={setHeightCmInput}
+                errorText={profileFieldErrors.height ?? null}
+              />
+            ) : (
+              <View className="flex-row gap-3">
+                <View className="flex-1">
+                  <ProfileFieldInput
+                    label="Feet"
+                    accessibilityLabel="Height feet"
+                    value={heightFeetInput}
+                    placeholder="e.g. 5"
+                    keyboardType="numeric"
+                    disabled={!user || profileSaving}
+                    onChangeText={setHeightFeetInput}
+                  />
+                </View>
+                <View className="flex-1">
+                  <ProfileFieldInput
+                    label="Inches"
+                    accessibilityLabel="Height inches"
+                    value={heightInchesInput}
+                    placeholder="e.g. 8"
+                    keyboardType="numeric"
+                    disabled={!user || profileSaving}
+                    onChangeText={setHeightInchesInput}
+                    errorText={profileFieldErrors.height ?? null}
+                  />
+                </View>
+              </View>
+            )}
+          </View>
           <SettingsDivider />
-          <ProfileFieldInput
-            label="Weight (kg)"
-            accessibilityLabel="Weight (kg)"
-            value={weightKgInput}
-            placeholder="e.g. 70.5"
-            keyboardType="decimal-pad"
-            disabled={!user || profileSaving}
-            onChangeText={setWeightKgInput}
-            onBlur={() => {
-              void parseAndPatchNumber('weightKg', weightKgInput, 700);
-            }}
-          />
+          <View className="py-3">
+            <View className="mb-2 flex-row items-center justify-between">
+              <Text className="text-base font-medium text-foreground dark:text-darkForeground">
+                Weight
+              </Text>
+              <SegmentedControl
+                value={weightUnit}
+                onChange={(next) => handleChangeWeightUnit(next as WeightUnit)}
+                options={[
+                  { value: 'kg', label: 'kg' },
+                  { value: 'lb', label: 'lb' },
+                ]}
+                className="w-28"
+              />
+            </View>
+            <ProfileFieldInput
+              label={`Weight (${weightUnit})`}
+              accessibilityLabel={`Weight (${weightUnit})`}
+              value={weightInput}
+              placeholder={weightUnit === 'kg' ? 'e.g. 70.5' : 'e.g. 155.4'}
+              keyboardType="decimal-pad"
+              disabled={!user || profileSaving}
+              onChangeText={setWeightInput}
+              errorText={profileFieldErrors.weight ?? null}
+            />
+          </View>
           <SettingsDivider />
           <ProfileFieldInput
             label="Age"
@@ -405,20 +673,20 @@ export default function SettingsScreen() {
             keyboardType="numeric"
             disabled={!user || profileSaving}
             onChangeText={setAgeInput}
-            onBlur={() => {
-              void parseAndPatchNumber('age', ageInput, 130, true);
-            }}
+            errorText={profileFieldErrors.age ?? ageValidationError}
           />
           <SettingsDivider />
           <View className="py-3">
-            <Text className="mb-2 text-base font-medium text-foreground dark:text-darkForeground">Sex</Text>
+            <Text className="mb-2 text-base font-medium text-foreground dark:text-darkForeground">
+              Sex
+            </Text>
             <View className="flex-row gap-2">
               {(['male', 'female'] as const).map((option) => {
-                const selected = sex === option;
+                const selected = sexInput === option;
                 return (
                   <Pressable
                     key={option}
-                    onPress={() => handlePickSex(option)}
+                    onPress={() => setSexInput(option)}
                     disabled={!user || profileSaving}
                     className={`rounded-full border px-3 py-2 ${selected ? 'border-primary bg-primary/10 dark:border-darkPrimary dark:bg-darkPrimary/20' : 'border-border dark:border-darkBorder'} disabled:opacity-50`}
                   >
@@ -436,23 +704,32 @@ export default function SettingsScreen() {
               Activity level
             </Text>
             <View className="flex-row flex-wrap gap-2">
-              {(['sedentary', 'light', 'moderate', 'active', 'very_active'] as const).map((option) => {
-                const selected = activityLevel === option;
-                return (
-                  <Pressable
-                    key={option}
-                    onPress={() => handlePickActivityLevel(option)}
-                    disabled={!user || profileSaving}
-                    className={`rounded-full border px-3 py-2 ${selected ? 'border-primary bg-primary/10 dark:border-darkPrimary dark:bg-darkPrimary/20' : 'border-border dark:border-darkBorder'} disabled:opacity-50`}
-                  >
-                    <Text className="text-sm font-medium capitalize text-foreground dark:text-darkForeground">
-                      {option.replace('_', ' ')}
-                    </Text>
-                  </Pressable>
-                );
-              })}
+              {(['sedentary', 'light', 'moderate', 'active', 'very_active'] as const).map(
+                (option) => {
+                  const selected = activityLevelInput === option;
+                  return (
+                    <Pressable
+                      key={option}
+                      onPress={() => setActivityLevelInput(option)}
+                      disabled={!user || profileSaving}
+                      className={`rounded-full border px-3 py-2 ${selected ? 'border-primary bg-primary/10 dark:border-darkPrimary dark:bg-darkPrimary/20' : 'border-border dark:border-darkBorder'} disabled:opacity-50`}
+                    >
+                      <Text className="text-sm font-medium capitalize text-foreground dark:text-darkForeground">
+                        {option.replace('_', ' ')}
+                      </Text>
+                    </Pressable>
+                  );
+                }
+              )}
             </View>
           </View>
+          <Button
+            className="mt-2"
+            onPress={() => void handleSaveProfile()}
+            disabled={!user || !canSaveProfile}
+          >
+            {profileSaving ? 'Saving...' : 'Save profile'}
+          </Button>
         </CardContent>
       </Card>
 
@@ -514,7 +791,7 @@ export default function SettingsScreen() {
               </Text>
             </View>
           </View>
-          <SettingsDivider />
+          <SettingsDivider className="mb-4" />
           <SettingsRow
             label="Legal Disclosures"
             onPress={() => router.push('/legal')}
@@ -551,6 +828,7 @@ export default function SettingsScreen() {
       <Card>
         <CardContent className="p-3">
           <SettingsRow
+            icon={<LogOut size={20} color={p.destructive} />}
             label="Sign Out"
             onPress={handleSignOut}
             destructive

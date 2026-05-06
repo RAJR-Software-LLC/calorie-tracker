@@ -16,6 +16,9 @@ export type Sex = 'male' | 'female';
 
 export type GoalType = 'lose' | 'gain' | 'maintain';
 
+export type HeightUnit = 'cm' | 'ft_in';
+export type WeightUnit = 'kg' | 'lb';
+
 export type CalorieGoal =
   | { mode: 'single'; target: number }
   | { mode: 'range'; min: number; max: number };
@@ -23,9 +26,22 @@ export type CalorieGoal =
 export interface UserProfileFields {
   heightCm: number | null;
   weightKg: number | null;
+  heightUnit: HeightUnit;
+  weightUnit: WeightUnit;
   age: number | null;
   sex: Sex | null;
   activityLevel: ActivityLevel | null;
+}
+
+export type HeightPatchValue =
+  | { unit: 'cm'; value: number }
+  | { unit: 'ft_in'; feet: number; inches: number };
+
+export type WeightPatchValue = { unit: 'kg'; value: number } | { unit: 'lb'; value: number };
+
+export interface PatchProfileBody extends Partial<Omit<UserProfileFields, 'heightCm' | 'weightKg'>> {
+  height?: HeightPatchValue | null;
+  weight?: WeightPatchValue | null;
 }
 
 export interface NotificationsCategories {
@@ -193,7 +209,7 @@ export type GetMeResponse = UserDocument | null;
 export interface PatchMeBody {
   displayName?: string;
   email?: string | null;
-  profile?: Partial<UserProfileFields>;
+  profile?: PatchProfileBody;
   maintenanceCalories?: number | null;
   calorieGoal?: CalorieGoal | null;
   goalType?: GoalType | null;

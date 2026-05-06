@@ -8,12 +8,17 @@ import { Label } from '@/components/ui/label';
 import { SegmentedControl } from '@/components/ui/segmented-control';
 import { useThemePalette } from '@/lib/use-theme-palette';
 import {
-  feetInchesToCm,
-  lbsToKg,
   mifflinStJeor,
   type ActivityLevel,
   type Sex,
 } from '@/lib/utils/calories';
+import {
+  cmToFeetInches,
+  feetInchesToCm,
+  formatDisplayWeightFromKg,
+  lbToKg,
+} from '@/src/lib/utils/profile-measurements';
+import type { HeightUnit, WeightUnit } from '@/types';
 
 const activityLabels: Record<ActivityLevel, string> = {
   sedentary: 'Sedentary (office job, little exercise)',
@@ -25,19 +30,39 @@ const activityLabels: Record<ActivityLevel, string> = {
 
 type AdvancedCalculatorProps = {
   onResult: (maintenance: number) => void;
+  defaults?: {
+    weightKg: number | null;
+    heightCm: number | null;
+    age: number | null;
+    sex: Sex | null;
+    activityLevel: ActivityLevel | null;
+    heightUnit: HeightUnit;
+    weightUnit: WeightUnit;
+  } | null;
 };
 
-export function AdvancedCalculator({ onResult }: AdvancedCalculatorProps) {
+export function AdvancedCalculator({ onResult, defaults = null }: AdvancedCalculatorProps) {
   const p = useThemePalette();
-  const [weightUnit, setWeightUnit] = useState<'lbs' | 'kg'>('lbs');
-  const [heightUnit, setHeightUnit] = useState<'imperial' | 'metric'>('imperial');
-  const [weight, setWeight] = useState('');
-  const [heightCm, setHeightCm] = useState('');
-  const [heightFeet, setHeightFeet] = useState('');
-  const [heightInches, setHeightInches] = useState('');
-  const [age, setAge] = useState('');
-  const [sex, setSex] = useState<Sex>('male');
-  const [activity, setActivity] = useState<ActivityLevel>('moderate');
+  const [weightUnit, setWeightUnit] = useState<WeightUnit>(defaults?.weightUnit ?? 'lb');
+  const [heightUnit, setHeightUnit] = useState<HeightUnit>(defaults?.heightUnit ?? 'ft_in');
+  const [weight, setWeight] = useState(
+    defaults ? formatDisplayWeightFromKg(defaults.weightKg, defaults.weightUnit) : ''
+  );
+  const defaultImperialHeight = defaults?.heightCm != null ? cmToFeetInches(defaults.heightCm) : null;
+  const [heightCm, setHeightCm] = useState(
+    defaults?.heightUnit === 'cm' && defaults.heightCm != null
+      ? String(Math.round(defaults.heightCm * 10) / 10)
+      : ''
+  );
+  const [heightFeet, setHeightFeet] = useState(
+    defaults?.heightUnit === 'ft_in' && defaultImperialHeight ? String(defaultImperialHeight.feet) : ''
+  );
+  const [heightInches, setHeightInches] = useState(
+    defaults?.heightUnit === 'ft_in' && defaultImperialHeight ? String(defaultImperialHeight.inches) : ''
+  );
+  const [age, setAge] = useState(defaults?.age != null ? String(defaults.age) : '');
+  const [sex, setSex] = useState<Sex>(defaults?.sex ?? 'male');
+  const [activity, setActivity] = useState<ActivityLevel>(defaults?.activityLevel ?? 'moderate');
   const [result, setResult] = useState<number | null>(null);
 
   function calculate() {
@@ -45,9 +70,9 @@ export function AdvancedCalculator({ onResult }: AdvancedCalculatorProps) {
     const a = Number(age);
     if (!w || !a) return;
 
-    const weightKg = weightUnit === 'lbs' ? lbsToKg(w) : w;
+    const weightKg = weightUnit === 'lb' ? lbToKg(w) : w;
     let hCm: number;
-    if (heightUnit === 'imperial') {
+    if (heightUnit === 'ft_in') {
       const ft = Number(heightFeet) || 0;
       const inNum = Number(heightInches) || 0;
       hCm = feetInchesToCm(ft, inNum);
@@ -109,7 +134,7 @@ export function AdvancedCalculator({ onResult }: AdvancedCalculatorProps) {
         <View className="flex-row gap-2">
           <Input
             keyboardType="decimal-pad"
-            placeholder={weightUnit === 'lbs' ? 'e.g. 160' : 'e.g. 72'}
+            placeholder={weightUnit === 'lb' ? 'e.g. 160' : 'e.g. 72'}
             value={weight}
             onChangeText={setWeight}
             className="flex-1"
@@ -118,7 +143,7 @@ export function AdvancedCalculator({ onResult }: AdvancedCalculatorProps) {
             value={weightUnit}
             onChange={setWeightUnit}
             options={[
-              { value: 'lbs', label: 'lbs' },
+              { value: 'lb', label: 'lb' },
               { value: 'kg', label: 'kg' },
             ]}
             className="w-28"
@@ -130,14 +155,14 @@ export function AdvancedCalculator({ onResult }: AdvancedCalculatorProps) {
         <View className="flex-row items-center justify-between">
           <Label>Height</Label>
           <Pressable
-            onPress={() => setHeightUnit(heightUnit === 'imperial' ? 'metric' : 'imperial')}
+            onPress={() => setHeightUnit(heightUnit === 'ft_in' ? 'cm' : 'ft_in')}
           >
             <Text className="text-xs text-primary dark:text-darkPrimary">
-              Switch to {heightUnit === 'imperial' ? 'cm' : 'ft/in'}
+              Switch to {heightUnit === 'ft_in' ? 'cm' : 'ft/in'}
             </Text>
           </Pressable>
         </View>
-        {heightUnit === 'imperial' ? (
+        {heightUnit === 'ft_in' ? (
           <View className="flex-row gap-2">
             <View className="flex-1 flex-row items-center gap-1">
               <Input
