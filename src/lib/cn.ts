@@ -1,6 +1,9 @@
+import { twMerge } from 'tailwind-merge';
+
 /**
- * Minimal className merge for NativeWind (no tailwind-merge in RN preset by default).
+ * Merge Tailwind class names so later arguments override earlier conflicting utilities
+ * (e.g. CardContent defaults + screen-level padding).
  */
 export function cn(...classes: (string | undefined | false | null)[]): string {
-  return classes.filter(Boolean).join(' ');
+  return twMerge(...classes);
 }

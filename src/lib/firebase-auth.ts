@@ -12,6 +12,7 @@ import * as AppleAuthentication from 'expo-apple-authentication';
 import * as Crypto from 'expo-crypto';
 
 import { bootstrapUserProfile } from '@/lib/auth-bootstrap';
+import { unregisterPushToken } from '@/lib/notifications/push-token';
 
 import { getFirebaseAuth } from './firebase';
 
@@ -45,6 +46,14 @@ export async function signUpWithEmail(
 export async function signOutUser(): Promise<void> {
   const auth = getFirebaseAuth();
   if (!auth) return;
+  const uid = auth.currentUser?.uid;
+  if (uid) {
+    try {
+      await unregisterPushToken(uid);
+    } catch {
+      // Pending delete is persisted for retry after next sign-in.
+    }
+  }
   await firebaseSignOut(auth);
 }
 
@@ -63,8 +72,8 @@ export async function signInWithApple(): Promise<User> {
     throw new Error('Apple Sign-In is not available on this device.');
   }
 
-  const nonce =
-    Math.random().toString(36).substring(2, 10) + Math.random().toString(36).substring(2, 10);
+  const randomBytes = await Crypto.getRandomBytesAsync(16);
+  const nonce = Array.from(randomBytes, (byte) => byte.toString(16).padStart(2, '0')).join('');
   const hashedNonce = await Crypto.digestStringAsync(Crypto.CryptoDigestAlgorithm.SHA256, nonce, {
     encoding: Crypto.CryptoEncoding.HEX,
   });

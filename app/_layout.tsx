@@ -11,6 +11,7 @@ import '../global.css';
 
 import { AuthProvider, useAuth } from '@/components/auth/auth-provider';
 import { useColorScheme } from '@/components/useColorScheme';
+import { installNotificationHandler, useNotificationTapRouter } from '@/lib/notifications/handler';
 import { initMonitoring } from '@/lib/monitoring';
 import { useThemePalette } from '@/lib/use-theme-palette';
 
@@ -32,6 +33,7 @@ export default function RootLayout() {
 
   useEffect(() => {
     initMonitoring();
+    installNotificationHandler();
   }, []);
 
   useEffect(() => {
@@ -63,6 +65,7 @@ function RootLayoutNav() {
   const { user, loading } = useAuth();
   const segments = useSegments();
   const router = useRouter();
+  useNotificationTapRouter(user, router);
 
   useEffect(() => {
     if (loading) return;

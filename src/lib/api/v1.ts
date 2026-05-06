@@ -12,6 +12,8 @@ import type {
   PostFamilyBody,
   PostFamilySharedItemBody,
   PostJoinFamilyBody,
+  PostPushTokenBody,
+  PostPushTokenResponse,
   PostSavedItemBody,
   SavedItemWithId,
 } from '@/types';
@@ -24,6 +26,14 @@ export async function getMe(): Promise<GetMeResponse> {
 
 export async function patchMe(body: PatchMeBody): Promise<GetMeResponse> {
   return apiRequest<GetMeResponse>('/me', { method: 'PATCH', json: body });
+}
+
+export async function postPushToken(body: PostPushTokenBody): Promise<PostPushTokenResponse> {
+  return apiRequest<PostPushTokenResponse>('/me/push-tokens', { method: 'POST', json: body });
+}
+
+export async function deletePushToken(tokenId: string): Promise<void> {
+  await apiRequest<void>(`/me/push-tokens/${encodeURIComponent(tokenId)}`, { method: 'DELETE' });
 }
 
 export type EntriesQuery = { date: string } | { startDate: string; endDate: string };

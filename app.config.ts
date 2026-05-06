@@ -118,6 +118,14 @@ const config: ExpoConfig = {
     'expo-router',
     'expo-apple-authentication',
     'expo-web-browser',
+    [
+      'expo-notifications',
+      {
+        icon: './assets/images/icon.png',
+        color: '#faf8f5',
+      },
+    ],
+    '@react-native-community/datetimepicker',
     '@sentry/react-native/expo',
   ],
   experiments: {

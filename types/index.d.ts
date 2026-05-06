@@ -28,9 +28,47 @@ export interface UserProfileFields {
   activityLevel: ActivityLevel | null;
 }
 
+export interface NotificationsCategories {
+  mealReminders: boolean;
+  goalStatus: boolean;
+  streaks: boolean;
+  familyEvents: boolean;
+  accountAdmin: boolean;
+}
+
+export interface NotificationsQuietHours {
+  start: string;
+  end: string;
+}
+
 export interface NotificationsSettings {
   enabled: boolean;
   reminderTimes: string[];
+  categories: NotificationsCategories;
+  quietHours: NotificationsQuietHours | null;
+  timezone: string;
+  goalStatusTime: string;
+}
+
+/** Deep-partial merge for PATCH /me notifications */
+export interface PatchNotificationsBody {
+  enabled?: boolean;
+  reminderTimes?: string[];
+  categories?: Partial<NotificationsCategories>;
+  quietHours?: NotificationsQuietHours | null;
+  timezone?: string;
+  goalStatusTime?: string;
+}
+
+export interface PostPushTokenBody {
+  token: string;
+  platform: 'ios' | 'android';
+  appVersion?: string;
+  deviceId?: string;
+}
+
+export interface PostPushTokenResponse {
+  id: string;
 }
 
 /** `users/{uid}` document (Firestore + API) */
@@ -118,7 +156,7 @@ export interface PatchMeBody {
   calorieGoal?: CalorieGoal | null;
   goalType?: GoalType | null;
   familyId?: string | null;
-  notifications?: Partial<NotificationsSettings>;
+  notifications?: PatchNotificationsBody;
 }
 
 export interface PostEntryBody {
