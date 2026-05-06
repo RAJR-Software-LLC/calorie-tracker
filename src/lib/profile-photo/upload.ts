@@ -25,11 +25,104 @@ export class ProfilePhotoError extends Error {
 
   readonly httpStatus?: number;
 
-  constructor(code: ProfilePhotoErrorCode, message?: string, httpStatus?: number) {
+  readonly debugMeta?: Record<string, unknown>;
+
+  constructor(
+    code: ProfilePhotoErrorCode,
+    message?: string,
+    httpStatus?: number,
+    debugMeta?: Record<string, unknown>
+  ) {
     super(message ?? code);
     this.name = 'ProfilePhotoError';
     this.code = code;
     this.httpStatus = httpStatus;
+    this.debugMeta = debugMeta;
+  }
+}
+
+function pathnameHash(pathname: string): string {
+  let hash = 0;
+  for (let i = 0; i < pathname.length; i += 1) {
+    hash = (hash * 31 + pathname.charCodeAt(i)) >>> 0;
+  }
+  return hash.toString(16);
+}
+
+function uploadUrlFingerprint(uploadUrl: string): Record<string, unknown> {
+  try {
+    const u = new URL(uploadUrl);
+    return {
+      uploadUrlOrigin: u.origin,
+      uploadPathLength: u.pathname.length,
+      uploadPathHash: pathnameHash(u.pathname),
+    };
+  } catch {
+    return { uploadUrlOrigin: 'invalid-url', uploadPathLength: 0, uploadPathHash: '0' };
+  }
+}
+
+type PutAttemptSummary = {
+  attempt: string;
+  bodyType: 'blob' | 'arrayBuffer';
+  headers: string[];
+  ok: boolean;
+  status?: number;
+  gcsRequestId?: string | null;
+  gcsGeneration?: string | null;
+  networkError?: string;
+};
+
+type SignedPutResult = {
+  response?: Response;
+  attempts: PutAttemptSummary[];
+};
+
+async function summarizeAttempt(
+  attempt: string,
+  bodyType: 'blob' | 'arrayBuffer',
+  headers: string[],
+  response: Response
+): Promise<PutAttemptSummary> {
+  const headerGet =
+    typeof response.headers?.get === 'function'
+      ? (name: string) => response.headers.get(name)
+      : () => null;
+  return {
+    attempt,
+    bodyType,
+    headers,
+    ok: response.ok,
+    status: response.status,
+    gcsRequestId: headerGet('x-goog-request-id'),
+    gcsGeneration: headerGet('x-goog-generation'),
+  };
+}
+
+async function attemptSignedPut(
+  uploadUrl: string,
+  body: Blob | ArrayBuffer,
+  headers: Record<string, string>,
+  attempt: string,
+  bodyType: 'blob' | 'arrayBuffer'
+): Promise<{ response?: Response; summary: PutAttemptSummary }> {
+  try {
+    const response = await fetch(uploadUrl, { method: 'PUT', headers, body });
+    return {
+      response,
+      summary: await summarizeAttempt(attempt, bodyType, Object.keys(headers), response),
+    };
+  } catch (err) {
+    return {
+      response: undefined,
+      summary: {
+        attempt,
+        bodyType,
+        headers: Object.keys(headers),
+        ok: false,
+        networkError: err instanceof Error ? err.message : 'unknown-network-error',
+      },
+    };
   }
 }
 
@@ -99,52 +192,35 @@ async function putToSignedUploadUrl(
   uploadUrl: string,
   contentType: string,
   body: Blob
-): Promise<Response> {
-  const firstAttempt = await fetch(uploadUrl, {
-    method: 'PUT',
-    headers: { 'Content-Type': contentType },
+): Promise<SignedPutResult> {
+  const attempts: PutAttemptSummary[] = [];
+  const first = await attemptSignedPut(
+    uploadUrl,
     body,
-  });
-  if (firstAttempt.ok) {
-    return firstAttempt;
+    { 'Content-Type': contentType },
+    'blob-content-type',
+    'blob'
+  );
+  attempts.push(first.summary);
+  if (first.response?.ok) {
+    return { response: first.response, attempts };
   }
 
-  // Some signed URLs are generated without content-type as a signed header.
-  // Retry once without the explicit header to avoid signature mismatch 4xx responses.
-  if (firstAttempt.status === 400 || firstAttempt.status === 403) {
-    const retryAttempt = await fetch(uploadUrl, {
-      method: 'PUT',
-      body,
-    });
-    if (retryAttempt.ok) {
-      return retryAttempt;
-    }
-    if (retryAttempt.status !== 400 && retryAttempt.status !== 403) {
-      return retryAttempt;
-    }
+  const arrayBufferFn = (body as Blob & { arrayBuffer?: () => Promise<ArrayBuffer> }).arrayBuffer;
+  if (typeof arrayBufferFn !== 'function') {
+    return { response: first.response, attempts };
   }
 
-  // Some React Native runtimes work more reliably with ArrayBuffer payloads
-  // on signed URLs than Blob payloads.
-  const bodyBytes = await body.arrayBuffer();
-  const thirdAttempt = await fetch(uploadUrl, {
-    method: 'PUT',
-    headers: { 'Content-Type': contentType },
-    body: bodyBytes,
-  });
-  if (thirdAttempt.ok) {
-    return thirdAttempt;
-  }
-
-  if (thirdAttempt.status === 400 || thirdAttempt.status === 403) {
-    const fourthAttempt = await fetch(uploadUrl, {
-      method: 'PUT',
-      body: bodyBytes,
-    });
-    return fourthAttempt;
-  }
-
-  return thirdAttempt;
+  const bodyBytes = await arrayBufferFn.call(body);
+  const second = await attemptSignedPut(
+    uploadUrl,
+    bodyBytes,
+    { 'Content-Type': contentType },
+    'arraybuffer-content-type',
+    'arrayBuffer'
+  );
+  attempts.push(second.summary);
+  return { response: second.response, attempts };
 }
 
 function assertFreshUploadUrl(expiresAtIso: string): void {
@@ -174,10 +250,26 @@ export async function uploadProfilePhoto(): Promise<UserDocument | null> {
   const session = await postProfilePhotoUploadUrl({ contentType: 'image/jpeg' });
   assertFreshUploadUrl(session.expiresAt);
 
-  const putRes = await putToSignedUploadUrl(session.uploadUrl, session.contentType, blob);
+  const put = await putToSignedUploadUrl(session.uploadUrl, session.contentType, blob);
+  const putRes = put.response;
 
-  if (!putRes.ok) {
-    throw new ProfilePhotoError('gcs-upload-failed', 'GCS upload failed', putRes.status);
+  if (!putRes?.ok) {
+    const debugMeta = {
+      stage: 'signed-put',
+      contentType: session.contentType,
+      blobSize: blob.size,
+      ...uploadUrlFingerprint(session.uploadUrl),
+      uploadAttempts: put.attempts,
+    };
+    const attemptSummary = put.attempts
+      .map((a) => `${a.attempt}:${a.status ?? a.networkError ?? 'no-response'}`)
+      .join(', ');
+    throw new ProfilePhotoError(
+      'gcs-upload-failed',
+      `GCS upload failed (${attemptSummary || 'no-attempts'})`,
+      putRes?.status,
+      debugMeta
+    );
   }
 
   const updated = await postProfilePhotoComplete({ storagePath: session.storagePath });

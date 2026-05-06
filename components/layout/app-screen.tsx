@@ -5,6 +5,7 @@ type AppScreenProps = ViewProps & {
   children: React.ReactNode;
   scroll?: boolean;
   showHeader?: boolean;
+  forceLeafHeader?: boolean;
 };
 
 const contentPad = {
@@ -21,12 +22,13 @@ export function AppScreen({
   children,
   scroll = true,
   showHeader = true,
+  forceLeafHeader = false,
   className,
   ...rest
 }: AppScreenProps) {
   return (
     <View className={`flex-1 bg-background dark:bg-darkBackground ${className ?? ''}`} {...rest}>
-      {showHeader ? <AppHeader /> : null}
+      {showHeader ? <AppHeader forceLeaf={forceLeafHeader} /> : null}
       {scroll ? (
         <ScrollView
           className="flex-1"

@@ -119,6 +119,12 @@ const config: ExpoConfig = {
     'expo-apple-authentication',
     'expo-web-browser',
     [
+      'expo-image-picker',
+      {
+        photosPermission: 'Allow Calorie Tracker to access your photos to set your profile photo.',
+      },
+    ],
+    [
       'expo-notifications',
       {
         icon: './assets/images/icon.png',

@@ -1,9 +1,7 @@
 process.env.EXPO_PUBLIC_API_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:3000';
 
-jest.mock(
-  '@react-native-async-storage/async-storage',
-  () =>
-    jest.requireActual('@react-native-async-storage/async-storage/jest/async-storage-mock')
+jest.mock('@react-native-async-storage/async-storage', () =>
+  jest.requireActual('@react-native-async-storage/async-storage/jest/async-storage-mock')
 );
 
 jest.mock(
@@ -72,3 +70,13 @@ jest.mock(
 );
 
 jest.mock('@react-native-community/datetimepicker', () => 'DateTimePicker');
+
+jest.mock('expo-image-picker', () => ({
+  requestMediaLibraryPermissionsAsync: jest.fn(async () => ({ status: 'undetermined' })),
+  launchImageLibraryAsync: jest.fn(async () => ({ canceled: true, assets: null })),
+}));
+
+jest.mock('expo-image-manipulator', () => ({
+  manipulateAsync: jest.fn(async (uri: string) => ({ uri })),
+  SaveFormat: { JPEG: 'jpeg', PNG: 'png', WEBP: 'webp' },
+}));

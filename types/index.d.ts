@@ -71,12 +71,43 @@ export interface PostPushTokenResponse {
   id: string;
 }
 
+export type ProfilePhotoContentType = 'image/jpeg' | 'image/png' | 'image/webp';
+
+/** Stored on `users/{uid}` in Firestore (no `downloadUrl`). */
+export interface UserProfilePhoto {
+  storagePath: string;
+  contentType: string;
+  updatedAt: ApiTimestamp | unknown;
+}
+
+/** `GET /api/v1/me` may include a short-lived signed read URL. */
+export interface UserProfilePhotoWithDownload extends UserProfilePhoto {
+  downloadUrl: string;
+}
+
+export interface PostProfilePhotoUploadUrlBody {
+  contentType: ProfilePhotoContentType;
+}
+
+export interface PostProfilePhotoUploadUrlResponse {
+  uploadUrl: string;
+  storagePath: string;
+  contentType: ProfilePhotoContentType;
+  expiresAt: ApiTimestamp;
+}
+
+export interface PostProfilePhotoCompleteBody {
+  storagePath: string;
+}
+
 /** `users/{uid}` document (Firestore + API) */
 export interface UserDocument {
   displayName: string;
   email: string | null;
   createdAt: ApiTimestamp | unknown;
   profile: UserProfileFields;
+  /** Present in Firestore; API may attach `downloadUrl` when serializing. */
+  profilePhoto?: UserProfilePhoto | UserProfilePhotoWithDownload | null;
   maintenanceCalories: number | null;
   calorieGoal: CalorieGoal | null;
   goalType: GoalType | null;

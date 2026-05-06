@@ -12,6 +12,9 @@ import type {
   PostFamilyBody,
   PostFamilySharedItemBody,
   PostJoinFamilyBody,
+  PostProfilePhotoCompleteBody,
+  PostProfilePhotoUploadUrlBody,
+  PostProfilePhotoUploadUrlResponse,
   PostPushTokenBody,
   PostPushTokenResponse,
   PostSavedItemBody,
@@ -26,6 +29,25 @@ export async function getMe(): Promise<GetMeResponse> {
 
 export async function patchMe(body: PatchMeBody): Promise<GetMeResponse> {
   return apiRequest<GetMeResponse>('/me', { method: 'PATCH', json: body });
+}
+
+export async function postProfilePhotoUploadUrl(
+  body: PostProfilePhotoUploadUrlBody
+): Promise<PostProfilePhotoUploadUrlResponse> {
+  return apiRequest<PostProfilePhotoUploadUrlResponse>('/me/profile-photo/upload-url', {
+    method: 'POST',
+    json: body,
+  });
+}
+
+export async function postProfilePhotoComplete(
+  body: PostProfilePhotoCompleteBody
+): Promise<GetMeResponse> {
+  return apiRequest<GetMeResponse>('/me/profile-photo/complete', { method: 'POST', json: body });
+}
+
+export async function deleteProfilePhoto(): Promise<void> {
+  await apiRequest<void>('/me/profile-photo', { method: 'DELETE' });
 }
 
 export async function postPushToken(body: PostPushTokenBody): Promise<PostPushTokenResponse> {

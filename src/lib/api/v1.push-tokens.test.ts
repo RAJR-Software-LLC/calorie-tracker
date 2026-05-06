@@ -29,12 +29,12 @@ describe('push token API', () => {
 
     expect(res.id).toBe('tok-doc-1');
     expect(fetchSpy).toHaveBeenCalledTimes(1);
-    const [url, init] = fetchSpy.mock.calls[0] as [string, RequestInit];
-    expect(url).toContain('/api/v1/me/push-tokens');
-    expect(init.method).toBe('POST');
-    expect(init.headers).toBeInstanceOf(Headers);
-    expect((init.headers as Headers).get('Authorization')).toBe('Bearer mock-token');
-    expect(JSON.parse(String(init.body))).toMatchObject({
+    const req = fetchSpy.mock.calls[0][0] as Request;
+    expect(req.url).toContain('/api/v1/me/push-tokens');
+    expect(req.method).toBe('POST');
+    expect(req.headers.get('Authorization')).toBe('Bearer mock-token');
+    const bodyText = await req.text();
+    expect(JSON.parse(bodyText)).toMatchObject({
       token: 'ExponentPushToken[abc]',
       platform: 'ios',
       appVersion: '1.0.0',
@@ -50,8 +50,8 @@ describe('push token API', () => {
 
     await expect(deletePushToken('doc-99')).resolves.toBeUndefined();
     expect(fetchSpy).toHaveBeenCalledTimes(1);
-    const url = fetchSpy.mock.calls[0][0] as string;
-    expect(url).toContain('/api/v1/me/push-tokens/doc-99');
-    expect((fetchSpy.mock.calls[0][1] as RequestInit).method).toBe('DELETE');
+    const delReq = fetchSpy.mock.calls[0][0] as Request;
+    expect(delReq.url).toContain('/api/v1/me/push-tokens/doc-99');
+    expect(delReq.method).toBe('DELETE');
   });
 });

@@ -244,17 +244,31 @@ describe('uploadProfilePhoto', () => {
       .fn()
       .mockResolvedValueOnce({ ok: true, blob: async () => smallBlob })
       .mockResolvedValueOnce({ ok: false, status: 403 })
-      .mockResolvedValueOnce({ ok: false, status: 403 })
-      .mockResolvedValueOnce({ ok: false, status: 403 })
-      .mockResolvedValueOnce({ ok: false, status: 403 }) as unknown as typeof fetch;
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 403,
+        headers: {
+          get: () => null,
+        },
+      }) as unknown as typeof fetch;
 
-    await expect(uploadProfilePhoto()).rejects.toMatchObject({
+    const err = await uploadProfilePhoto().catch((e) => e);
+    expect(err).toMatchObject({
       code: 'gcs-upload-failed',
       httpStatus: 403,
     });
+    expect(err.message).toContain('blob-content-type:403');
+    expect(err.message).toContain('arraybuffer-content-type:403');
+    expect(err.debugMeta).toMatchObject({
+      stage: 'signed-put',
+      contentType: 'image/jpeg',
+      blobSize: 100,
+      uploadUrlOrigin: 'https://signed-put.example',
+    });
+    expect(Array.isArray(err.debugMeta.uploadAttempts)).toBe(true);
   });
 
-  it('retries PUT without content-type header on signed-url 403', async () => {
+  it('falls back to ArrayBuffer PUT after Blob 403 retries', async () => {
     (ImagePicker.requestMediaLibraryPermissionsAsync as jest.Mock).mockResolvedValue({
       status: 'granted',
     });
@@ -297,17 +311,15 @@ describe('uploadProfilePhoto', () => {
 
     const fetchMock = global.fetch as jest.Mock;
     expect(fetchMock).toHaveBeenCalledTimes(3);
-    expect(fetchMock.mock.calls[1][1]).toMatchObject({
-      method: 'PUT',
-      headers: { 'Content-Type': 'image/jpeg' },
+    const thirdCallOptions = fetchMock.mock.calls[2][1];
+    expect(thirdCallOptions.method).toBe('PUT');
+    expect(thirdCallOptions.headers).toEqual({
+      'Content-Type': 'image/jpeg',
     });
-    expect(fetchMock.mock.calls[2][1]).toMatchObject({
-      method: 'PUT',
-    });
-    expect(fetchMock.mock.calls[2][1].headers).toBeUndefined();
+    expect(thirdCallOptions.body).toBeInstanceOf(ArrayBuffer);
   });
 
-  it('falls back to ArrayBuffer PUT after Blob 403 retries', async () => {
+  it('skips ArrayBuffer fallback when blob.arrayBuffer is unavailable', async () => {
     (ImagePicker.requestMediaLibraryPermissionsAsync as jest.Mock).mockResolvedValue({
       status: 'granted',
     });
@@ -316,19 +328,8 @@ describe('uploadProfilePhoto', () => {
       assets: [{ uri: 'file://picked.jpg' }],
     });
 
-    const me = makeUser({
-      profilePhoto: {
-        storagePath: 'profile-photos/u1/x.jpg',
-        contentType: 'image/jpeg',
-        updatedAt: '2026-01-02T00:00:00.000Z',
-        downloadUrl: 'https://signed-read.example/img',
-      },
-    });
-    const { postProfilePhotoUploadUrl, postProfilePhotoComplete } = jest.requireMock(
-      '@/lib/api'
-    ) as {
+    const { postProfilePhotoUploadUrl } = jest.requireMock('@/lib/api') as {
       postProfilePhotoUploadUrl: jest.Mock;
-      postProfilePhotoComplete: jest.Mock;
     };
     postProfilePhotoUploadUrl.mockResolvedValue({
       uploadUrl: 'https://signed-put.example/put',
@@ -336,25 +337,17 @@ describe('uploadProfilePhoto', () => {
       contentType: 'image/jpeg',
       expiresAt: new Date(Date.now() + 60_000).toISOString(),
     });
-    postProfilePhotoComplete.mockResolvedValue(me);
 
-    const smallBlob = new Blob([new Uint8Array(100)]);
+    const blobWithoutArrayBuffer = { size: 100 } as Blob;
     global.fetch = jest
       .fn()
-      .mockResolvedValueOnce({ ok: true, blob: async () => smallBlob })
-      .mockResolvedValueOnce({ ok: false, status: 403 })
-      .mockResolvedValueOnce({ ok: false, status: 403 })
-      .mockResolvedValueOnce({ ok: true, status: 200 }) as unknown as typeof fetch;
+      .mockResolvedValueOnce({ ok: true, blob: async () => blobWithoutArrayBuffer })
+      .mockResolvedValueOnce({ ok: false, status: 403 }) as unknown as typeof fetch;
 
-    const result = await uploadProfilePhoto();
-    expect(result).toEqual(me);
-
-    const fetchMock = global.fetch as jest.Mock;
-    expect(fetchMock).toHaveBeenCalledTimes(4);
-    const thirdCallOptions = fetchMock.mock.calls[3][1];
-    expect(thirdCallOptions.method).toBe('PUT');
-    expect(thirdCallOptions.headers).toEqual({ 'Content-Type': 'image/jpeg' });
-    expect(thirdCallOptions.body).toBeInstanceOf(ArrayBuffer);
+    await expect(uploadProfilePhoto()).rejects.toMatchObject({
+      code: 'gcs-upload-failed',
+      httpStatus: 403,
+    });
   });
 });
 

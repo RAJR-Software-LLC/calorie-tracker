@@ -1,7 +1,15 @@
+import { useFocusEffect } from '@react-navigation/native';
+import { useRouter } from 'expo-router';
+import { useCallback, useEffect, useState } from 'react';
+import { Pressable, Text, View } from 'react-native';
+import type { GetMeResponse } from '@/types';
+
 import { useAuth } from '@/components/auth/auth-provider';
+import { Avatar } from '@/components/ui/avatar';
+import { getMe } from '@/lib/api';
+import { logAppError } from '@/lib/app-errors';
 import { useThemePalette } from '@/lib/use-theme-palette';
 import { Leaf } from 'lucide-react-native';
-import { Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 function getGreeting(): string {
@@ -11,11 +19,39 @@ function getGreeting(): string {
   return 'Good evening';
 }
 
-export function AppHeader() {
+export type AppHeaderProps = {
+  forceLeaf?: boolean;
+};
+
+export function AppHeader({ forceLeaf = false }: AppHeaderProps = {}) {
   const p = useThemePalette();
   const { user } = useAuth();
+  const router = useRouter();
   const insets = useSafeAreaInsets();
+  const [profile, setProfile] = useState<GetMeResponse>(null);
   const displayName = user?.displayName?.split(' ')[0] || 'Friend';
+  const hasProfilePhoto = !forceLeaf && profile?.profilePhoto != null;
+
+  useEffect(() => {
+    if (!user) setProfile(null);
+  }, [user]);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (forceLeaf || !user) return;
+      let cancelled = false;
+      void getMe()
+        .then((me) => {
+          if (!cancelled) setProfile(me);
+        })
+        .catch((err) => {
+          logAppError('header/getMe', err);
+        });
+      return () => {
+        cancelled = true;
+      };
+    }, [user, forceLeaf])
+  );
 
   return (
     <View
@@ -31,9 +67,28 @@ export function AppHeader() {
             {displayName}
           </Text>
         </View>
-        <View className="h-9 w-9 items-center justify-center rounded-lg bg-primary/10 dark:bg-darkPrimary/10">
-          <Leaf size={20} color={p.primary} />
-        </View>
+        <Pressable
+          onPress={() => router.push('/(tabs)/settings')}
+          className="h-9 w-9 items-center justify-center rounded-lg bg-primary/10 active:opacity-80 dark:bg-darkPrimary/10"
+          accessibilityRole="button"
+          accessibilityLabel="Open settings"
+        >
+          {hasProfilePhoto && profile?.profilePhoto ? (
+            <Avatar
+              photo={profile.profilePhoto}
+              name={user?.displayName}
+              email={user?.email}
+              size={30}
+              onRefreshNeeded={() => {
+                void getMe()
+                  .then(setProfile)
+                  .catch((err) => logAppError('header/refreshProfilePhoto', err));
+              }}
+            />
+          ) : (
+            <Leaf size={20} color={p.primary} />
+          )}
+        </Pressable>
       </View>
     </View>
   );

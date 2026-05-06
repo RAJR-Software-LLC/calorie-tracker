@@ -2,6 +2,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
 import {
   Bell,
+  Camera,
   ChevronRight,
   ExternalLink as ExternalLinkIcon,
   FileText,
@@ -9,15 +10,15 @@ import {
   Mail,
   Shield,
   Target,
-  User,
 } from 'lucide-react-native';
 import { useCallback, useEffect, useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { ActivityIndicator, Modal, Pressable, Text, View } from 'react-native';
 
 import { useAuth } from '@/components/auth/auth-provider';
 import { ExternalLink } from '@/components/ExternalLink';
 import { AppScreen } from '@/components/layout/app-screen';
 import { NotificationsSettings } from '@/components/settings/notifications-settings';
+import { Avatar } from '@/components/ui/avatar';
 import { Card, CardContent } from '@/components/ui/card';
 import { getMe } from '@/lib/api';
 import { logAppError } from '@/lib/app-errors';
@@ -25,6 +26,13 @@ import { formatCalorieGoal } from '@/lib/calorie-goal';
 import { getLegalLinks } from '@/lib/env';
 import { signOutUser } from '@/lib/firebase-auth';
 import { withNotificationDefaults } from '@/lib/notifications/defaults';
+import {
+  ProfilePhotoError,
+  removeProfilePhoto,
+  toUserProfilePhotoMessage,
+  uploadProfilePhoto,
+} from '@/lib/profile-photo/upload';
+import { showToast } from '@/lib/toast';
 import { useThemePalette } from '@/lib/use-theme-palette';
 import { cn } from '@/src/lib/cn';
 import type { GetMeResponse } from '@/types';
@@ -83,6 +91,8 @@ export default function SettingsScreen() {
   const p = useThemePalette();
   const [profile, setProfile] = useState<GetMeResponse>(null);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [photoSheetOpen, setPhotoSheetOpen] = useState(false);
+  const [photoUploading, setPhotoUploading] = useState(false);
   const legalLinks = getLegalLinks();
   const goalDisplay = formatCalorieGoal(profile?.calorieGoal ?? null);
 
@@ -121,8 +131,61 @@ export default function SettingsScreen() {
     void signOutUser();
   };
 
+  const refreshProfileFromServer = useCallback(() => {
+    if (!user) return;
+    void getMe()
+      .then(setProfile)
+      .catch((err) => logAppError('settings/refreshProfilePhoto', err));
+  }, [user]);
+
+  const handleChooseProfilePhoto = useCallback(() => {
+    if (!user) return;
+    setPhotoUploading(true);
+    void (async () => {
+      try {
+        const me = await uploadProfilePhoto();
+        if (me != null) {
+          setProfile(me);
+          showToast('Profile photo updated', 'success');
+        }
+        setPhotoSheetOpen(false);
+      } catch (err) {
+        const uploadMeta =
+          err instanceof ProfilePhotoError
+            ? {
+                profilePhotoCode: err.code,
+                profilePhotoHttpStatus: err.httpStatus,
+                profilePhotoDebugMeta: err.debugMeta,
+              }
+            : undefined;
+        logAppError('settings/profile-photo-upload', err, uploadMeta);
+        showToast(toUserProfilePhotoMessage(err), 'error');
+      } finally {
+        setPhotoUploading(false);
+      }
+    })();
+  }, [user]);
+
+  const handleRemoveProfilePhoto = useCallback(() => {
+    if (!user) return;
+    setPhotoUploading(true);
+    void (async () => {
+      try {
+        const me = await removeProfilePhoto();
+        setProfile(me);
+        showToast('Profile photo removed', 'success');
+        setPhotoSheetOpen(false);
+      } catch (err) {
+        logAppError('settings/profile-photo-remove', err);
+        showToast(toUserProfilePhotoMessage(err), 'error');
+      } finally {
+        setPhotoUploading(false);
+      }
+    })();
+  }, [user]);
+
   return (
-    <AppScreen>
+    <AppScreen forceLeafHeader>
       <View className="mb-2">
         <Text className="text-2xl font-bold text-foreground dark:text-darkForeground">
           Settings
@@ -136,9 +199,30 @@ export default function SettingsScreen() {
       <Card>
         <CardContent className="p-4">
           <View className="mb-3 flex-row items-center gap-3">
-            <View className="h-12 w-12 items-center justify-center rounded-full bg-primary/15 dark:bg-darkPrimary/25">
-              <User size={24} color={p.primary} />
-            </View>
+            <Pressable
+              onPress={() => user && setPhotoSheetOpen(true)}
+              disabled={!user || photoUploading}
+              className="active:opacity-80 disabled:opacity-50"
+              accessibilityLabel="Change profile photo"
+            >
+              <View className="relative h-12 w-12">
+                <Avatar
+                  photo={profile?.profilePhoto}
+                  name={user?.displayName}
+                  email={user?.email}
+                  size={48}
+                  onRefreshNeeded={refreshProfileFromServer}
+                />
+                {photoUploading ? (
+                  <View className="absolute inset-0 items-center justify-center rounded-full bg-background/70 dark:bg-darkBackground/70">
+                    <ActivityIndicator color={p.primary} />
+                  </View>
+                ) : null}
+                <View className="absolute -bottom-0.5 -right-0.5 h-5 w-5 items-center justify-center rounded-full border-2 border-background bg-primary dark:border-darkBackground dark:bg-darkPrimary">
+                  <Camera size={10} color={p.primaryForeground} />
+                </View>
+              </View>
+            </Pressable>
             <View className="flex-1">
               <Text className="text-lg font-semibold text-foreground dark:text-darkForeground">
                 Profile
@@ -278,6 +362,58 @@ export default function SettingsScreen() {
       <Text className="text-center text-xs text-muted-foreground dark:text-darkMutedForeground">
         Calorie Tracker v1.0
       </Text>
+
+      <Modal
+        visible={photoSheetOpen}
+        animationType="slide"
+        transparent
+        onRequestClose={() => {
+          if (!photoUploading) setPhotoSheetOpen(false);
+        }}
+      >
+        <Pressable
+          className="flex-1 justify-end bg-black/40"
+          onPress={() => {
+            if (!photoUploading) setPhotoSheetOpen(false);
+          }}
+        >
+          <Pressable
+            className="rounded-t-3xl bg-background p-4 pb-8 dark:bg-darkBackground"
+            onPress={(e) => e.stopPropagation()}
+          >
+            <Text className="mb-4 text-lg font-semibold text-foreground dark:text-darkForeground">
+              Profile photo
+            </Text>
+            <Pressable
+              onPress={handleChooseProfilePhoto}
+              disabled={photoUploading}
+              className="rounded-xl bg-primary/10 py-3 active:opacity-70 dark:bg-darkPrimary/20"
+            >
+              <Text className="text-center text-base font-semibold text-foreground dark:text-darkForeground">
+                {photoUploading ? 'Working…' : 'Choose photo'}
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={handleRemoveProfilePhoto}
+              disabled={photoUploading || !profile?.profilePhoto}
+              className="mt-2 rounded-xl border border-border py-3 active:opacity-70 disabled:opacity-40 dark:border-darkBorder"
+            >
+              <Text className="text-center text-base font-semibold text-destructive dark:text-darkDestructiveForeground">
+                Remove photo
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={() => setPhotoSheetOpen(false)}
+              disabled={photoUploading}
+              className="mt-3 py-3 active:opacity-70"
+            >
+              <Text className="text-center text-base font-medium text-muted-foreground dark:text-darkMutedForeground">
+                Cancel
+              </Text>
+            </Pressable>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </AppScreen>
   );
 }
