@@ -26,6 +26,7 @@ import { getLegalLinks } from '@/lib/env';
 import { signOutUser } from '@/lib/firebase-auth';
 import { withNotificationDefaults } from '@/lib/notifications/defaults';
 import { useThemePalette } from '@/lib/use-theme-palette';
+import { cn } from '@/src/lib/cn';
 import type { GetMeResponse } from '@/types';
 
 type SettingsRowProps = {
@@ -72,8 +73,8 @@ function SettingsRow({ icon, label, value, onPress, showChevron, destructive }: 
   return content;
 }
 
-function SettingsDivider() {
-  return <View className="h-px bg-border/50 dark:bg-darkBorder/50" />;
+function SettingsDivider({ className }: { className?: string }) {
+  return <View className={cn('h-px bg-border/50 dark:bg-darkBorder/50', className)} />;
 }
 
 export default function SettingsScreen() {
@@ -88,7 +89,14 @@ export default function SettingsScreen() {
   useEffect(() => {
     if (!user) {
       setProfile(null);
+      return;
     }
+    void getMe()
+      .then(setProfile)
+      .catch((err) => {
+        logAppError('settings/getMe', err);
+        setProfile(null);
+      });
   }, [user]);
 
   useFocusEffect(
@@ -180,15 +188,21 @@ export default function SettingsScreen() {
               />
             </View>
           </Pressable>
+
+          {showNotifications ? (
+            <>
+              <SettingsDivider className="mt-4" />
+              <NotificationsSettings
+                initial={
+                  profile?.notifications ? withNotificationDefaults(profile.notifications) : null
+                }
+                onSaved={(me) => setProfile(me)}
+                embedded
+              />
+            </>
+          ) : null}
         </CardContent>
       </Card>
-
-      {showNotifications ? (
-        <NotificationsSettings
-          initial={profile?.notifications ? withNotificationDefaults(profile.notifications) : null}
-          onSaved={(me) => setProfile(me)}
-        />
-      ) : null}
 
       {/* Legal Section */}
       <Card>
