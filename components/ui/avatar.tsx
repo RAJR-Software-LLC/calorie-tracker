@@ -5,7 +5,7 @@ import { useThemePalette } from '@/lib/use-theme-palette';
 import type { UserProfilePhoto, UserProfilePhotoWithDownload } from '@/types';
 
 export type AvatarProps = {
-  photo?: UserProfilePhoto | UserProfilePhotoWithDownload | null;
+  photo?: UserProfilePhoto | UserProfilePhotoWithDownload | { downloadUrl: string } | null;
   name?: string | null;
   email?: string | null;
   size?: number;

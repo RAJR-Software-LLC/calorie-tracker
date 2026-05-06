@@ -156,11 +156,22 @@ export interface FamilyDocument {
   createdBy: string;
   members: string[];
   inviteCode: string;
+  memberProfiles?: FamilyMemberProfile[];
   createdAt: ApiTimestamp | unknown;
 }
 
 export interface FamilyWithId extends FamilyDocument {
   id: string;
+}
+
+export interface FamilyMemberProfilePhoto {
+  downloadUrl: string;
+}
+
+export interface FamilyMemberProfile {
+  uid: string;
+  displayName: string | null;
+  profilePhoto: FamilyMemberProfilePhoto | null;
 }
 
 export interface FamilySharedItemDocument {

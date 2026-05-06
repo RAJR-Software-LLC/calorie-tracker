@@ -1,17 +1,23 @@
 import { Share2, Users, UtensilsCrossed } from 'lucide-react-native';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Modal, Pressable, ScrollView, Text, View } from 'react-native';
 
 import { useAuth } from '@/components/auth/auth-provider';
+import { Avatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { getFamily, getFamilySharedItems, getSavedItems, postFamilySharedItem } from '@/lib/api';
+import { getFamily, getFamilySharedItems, getMe, getSavedItems, postFamilySharedItem } from '@/lib/api';
 import { logAppError, toUserErrorMessage } from '@/lib/app-errors';
 import { showToast } from '@/lib/toast';
 import { useThemePalette } from '@/lib/use-theme-palette';
 
-import type { FamilySharedItemWithId, FamilyWithId, SavedItemWithId } from '@/types';
+import type {
+  FamilySharedItemWithId,
+  FamilyWithId,
+  SavedItemWithId,
+  UserProfilePhotoWithDownload,
+} from '@/types';
 
 type SharedItemsListProps = {
   familyId: string;
@@ -19,22 +25,43 @@ type SharedItemsListProps = {
 
 export function SharedItemsList({ familyId }: SharedItemsListProps) {
   const p = useThemePalette();
+  const { user } = useAuth();
   const [sharedItems, setSharedItems] = useState<FamilySharedItemWithId[]>([]);
   const [family, setFamily] = useState<FamilyWithId | null>(null);
+  const [mePhoto, setMePhoto] = useState<UserProfilePhotoWithDownload | null>(null);
   const [loading, setLoading] = useState(true);
   const [shareOpen, setShareOpen] = useState(false);
+  const hasRetriedAvatarRefreshRef = useRef(false);
+
+  function toDownloadPhoto(
+    profilePhoto: unknown
+  ): UserProfilePhotoWithDownload | null {
+    if (
+      profilePhoto &&
+      typeof profilePhoto === 'object' &&
+      'downloadUrl' in profilePhoto &&
+      typeof profilePhoto.downloadUrl === 'string' &&
+      profilePhoto.downloadUrl.length > 0
+    ) {
+      return profilePhoto as UserProfilePhotoWithDownload;
+    }
+    return null;
+  }
 
   useEffect(() => {
     async function load() {
       if (!familyId) return;
       setLoading(true);
+      hasRetriedAvatarRefreshRef.current = false;
       try {
-        const [items, familyData] = await Promise.all([
+        const [items, familyData, me] = await Promise.all([
           getFamilySharedItems(familyId),
           getFamily(familyId),
+          getMe(),
         ]);
         setSharedItems(items);
         setFamily(familyData);
+        setMePhoto(toDownloadPhoto(me?.profilePhoto));
       } finally {
         setLoading(false);
       }
@@ -42,10 +69,43 @@ export function SharedItemsList({ familyId }: SharedItemsListProps) {
     void load();
   }, [familyId]);
 
+  async function refreshFamily() {
+    const familyData = await getFamily(familyId);
+    setFamily(familyData);
+  }
+
+  async function refreshMePhoto() {
+    const me = await getMe();
+    setMePhoto(toDownloadPhoto(me?.profilePhoto));
+  }
+
+  async function handleAvatarRefreshNeeded() {
+    if (hasRetriedAvatarRefreshRef.current) return;
+    hasRetriedAvatarRefreshRef.current = true;
+    try {
+      await Promise.all([refreshFamily(), refreshMePhoto()]);
+    } catch {
+      // Keep existing avatar fallback UI if refresh fails.
+    }
+  }
+
   async function refreshItems() {
     const items = await getFamilySharedItems(familyId);
     setSharedItems(items);
   }
+
+  const displayMembers =
+    family?.memberProfiles?.map((profile) => ({
+      uid: profile.uid,
+      displayName: profile.displayName,
+      photoUrl: profile.profilePhoto?.downloadUrl ?? null,
+    })) ??
+    family?.members?.map((uid) => ({
+      uid,
+      displayName: null,
+      photoUrl: null,
+    })) ??
+    [];
 
   if (loading) {
     return (
@@ -91,6 +151,49 @@ export function SharedItemsList({ familyId }: SharedItemsListProps) {
           </Text>
         </View>
       </Button>
+
+      <View className="gap-3">
+        <Text className="text-sm font-semibold text-foreground dark:text-darkForeground">
+          Family members
+        </Text>
+        {displayMembers.length === 0 ? (
+          <View className="rounded-xl border border-dashed border-border px-4 py-3 dark:border-darkBorder">
+            <Text className="text-sm text-muted-foreground dark:text-darkMutedForeground">
+              No members found.
+            </Text>
+          </View>
+        ) : (
+          <View className="gap-2">
+            {displayMembers.map((member) => {
+              const displayName = member.displayName?.trim() || '';
+              const isCurrentUser = user?.uid === member.uid;
+              const rowLabel = isCurrentUser ? 'Me' : displayName || 'Unknown member';
+              const avatarName = displayName || null;
+              const avatarPhoto = member.photoUrl
+                ? { downloadUrl: member.photoUrl }
+                : isCurrentUser
+                  ? mePhoto
+                  : null;
+              return (
+                <View
+                  key={member.uid}
+                  className="flex-row items-center gap-3 rounded-xl border border-border/50 bg-card px-4 py-3 shadow-sm dark:border-darkBorder dark:bg-darkCard"
+                >
+                  <Avatar
+                    size={36}
+                    name={avatarName}
+                    photo={avatarPhoto}
+                    onRefreshNeeded={handleAvatarRefreshNeeded}
+                  />
+                  <Text className="flex-1 text-sm font-medium text-foreground dark:text-darkForeground">
+                    {rowLabel}
+                  </Text>
+                </View>
+              );
+            })}
+          </View>
+        )}
+      </View>
 
       <View className="gap-3">
         <Text className="text-sm font-semibold text-foreground dark:text-darkForeground">
