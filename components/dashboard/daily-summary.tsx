@@ -1,6 +1,6 @@
+import { Dumbbell, Flame } from 'lucide-react-native';
 import { Text, View } from 'react-native';
 import Svg, { Circle, G } from 'react-native-svg';
-import { Dumbbell, Flame } from 'lucide-react-native';
 
 import { formatCalorieGoal, getCalorieGoalUpperTarget } from '@/lib/calorie-goal';
 import { useThemePalette } from '@/lib/use-theme-palette';

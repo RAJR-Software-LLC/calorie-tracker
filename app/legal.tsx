@@ -1,5 +1,5 @@
-import { Text, View } from 'react-native';
 import { Stack } from 'expo-router';
+import { Text, View } from 'react-native';
 
 import { AppScreen } from '@/components/layout/app-screen';
 
@@ -10,6 +10,7 @@ export default function LegalScreen() {
         options={{
           title: 'Legal Disclosures',
           headerBackTitle: 'Settings',
+          headerBackButtonDisplayMode: 'minimal',
         }}
       />
       <Text className="text-lg font-semibold text-foreground dark:text-darkForeground">Legal</Text>

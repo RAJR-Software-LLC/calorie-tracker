@@ -81,7 +81,10 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
     }
 
     const request = new Request(url, {
-      cache: 'no-store',
+      // Avoid `no-store` / `no-cache` here: whatwg-fetch (used on some RN targets)
+      // appends `&_=timestamp` to GET/HEAD URLs for cache busting, which breaks
+      // strict query validation on the API (e.g. GET /me/water?date=…).
+      cache: 'reload',
       ...rest,
       headers,
       body: json !== undefined ? JSON.stringify(json) : undefined,

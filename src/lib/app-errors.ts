@@ -40,8 +40,16 @@ function apiErrorUserMessage(err: ApiError): string {
   switch (err.status) {
     case 401:
       return 'Please sign in again.';
-    case 403:
+    case 403: {
+      const url = err.requestUrl ?? '';
+      if (url.includes('/me/water')) {
+        return 'Water tracking is turned off. Enable it in Settings to log water.';
+      }
+      if (url.includes('/me/exercise')) {
+        return 'Exercise logging is turned off. Enable it in Settings to log workouts.';
+      }
       return "You don't have permission to do that.";
+    }
     case 404:
       return "We couldn't find that resource.";
     case 409:
@@ -78,6 +86,13 @@ export function logAppError(context: string, err: unknown, meta?: Record<string,
   if (err instanceof ApiError) {
     payload.httpStatus = err.status;
     payload.apiBody = err.body;
+    if (err.body !== undefined) {
+      try {
+        payload.apiBodyJson = JSON.stringify(err.body);
+      } catch {
+        payload.apiBodyJson = '[unserializable]';
+      }
+    }
     if (err.requestUrl) {
       payload.requestUrl = err.requestUrl;
     }

@@ -1,6 +1,7 @@
 import { useAuth } from '@/components/auth/auth-provider';
 import { ExternalLink } from '@/components/ExternalLink';
 import { AppScreen } from '@/components/layout/app-screen';
+import { HabitsSettings } from '@/components/settings/habits-settings';
 import { NotificationsSettings } from '@/components/settings/notifications-settings';
 import { Avatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -35,7 +36,7 @@ import {
 import type { ActivityLevel, GetMeResponse, GoalType, HeightUnit, Sex, WeightUnit } from '@/types';
 import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
-import { Bell, Camera, ChevronRight, LogOut, Mail, Shield } from 'lucide-react-native';
+import { Bell, Camera, ChevronRight, Droplets, LogOut, Mail, Shield } from 'lucide-react-native';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Modal, Pressable, Text, View } from 'react-native';
 
@@ -147,6 +148,8 @@ export default function SettingsScreen() {
   const p = useThemePalette();
   const [profile, setProfile] = useState<GetMeResponse>(null);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [showProfile, setShowProfile] = useState(false);
+  const [showHabits, setShowHabits] = useState(false);
   const [photoSheetOpen, setPhotoSheetOpen] = useState(false);
   const [photoUploading, setPhotoUploading] = useState(false);
   const [heightUnit, setHeightUnit] = useState<HeightUnit>('cm');
@@ -536,7 +539,7 @@ export default function SettingsScreen() {
       {/* Profile Section */}
       <Card>
         <CardContent className="p-4">
-          <View className="mb-3 flex-row items-center gap-3">
+          <View className="flex-row items-center gap-3">
             <Pressable
               onPress={() => user && setPhotoSheetOpen(true)}
               disabled={!user || photoUploading}
@@ -561,20 +564,38 @@ export default function SettingsScreen() {
                 </View>
               </View>
             </Pressable>
-            <View className="flex-1">
-              <Text className="text-lg font-semibold text-foreground dark:text-darkForeground">
-                Profile
-              </Text>
-              <View className="flex-row items-center gap-1">
-                <Mail size={12} color={p.mutedForeground} />
-                <Text className="text-sm text-muted-foreground dark:text-darkMutedForeground">
-                  {user?.email ?? 'Not signed in'}
+            <Pressable
+              onPress={() => setShowProfile(!showProfile)}
+              className="min-w-0 flex-1 flex-row items-center gap-2 active:opacity-70"
+              accessibilityRole="button"
+              accessibilityLabel={showProfile ? 'Collapse profile section' : 'Expand profile section'}
+            >
+              <View className="min-w-0 flex-1">
+                <Text className="text-lg font-semibold text-foreground dark:text-darkForeground">
+                  Profile
                 </Text>
+                <View className="flex-row items-center gap-1">
+                  <Mail size={12} color={p.mutedForeground} />
+                  <Text
+                    className="text-sm text-muted-foreground dark:text-darkMutedForeground"
+                    numberOfLines={1}
+                  >
+                    {user?.email ?? 'Not signed in'}
+                  </Text>
+                </View>
               </View>
-            </View>
+              <ChevronRight
+                size={20}
+                color={p.mutedForeground}
+                style={{ transform: [{ rotate: showProfile ? '90deg' : '0deg' }] }}
+              />
+            </Pressable>
           </View>
-          <SettingsDivider />
-          <SettingsRow
+
+          {showProfile ? (
+            <>
+              <SettingsDivider className="mt-4" />
+              <SettingsRow
             label="Daily Goal"
             value={goalDisplay != null ? `${goalDisplay} kcal` : 'Not set'}
             onPress={() => router.push('/(tabs)/calculator')}
@@ -730,8 +751,59 @@ export default function SettingsScreen() {
           >
             {profileSaving ? 'Saving...' : 'Save profile'}
           </Button>
+            </>
+          ) : null}
         </CardContent>
       </Card>
+
+      {user && profile ? (
+        <Card>
+          <CardContent className="p-4">
+            <Pressable
+              onPress={() => setShowHabits(!showHabits)}
+              className="active:opacity-70"
+              accessibilityRole="button"
+              accessibilityLabel={
+                showHabits ? 'Collapse habits and water section' : 'Expand habits and water section'
+              }
+            >
+              <View className="flex-row items-center gap-3">
+                <View className="h-12 w-12 items-center justify-center rounded-full bg-primary/15 dark:bg-darkPrimary/25">
+                  <Droplets size={22} color={p.primary} />
+                </View>
+                <View className="min-w-0 flex-1">
+                  <Text className="text-lg font-semibold text-foreground dark:text-darkForeground">
+                    Habits and water
+                  </Text>
+                  <Text className="text-sm text-muted-foreground dark:text-darkMutedForeground">
+                    Optional tracking features
+                  </Text>
+                </View>
+                <ChevronRight
+                  size={20}
+                  color={p.mutedForeground}
+                  style={{ transform: [{ rotate: showHabits ? '90deg' : '0deg' }] }}
+                />
+              </View>
+            </Pressable>
+
+            {showHabits ? (
+              <>
+                <SettingsDivider className="mt-4" />
+                <HabitsSettings
+                  profile={profile}
+                  disabled={!user}
+                  embedded
+                  onUpdated={(me) => {
+                    setProfile(me);
+                    syncProfileInputs(me);
+                  }}
+                />
+              </>
+            ) : null}
+          </CardContent>
+        </Card>
+      ) : null}
 
       {/* Notifications Section */}
       <Card>

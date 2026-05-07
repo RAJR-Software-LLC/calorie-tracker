@@ -5,8 +5,10 @@ import type {
   FamilySharedItemWithId,
   FamilyWithId,
   GetMeResponse,
+  GetWaterDailyQuery,
   JoinFamilyResponse,
   PatchMeBody,
+  PatchMeWaterBody,
   PostEntryBody,
   PostExerciseBody,
   PostFamilyBody,
@@ -18,10 +20,13 @@ import type {
   PostPushTokenBody,
   PostPushTokenResponse,
   PostSavedItemBody,
+  PutMeWaterBody,
   SavedItemWithId,
+  WaterDailyWithId,
 } from '@/types';
 
 import { apiRequest } from './client';
+import { withWater429Retry } from './water-429-retry';
 
 export async function getMe(): Promise<GetMeResponse> {
   return apiRequest<GetMeResponse>('/me');
@@ -104,6 +109,30 @@ export async function postExercise(body: PostExerciseBody): Promise<{ id: string
 
 export async function deleteExercise(exerciseId: string): Promise<void> {
   await apiRequest<void>(`/me/exercise/${encodeURIComponent(exerciseId)}`, { method: 'DELETE' });
+}
+
+function normalizeWaterQueryDate(date: string): string {
+  return date.trim().replace(/\u2212/g, '-');
+}
+
+export async function getMeWater(query: GetWaterDailyQuery): Promise<WaterDailyWithId> {
+  const date = normalizeWaterQueryDate(query.date);
+  const params = new URLSearchParams({ date });
+  return withWater429Retry(() =>
+    apiRequest<WaterDailyWithId>(`/me/water?${params.toString()}`)
+  );
+}
+
+export async function putMeWater(body: PutMeWaterBody): Promise<WaterDailyWithId> {
+  return withWater429Retry(() =>
+    apiRequest<WaterDailyWithId>('/me/water', { method: 'PUT', json: body })
+  );
+}
+
+export async function patchMeWater(body: PatchMeWaterBody): Promise<WaterDailyWithId> {
+  return withWater429Retry(() =>
+    apiRequest<WaterDailyWithId>('/me/water', { method: 'PATCH', json: body })
+  );
 }
 
 export async function postFamily(body: PostFamilyBody): Promise<CreateFamilyResponse> {

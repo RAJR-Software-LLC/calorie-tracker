@@ -1,14 +1,15 @@
+import { Dumbbell, Plus, Trash2 } from 'lucide-react-native';
 import { useState } from 'react';
 import { KeyboardAvoidingView, Modal, Platform, Pressable, Text, View } from 'react-native';
-import { Dumbbell, Plus, Trash2 } from 'lucide-react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAuth } from '@/components/auth/auth-provider';
 import { useDashboard } from '@/components/dashboard/dashboard-context';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { logAppError, toUserErrorMessage } from '@/lib/app-errors';
 import { deleteExercise, postExercise } from '@/lib/api';
+import { logAppError, toUserErrorMessage } from '@/lib/app-errors';
 import { showToast } from '@/lib/toast';
 import { useThemePalette } from '@/lib/use-theme-palette';
 
@@ -19,8 +20,12 @@ type ExerciseSectionProps = {
 export function ExerciseSection({ date }: ExerciseSectionProps) {
   const p = useThemePalette();
   const { user } = useAuth();
-  const { exercises, refreshExercises } = useDashboard();
+  const { exercises, refreshExercises, habits } = useDashboard();
   const [open, setOpen] = useState(false);
+
+  if (habits.exerciseTrackingEnabled === false) {
+    return null;
+  }
 
   async function handleDelete(exerciseId: string) {
     if (!user) return;
@@ -37,9 +42,12 @@ export function ExerciseSection({ date }: ExerciseSectionProps) {
   return (
     <View className="gap-3">
       <View className="flex-row items-center justify-between">
-        <Text className="text-sm font-semibold text-foreground dark:text-darkForeground">
-          Exercise
-        </Text>
+        <View className="flex-row items-center gap-2">
+          <Dumbbell size={18} color={p.primary} />
+          <Text className="text-sm font-semibold text-foreground dark:text-darkForeground">
+            {"Today's exercise"}
+          </Text>
+        </View>
         <Pressable className="flex-row items-center gap-1" onPress={() => setOpen(true)}>
           <Plus size={16} color={p.primary} />
           <Text className="text-sm font-medium text-primary dark:text-darkPrimary">
@@ -94,6 +102,7 @@ function ExerciseModal({
   date: string;
 }) {
   const { user } = useAuth();
+  const insets = useSafeAreaInsets();
   const { refreshExercises } = useDashboard();
   const [name, setName] = useState('');
   const [caloriesBurned, setCaloriesBurned] = useState('');
@@ -133,7 +142,10 @@ function ExerciseModal({
         className="flex-1 justify-end bg-black/40"
       >
         <Pressable className="flex-1" onPress={() => onOpenChange(false)} />
-        <View className="rounded-t-3xl bg-card p-4 dark:bg-darkCard">
+        <View
+          className="rounded-t-3xl bg-card px-4 pt-4 dark:bg-darkCard"
+          style={{ paddingBottom: insets.bottom + 24 }}
+        >
           <Text className="text-xl font-semibold text-foreground dark:text-darkForeground">
             Log exercise
           </Text>

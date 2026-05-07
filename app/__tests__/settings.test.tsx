@@ -39,6 +39,10 @@ jest.mock('@/components/settings/notifications-settings', () => ({
   NotificationsSettings: () => null,
 }));
 
+jest.mock('@/components/settings/habits-settings', () => ({
+  HabitsSettings: () => null,
+}));
+
 jest.mock('@/components/ExternalLink', () => ({
   ExternalLink: ({ children }: { children: React.ReactNode }) => children,
 }));
@@ -132,6 +136,10 @@ function applyProfilePatch(
   return next;
 }
 
+async function expandProfileForEditing() {
+  fireEvent.press(screen.getByLabelText('Expand profile section'));
+}
+
 describe('SettingsScreen profile editing', () => {
   let serverMe: UserDocument;
 
@@ -155,6 +163,7 @@ describe('SettingsScreen profile editing', () => {
     render(<SettingsScreen />);
 
     await waitFor(() => expect(mockGetMe).toHaveBeenCalled());
+    expandProfileForEditing();
     expect(screen.getByText('Weight Goal')).toBeTruthy();
     expect(screen.getByText('Lose weight (coming soon)')).toBeTruthy();
     expect(screen.getByText('Legal Disclosures')).toBeTruthy();
@@ -164,6 +173,7 @@ describe('SettingsScreen profile editing', () => {
     render(<SettingsScreen />);
 
     await waitFor(() => expect(mockGetMe).toHaveBeenCalled());
+    expandProfileForEditing();
     const heightInput = screen.getByLabelText('Height (cm)');
     fireEvent.changeText(heightInput, '170');
     const weightInput = screen.getByLabelText('Weight (kg)');
@@ -184,6 +194,7 @@ describe('SettingsScreen profile editing', () => {
     render(<SettingsScreen />);
 
     await waitFor(() => expect(mockGetMe).toHaveBeenCalled());
+    expandProfileForEditing();
     fireEvent.changeText(screen.getByLabelText('Age'), '31');
     fireEvent.press(screen.getByText('female'));
     expect(mockPatchMe).not.toHaveBeenCalled();
@@ -209,6 +220,7 @@ describe('SettingsScreen profile editing', () => {
     render(<SettingsScreen />);
 
     await waitFor(() => expect(mockGetMe).toHaveBeenCalled());
+    expandProfileForEditing();
     fireEvent.changeText(screen.getByLabelText('Height feet'), '5');
     fireEvent.changeText(screen.getByLabelText('Height inches'), '12');
     fireEvent.press(screen.getByText('Save profile'));

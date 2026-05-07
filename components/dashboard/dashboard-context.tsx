@@ -1,22 +1,25 @@
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-  type ReactNode,
-} from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 
 import { useAuth } from '@/components/auth/auth-provider';
-import { getEntries, getExerciseForDate, getMe, getSavedItems } from '@/lib/api';
+import { getEntries, getExerciseForDate, getMe, getMeWater, getSavedItems } from '@/lib/api';
+import { ApiError } from '@/lib/api/errors';
 import { logAppError, toUserErrorMessage } from '@/lib/app-errors';
-import { formatDate } from '@/lib/date';
+import { formatDate, formatDateInTimeZone } from '@/lib/date';
 import { getFirebaseIdTokenForApi } from '@/lib/firebase';
 import { showToast } from '@/lib/toast';
-import type { CalorieEntryWithId, CalorieGoal, ExerciseWithId, SavedItemWithId } from '@/types';
+import { mergeUserHabits } from '@/lib/utils/user-habits';
+import type {
+  CalorieEntryWithId,
+  CalorieGoal,
+  ExerciseWithId,
+  SavedItemWithId,
+  UserHabits,
+  WaterDailyWithId,
+} from '@/types';
 
 interface DashboardContextType {
+  /** `YYYY-MM-DD` for entries, exercise, and water (aligned with `notifications.timezone` after load). */
+  calendarDay: string;
   entries: CalorieEntryWithId[];
   exercises: ExerciseWithId[];
   savedItems: SavedItemWithId[];
@@ -24,10 +27,13 @@ interface DashboardContextType {
   exerciseCalories: number;
   calorieGoal: CalorieGoal | null;
   maintenanceCalories: number | null;
+  habits: UserHabits;
+  waterDaily: WaterDailyWithId | null;
   loading: boolean;
   refreshEntries: () => Promise<void>;
   refreshExercises: () => Promise<void>;
   refreshSavedItems: () => Promise<void>;
+  refreshWater: () => Promise<void>;
   refreshAll: () => Promise<void>;
 }
 
@@ -40,21 +46,36 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   const [savedItems, setSavedItems] = useState<SavedItemWithId[]>([]);
   const [calorieGoal, setCalorieGoal] = useState<CalorieGoal | null>(null);
   const [maintenanceCalories, setMaintenanceCalories] = useState<number | null>(null);
+  const [habits, setHabits] = useState<UserHabits>(() => mergeUserHabits(undefined));
+  const [waterDaily, setWaterDaily] = useState<WaterDailyWithId | null>(null);
   const [loading, setLoading] = useState(true);
-
-  const today = useMemo(() => formatDate(new Date()), []);
+  const [calendarDay, setCalendarDay] = useState(() => formatDate(new Date()));
 
   const refreshEntries = useCallback(async () => {
     if (!user) return;
-    const data = await getEntries({ date: today });
+    const data = await getEntries({ date: calendarDay });
     setEntries(data);
-  }, [user, today]);
+  }, [user, calendarDay]);
 
   const refreshExercises = useCallback(async () => {
     if (!user) return;
-    const data = await getExerciseForDate(today);
+    if (habits.exerciseTrackingEnabled === false) {
+      setExercises([]);
+      return;
+    }
+    const data = await getExerciseForDate(calendarDay);
     setExercises(data);
-  }, [user, today]);
+  }, [user, calendarDay, habits.exerciseTrackingEnabled]);
+
+  const refreshWater = useCallback(async () => {
+    if (!user) return;
+    if (habits.waterTrackingEnabled === false) {
+      setWaterDaily(null);
+      return;
+    }
+    const row = await getMeWater({ date: calendarDay });
+    setWaterDaily(row);
+  }, [user, calendarDay, habits.waterTrackingEnabled]);
 
   const refreshSavedItems = useCallback(async () => {
     if (!user) return;
@@ -67,17 +88,44 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     setLoading(true);
     try {
       await getFirebaseIdTokenForApi({ forceRefresh: true });
-      const [entriesData, exercisesData, savedData, profile] = await Promise.all([
-        getEntries({ date: today }),
-        getExerciseForDate(today),
+      const profile = await getMe();
+      const tz = profile?.notifications?.timezone ?? 'UTC';
+      const day = formatDateInTimeZone(new Date(), tz);
+      setCalendarDay(day);
+
+      const h = mergeUserHabits(profile?.habits);
+      setHabits(h);
+
+      const [entriesData, savedData] = await Promise.all([
+        getEntries({ date: day }),
         getSavedItems(),
-        getMe(),
       ]);
       setEntries(entriesData);
-      setExercises(exercisesData);
       setSavedItems(savedData);
       setCalorieGoal(profile?.calorieGoal ?? null);
       setMaintenanceCalories(profile?.maintenanceCalories ?? null);
+
+      const exercisesData =
+        h.exerciseTrackingEnabled === false ? [] : await getExerciseForDate(day);
+      setExercises(exercisesData);
+
+      let waterRow: WaterDailyWithId | null = null;
+      if (h.waterTrackingEnabled !== false) {
+        try {
+          waterRow = await getMeWater({ date: day });
+        } catch (err) {
+          logAppError('dashboard/getMeWater', err, { date: day, timezone: tz });
+          if (err instanceof ApiError && (err.status === 400 || err.status === 422)) {
+            showToast(
+              toUserErrorMessage(err, 'Could not load water for this day. Check your profile timezone in Settings.'),
+              'error'
+            );
+          } else {
+            throw err;
+          }
+        }
+      }
+      setWaterDaily(waterRow);
     } catch (err) {
       logAppError('dashboard/refreshAll', err);
       showToast(
@@ -87,7 +135,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     } finally {
       setLoading(false);
     }
-  }, [user, today]);
+  }, [user]);
 
   useEffect(() => {
     if (!user) {
@@ -96,6 +144,9 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       setSavedItems([]);
       setCalorieGoal(null);
       setMaintenanceCalories(null);
+      setHabits(mergeUserHabits(undefined));
+      setWaterDaily(null);
+      setCalendarDay(formatDate(new Date()));
       setLoading(false);
       return;
     }
@@ -107,6 +158,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo(
     () => ({
+      calendarDay,
       entries,
       exercises,
       savedItems,
@@ -114,13 +166,17 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       exerciseCalories,
       calorieGoal,
       maintenanceCalories,
+      habits,
+      waterDaily,
       loading,
       refreshEntries,
       refreshExercises,
       refreshSavedItems,
+      refreshWater,
       refreshAll,
     }),
     [
+      calendarDay,
       entries,
       exercises,
       savedItems,
@@ -128,10 +184,13 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       exerciseCalories,
       calorieGoal,
       maintenanceCalories,
+      habits,
+      waterDaily,
       loading,
       refreshEntries,
       refreshExercises,
       refreshSavedItems,
+      refreshWater,
       refreshAll,
     ]
   );

@@ -12,7 +12,9 @@ This file is copied from **calorie-tracker-backend** so the mobile app uses the 
 
 | Type                                                  | Meaning                                                                                                              |
 | ----------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| `UserDocument`                                        | Profile row for the signed-in user (`GET/PATCH /api/v1/me`). Includes `profile`, goals, `familyId`, `notifications`. |
+| `UserDocument`                                        | Profile row for the signed-in user (`GET/PATCH /api/v1/me`). Includes `profile`, goals, `familyId`, `notifications`, optional `habits`. |
+| `UserHabits` / `PatchUserHabitsBody`                  | Optional habits under `PATCH /api/v1/me` (`exercise` / `water` toggles, water units & goals). |
+| `WaterDailyDocument` / `WaterDailyWithId`             | Daily water row; `GET/PUT/PATCH /api/v1/me/water`. |
 | `CalorieEntryDocument` / `CalorieEntryWithId`         | Food log line items; list + create + delete under `/api/v1/me/entries`.                                              |
 | `SavedItemDocument` / `SavedItemWithId`               | Reusable items; `/api/v1/me/saved-items` plus usage increment.                                                       |
 | `ExerciseDocument` / `ExerciseWithId`                 | Exercise log lines; `/api/v1/me/exercise`.                                                                           |
@@ -28,7 +30,8 @@ This file is copied from **calorie-tracker-backend** so the mobile app uses the 
 | Type                                                               | Endpoint                                                    |
 | ------------------------------------------------------------------ | ----------------------------------------------------------- | ----- |
 | `GetMeResponse`                                                    | `GET /api/v1/me` — `UserDocument                            | null` |
-| `PatchMeBody`                                                      | `PATCH /api/v1/me` — partial update; `notifications` merges |
+| `PatchMeBody`                                                      | `PATCH /api/v1/me` — partial update; `notifications` merges; optional `habits` |
+| `GetWaterDailyQuery`, `PutMeWaterBody`, `PatchMeWaterBody`          | Water daily read / idempotent set / delta update |
 | `PostEntryBody`, `PostSavedItemBody`, `PostExerciseBody`           | POST bodies for entries, saved items, exercise              |
 | `PostFamilyBody`, `PostJoinFamilyBody`, `PostFamilySharedItemBody` | Family create/join/shared item                              |
 | `CreateFamilyResponse`, `JoinFamilyResponse`                       | JSON bodies returned from family POST routes                |

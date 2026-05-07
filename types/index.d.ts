@@ -19,6 +19,66 @@ export type GoalType = 'lose' | 'gain' | 'maintain';
 export type HeightUnit = 'cm' | 'ft_in';
 export type WeightUnit = 'kg' | 'lb';
 
+/** Volume units for daily water totals (`GET/PATCH/PUT /api/v1/me/water`, `habits`). */
+export type WaterUnit = 'ml' | 'l' | 'oz_us' | 'oz_imperial' | 'cup_us';
+
+/** Account-level optional habits; `calorieTrackingEnabled` is always on server-side. */
+export interface UserHabits {
+  calorieTrackingEnabled: boolean;
+  exerciseTrackingEnabled: boolean;
+  waterTrackingEnabled: boolean;
+  waterDefaultUnit: WaterUnit;
+  waterGoalAmount: number | null;
+  waterGoalUnit: WaterUnit | null;
+}
+
+/** Fields clients may send in `PATCH /api/v1/me` under `habits` (no calorie toggle off). */
+export type PatchUserHabitsBody = Partial<
+  Pick<
+    UserHabits,
+    | 'exerciseTrackingEnabled'
+    | 'waterTrackingEnabled'
+    | 'waterDefaultUnit'
+    | 'waterGoalAmount'
+    | 'waterGoalUnit'
+  >
+>;
+
+/** `users/{uid}/waterDaily/{date}` — REST JSON uses ISO strings for timestamps. */
+export interface WaterDailyDocument {
+  date: DateString;
+  totalAmount: number;
+  unit: WaterUnit;
+  goalAmount: number | null;
+  goalUnit: WaterUnit | null;
+  createdAt?: ApiTimestamp | unknown;
+  updatedAt?: ApiTimestamp | unknown;
+}
+
+/** `GET /api/v1/me/water` always returns `id` equal to `date`. */
+export interface WaterDailyWithId extends WaterDailyDocument {
+  id: string;
+}
+
+/** Query for `GET /api/v1/me/water` — `date` is required (strict YYYY-MM-DD). */
+export interface GetWaterDailyQuery {
+  date: DateString;
+}
+
+/** `PUT /api/v1/me/water` — idempotent daily total; strict schema (no unknown keys). */
+export interface PutMeWaterBody {
+  date: DateString;
+  totalAmount: number;
+  unit: WaterUnit;
+  goalAmount: number | null;
+  goalUnit: WaterUnit | null;
+}
+
+/** `PATCH /api/v1/me/water` — delta in the same unit the server expects for the bucket (see API docs). */
+export interface PatchMeWaterBody {
+  deltaAmount: number;
+}
+
 export type CalorieGoal =
   | { mode: 'single'; target: number }
   | { mode: 'range'; min: number; max: number };
@@ -129,6 +189,8 @@ export interface UserDocument {
   goalType: GoalType | null;
   familyId: string | null;
   notifications: NotificationsSettings;
+  /** Optional until all accounts migrated; merge with client defaults when absent. */
+  habits?: UserHabits;
 }
 
 export interface CalorieEntryDocument {
@@ -215,6 +277,7 @@ export interface PatchMeBody {
   goalType?: GoalType | null;
   familyId?: string | null;
   notifications?: PatchNotificationsBody;
+  habits?: PatchUserHabitsBody;
 }
 
 export interface PostEntryBody {

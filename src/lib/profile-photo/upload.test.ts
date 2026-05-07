@@ -54,6 +54,8 @@ function makeUser(overrides: Partial<UserDocument> = {}): UserDocument {
     profile: {
       heightCm: null,
       weightKg: null,
+      heightUnit: 'cm',
+      weightUnit: 'kg',
       age: null,
       sex: null,
       activityLevel: null,

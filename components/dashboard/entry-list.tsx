@@ -1,11 +1,11 @@
-import { Text, View } from 'react-native';
 import { Trash2, UtensilsCrossed } from 'lucide-react-native';
+import { Text, View } from 'react-native';
 
 import { useAuth } from '@/components/auth/auth-provider';
 import { useDashboard } from '@/components/dashboard/dashboard-context';
 import { Button } from '@/components/ui/button';
-import { logAppError, toUserErrorMessage } from '@/lib/app-errors';
 import { deleteEntry } from '@/lib/api';
+import { logAppError, toUserErrorMessage } from '@/lib/app-errors';
 import { showToast } from '@/lib/toast';
 import { useThemePalette } from '@/lib/use-theme-palette';
 
@@ -29,9 +29,12 @@ export function EntryList() {
   if (loading) {
     return (
       <View className="gap-3">
-        <Text className="text-sm font-semibold text-foreground dark:text-darkForeground">
-          Today&apos;s meals
-        </Text>
+        <View className="flex-row items-center gap-2">
+          <UtensilsCrossed size={18} color={p.primary} />
+          <Text className="text-sm font-semibold text-foreground dark:text-darkForeground">
+            {"Today's meals"}
+          </Text>
+        </View>
         {[1, 2].map((i) => (
           <View key={i} className="h-16 rounded-xl bg-muted dark:bg-darkMuted" />
         ))}
@@ -41,9 +44,12 @@ export function EntryList() {
 
   return (
     <View className="gap-3">
-      <Text className="text-sm font-semibold text-foreground dark:text-darkForeground">
-        Today&apos;s meals
-      </Text>
+      <View className="flex-row items-center gap-2">
+        <UtensilsCrossed size={18} color={p.primary} />
+        <Text className="text-sm font-semibold text-foreground dark:text-darkForeground">
+          {"Today's meals"}
+        </Text>
+      </View>
 
       {entries.length === 0 ? (
         <View className="items-center gap-2 rounded-xl border border-dashed border-border py-8 dark:border-darkBorder">

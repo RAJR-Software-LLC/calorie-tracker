@@ -1,3 +1,4 @@
+import { NavigationContainer } from '@react-navigation/native';
 import { render, screen } from '@testing-library/react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
@@ -9,13 +10,15 @@ import DashboardScreen from '@/app/(tabs)/index';
 describe('DashboardScreen', () => {
   it('renders dashboard title', () => {
     render(
-      <SafeAreaProvider>
-        <AuthProvider>
-          <DashboardProvider>
-            <DashboardScreen />
-          </DashboardProvider>
-        </AuthProvider>
-      </SafeAreaProvider>
+      <NavigationContainer>
+        <SafeAreaProvider>
+          <AuthProvider>
+            <DashboardProvider>
+              <DashboardScreen />
+            </DashboardProvider>
+          </AuthProvider>
+        </SafeAreaProvider>
+      </NavigationContainer>
     );
     expect(screen.getByText('Dashboard')).toBeTruthy();
   });

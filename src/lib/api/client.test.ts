@@ -41,6 +41,8 @@ describe('apiRequest', () => {
 
     expect(result.ok).toBe(true);
     expect(fetchMock).toHaveBeenCalledTimes(2);
+    const firstReq = fetchMock.mock.calls[0][0] as Request;
+    expect(firstReq.cache).toBe('reload');
   });
 
   it('throws ApiError with request URL when response is non-ok', async () => {

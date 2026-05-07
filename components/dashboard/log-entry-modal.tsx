@@ -9,6 +9,7 @@ import {
   Text,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { format, parseISO } from 'date-fns';
 import { Plus, Search } from 'lucide-react-native';
 
@@ -31,7 +32,9 @@ export type LogEntryModalProps = {
 };
 
 export function LogEntryModal({ open, onOpenChange, date, onLogged }: LogEntryModalProps) {
-  const isToday = date === new Date().toISOString().split('T')[0];
+  const { calendarDay } = useDashboard();
+  const insets = useSafeAreaInsets();
+  const isToday = date === calendarDay;
   const dateLabel = isToday ? 'today' : format(parseISO(date), 'MMM d');
 
   return (
@@ -46,7 +49,10 @@ export function LogEntryModal({ open, onOpenChange, date, onLogged }: LogEntryMo
         className="flex-1 justify-end bg-black/40"
       >
         <Pressable className="flex-1" onPress={() => onOpenChange(false)} />
-        <View className="max-h-[90%] rounded-t-3xl bg-card p-4 dark:bg-darkCard">
+        <View
+          className="max-h-[90%] rounded-t-3xl bg-card px-4 pt-4 dark:bg-darkCard"
+          style={{ paddingBottom: insets.bottom + 24 }}
+        >
           <Text className="text-2xl font-semibold text-foreground dark:text-darkForeground">
             Log a meal
           </Text>
