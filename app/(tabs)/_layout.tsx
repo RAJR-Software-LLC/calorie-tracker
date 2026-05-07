@@ -1,9 +1,35 @@
 import { Tabs } from 'expo-router';
 import { Calculator, Calendar, Home, Settings, Users } from 'lucide-react-native';
+import { Platform, View } from 'react-native';
 
 import { DashboardProvider } from '@/components/dashboard/dashboard-context';
 import { useColorScheme } from '@/components/useColorScheme';
 import { dark, light } from '@/theme';
+
+function TabIcon({
+  Icon,
+  color,
+  focused,
+  activeColor,
+}: {
+  Icon: typeof Home;
+  color: string;
+  focused: boolean;
+  activeColor: string;
+}) {
+  return (
+    <View className="items-center justify-center">
+      <View
+        className={`items-center justify-center rounded-2xl px-5 py-2 ${focused ? 'bg-primary/15 dark:bg-darkPrimary/20' : ''}`}
+      >
+        <Icon color={focused ? activeColor : color} size={22} strokeWidth={focused ? 2.5 : 1.8} />
+      </View>
+      {focused ? (
+        <View className="mt-1 h-1 w-1 rounded-full bg-primary dark:bg-darkPrimary" />
+      ) : null}
+    </View>
+  );
+}
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
@@ -17,13 +43,25 @@ export default function TabLayout() {
           headerShown: false,
           tabBarActiveTintColor: p.primary,
           tabBarInactiveTintColor: p.mutedForeground,
+          tabBarShowLabel: false,
           tabBarStyle: {
-            backgroundColor: p.background,
-            borderTopColor: p.border,
+            position: 'absolute',
+            bottom: Platform.OS === 'ios' ? 28 : 16,
+            left: 20,
+            right: 20,
+            height: 64,
+            backgroundColor: isDark ? p.card : '#ffffff',
+            borderRadius: 32,
+            borderTopWidth: 0,
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: isDark ? 0.3 : 0.1,
+            shadowRadius: 12,
+            elevation: 8,
+            paddingHorizontal: 8,
           },
-          tabBarLabelStyle: {
-            fontSize: 11,
-            fontWeight: '600',
+          tabBarItemStyle: {
+            paddingVertical: 8,
           },
         }}
       >
@@ -31,35 +69,45 @@ export default function TabLayout() {
           name="index"
           options={{
             title: 'Dashboard',
-            tabBarIcon: ({ color, size }) => <Home color={color} size={size} />,
+            tabBarIcon: ({ color, focused }) => (
+              <TabIcon Icon={Home} color={color} focused={focused} activeColor={p.primary} />
+            ),
           }}
         />
         <Tabs.Screen
           name="calendar"
           options={{
             title: 'Calendar',
-            tabBarIcon: ({ color, size }) => <Calendar color={color} size={size} />,
+            tabBarIcon: ({ color, focused }) => (
+              <TabIcon Icon={Calendar} color={color} focused={focused} activeColor={p.primary} />
+            ),
           }}
         />
         <Tabs.Screen
           name="calculator"
           options={{
             title: 'Calculator',
-            tabBarIcon: ({ color, size }) => <Calculator color={color} size={size} />,
+            tabBarIcon: ({ color, focused }) => (
+              <TabIcon Icon={Calculator} color={color} focused={focused} activeColor={p.primary} />
+            ),
           }}
         />
         <Tabs.Screen
           name="family"
           options={{
             title: 'Family',
-            tabBarIcon: ({ color, size }) => <Users color={color} size={size} />,
+            tabBarIcon: ({ color, focused }) => (
+              <TabIcon Icon={Users} color={color} focused={focused} activeColor={p.primary} />
+            ),
           }}
         />
         <Tabs.Screen
           name="settings"
           options={{
             title: 'Settings',
-            tabBarIcon: ({ color, size }) => <Settings color={color} size={size} />,
+            tabBarIcon: ({ color, focused }) => (
+              <TabIcon Icon={Settings} color={color} focused={focused} activeColor={p.primary} />
+            ),
           }}
         />
       </Tabs>
