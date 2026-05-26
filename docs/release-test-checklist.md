@@ -16,6 +16,12 @@
   - Create log entry.
   - Edit log entry.
   - Delete log entry.
+  - Saved food combobox shows personal + family rows with badges.
+- Saved foods (see [`docs/saved-foods.md`](saved-foods.md)):
+  - Settings → Saved foods lists personal items alphabetically.
+  - Edit/delete send `If-Unmodified-Since`; stale 409 refreshes list.
+  - Duplicate name 409 keeps edit form open with inline error.
+  - Unknown-calorie personal items show toggle in edit UI.
 - Calculator:
   - Quick calculator returns expected calorie estimate.
   - Advanced calculator handles edge inputs without crashes.

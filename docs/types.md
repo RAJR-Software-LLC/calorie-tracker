@@ -16,7 +16,7 @@ Backend types are copied into [`types/index.d.ts`](../types/index.d.ts) via `npm
 | `HabitsSettings` / `UserHabits` (client alias)        | Optional habits under `PATCH /api/v1/me` (`exercise` / `water` toggles, water units & goals).                                           |
 | `WaterDailyDocument` / `WaterDailyWithId`             | Daily water row; `GET/PUT/PATCH /api/v1/me/water`.                                                                                      |
 | `CalorieEntryDocument` / `CalorieEntryWithId`         | Food log line items; list + create + delete under `/api/v1/me/entries`.                                                                 |
-| `SavedItemDocument` / `SavedItemWithId`               | Reusable items; `/api/v1/me/saved-items` plus usage increment.                                                                          |
+| `SavedItemDocument` / `SavedItemWithId`               | Reusable items; `/api/v1/me/saved-items` (GET/POST/PATCH/DELETE with `If-Unmodified-Since` on mutations). See [`docs/saved-foods.md`](saved-foods.md). |
 | `ExerciseDocument` / `ExerciseWithId`                 | Exercise log lines; `/api/v1/me/exercise`.                                                                                              |
 | `ExercisePreset` / `GetExercisePresetsResponse`       | Curated preset catalog from `GET /api/v1/me/exercise/presets`.                                                                          |
 | `PostExerciseBulkBody` / `BulkExerciseResult`         | Native sync bulk upload to `/api/v1/me/exercise/bulk`.                                                                                  |

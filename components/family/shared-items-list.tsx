@@ -15,6 +15,7 @@ import {
   postFamilySharedItem,
 } from '@/lib/api';
 import { logAppError, toUserErrorMessage } from '@/lib/app-errors';
+import { isKnownCalories } from '@/lib/utils/saved-items';
 import { showToast } from '@/lib/toast';
 import { useThemePalette } from '@/lib/use-theme-palette';
 
@@ -271,6 +272,10 @@ function ShareItemModal({
   }, [open, user]);
 
   function selectMyItem(item: SavedItemWithId) {
+    if (!isKnownCalories(item.defaultCalories)) {
+      showToast('Set a calorie amount before sharing with family.', 'error');
+      return;
+    }
     setItemName(item.itemName);
     setQuantity(String(item.defaultQuantity));
     setCalories(String(item.defaultCalories));
@@ -278,12 +283,17 @@ function ShareItemModal({
 
   async function handleShare() {
     if (!user || !itemName.trim() || !calories) return;
+    const calRaw = Number(calories);
+    if (!Number.isFinite(calRaw) || calRaw < 0) {
+      showToast('Enter a valid calorie amount to share.', 'error');
+      return;
+    }
     setLoading(true);
     try {
       await postFamilySharedItem(familyId, {
         itemName: itemName.trim(),
         defaultQuantity: Number(quantity) || 1,
-        defaultCalories: Number(calories),
+        defaultCalories: calRaw,
         sharedByName: user.displayName || 'A family member',
       });
       showToast('Item shared with family!', 'success');
@@ -324,7 +334,10 @@ function ShareItemModal({
               <View className="mb-4 gap-2">
                 <Label>From my items</Label>
                 <View className="flex-row flex-wrap gap-2">
-                  {myItems.slice(0, 6).map((item) => (
+                  {myItems
+                    .filter((item) => isKnownCalories(item.defaultCalories))
+                    .slice(0, 6)
+                    .map((item) => (
                     <Pressable
                       key={item.id}
                       className={`rounded-full border px-3 py-1.5 ${

@@ -43,6 +43,10 @@ jest.mock('@/components/settings/habits-settings', () => ({
   HabitsSettings: () => null,
 }));
 
+jest.mock('@/components/settings/saved-foods-management-modal', () => ({
+  SavedFoodsManagementModal: () => null,
+}));
+
 jest.mock('@/components/ExternalLink', () => ({
   ExternalLink: ({ children }: { children: React.ReactNode }) => children,
 }));

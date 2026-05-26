@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   KeyboardAvoidingView,
   Modal,
@@ -21,6 +21,13 @@ import { Label } from '@/components/ui/label';
 import { logAppError, toUserErrorMessage } from '@/lib/app-errors';
 import { patchSavedItemUsage, postEntry, postSavedItem } from '@/lib/api';
 import { getAfterLogMessage } from '@/lib/utils/messages';
+import {
+  formatSavedItemCalories,
+  formatFamilySharerLabel,
+  isKnownCalories,
+  mergeSavedFoodSuggestions,
+  type SavedFoodSuggestion,
+} from '@/lib/utils/saved-items';
 import { showToast } from '@/lib/toast';
 import { useThemePalette } from '@/lib/use-theme-palette';
 
@@ -77,10 +84,72 @@ export function LogEntryModal({ open, onOpenChange, date, onLogged }: LogEntryMo
   );
 }
 
+function SourceBadge({ source }: { source: SavedFoodSuggestion['source'] }) {
+  const isFamily = source === 'family';
+  return (
+    <View
+      className={`rounded-full px-2 py-0.5 ${isFamily ? 'bg-accent/20 dark:bg-darkAccent/25' : 'bg-primary/10 dark:bg-darkPrimary/20'}`}
+    >
+      <Text className="text-[10px] font-semibold uppercase tracking-wide text-foreground dark:text-darkForeground">
+        {isFamily ? 'Family' : 'Personal'}
+      </Text>
+    </View>
+  );
+}
+
+function SuggestionRow({
+  suggestion,
+  currentUserId,
+  onSelect,
+}: {
+  suggestion: SavedFoodSuggestion;
+  currentUserId: string | undefined;
+  onSelect: (suggestion: SavedFoodSuggestion) => void;
+}) {
+  const { item, source } = suggestion;
+  const caloriesLabel = formatSavedItemCalories(item.defaultCalories, item.defaultQuantity);
+  const isUnknown = !isKnownCalories(item.defaultCalories);
+  const sharerLabel =
+    source === 'family'
+      ? formatFamilySharerLabel(item.sharedBy, item.sharedByName, currentUserId)
+      : null;
+
+  return (
+    <Pressable
+      className="flex-row items-center gap-2 px-3 py-2.5"
+      onPress={() => onSelect(suggestion)}
+    >
+      <View className="min-w-0 flex-1 gap-0.5">
+        <View className="flex-row items-center gap-2">
+          <Text
+            className="shrink text-sm font-medium text-foreground dark:text-darkForeground"
+            numberOfLines={1}
+          >
+            {item.itemName}
+          </Text>
+          <SourceBadge source={source} />
+        </View>
+        <View className="flex-row flex-wrap items-center gap-x-2">
+          <Text
+            className={`text-xs ${isUnknown ? 'text-muted-foreground dark:text-darkMutedForeground' : 'text-muted-foreground dark:text-darkMutedForeground'}`}
+          >
+            {caloriesLabel}
+          </Text>
+          {sharerLabel ? (
+            <Text className="text-xs text-muted-foreground dark:text-darkMutedForeground">
+              · Shared by {sharerLabel}
+            </Text>
+          ) : null}
+        </View>
+      </View>
+    </Pressable>
+  );
+}
+
 function LogEntryForm({ date, onSuccess }: { date: string; onSuccess: () => void }) {
   const p = useThemePalette();
   const { user } = useAuth();
-  const { savedItems, refreshEntries, refreshSavedItems } = useDashboard();
+  const { savedItems, familySharedItems, refreshEntries, refreshSavedItems } = useDashboard();
   const [itemName, setItemName] = useState('');
   const [quantity, setQuantity] = useState('1');
   const [calories, setCalories] = useState('');
@@ -88,14 +157,20 @@ function LogEntryForm({ date, onSuccess }: { date: string; onSuccess: () => void
   const [loading, setLoading] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
 
-  const filteredItems = savedItems.filter((item) =>
-    item.itemName.toLowerCase().includes(itemName.toLowerCase())
+  const suggestions = useMemo(
+    () => mergeSavedFoodSuggestions(savedItems, familySharedItems, itemName),
+    [savedItems, familySharedItems, itemName]
   );
 
-  function selectSavedItem(item: (typeof savedItems)[0]) {
+  function selectSuggestion(suggestion: SavedFoodSuggestion) {
+    const { item } = suggestion;
     setItemName(item.itemName);
     setQuantity(String(item.defaultQuantity));
-    setCalories(String(item.defaultCalories));
+    if (isKnownCalories(item.defaultCalories)) {
+      setCalories(String(item.defaultCalories));
+    } else {
+      setCalories('');
+    }
     setShowSuggestions(false);
   }
 
@@ -174,24 +249,18 @@ function LogEntryForm({ date, onSuccess }: { date: string; onSuccess: () => void
             onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
           />
         </View>
-        {showSuggestions && itemName.length > 0 && filteredItems.length > 0 && (
-          <View className="absolute left-0 right-0 top-[76px] z-20 rounded-lg border border-border bg-background shadow-lg dark:border-darkBorder dark:bg-darkBackground">
-            {filteredItems.slice(0, 5).map((item) => (
-              <Pressable
-                key={item.id}
-                className="flex-row items-center justify-between px-3 py-2"
-                onPress={() => selectSavedItem(item)}
-              >
-                <Text className="text-sm text-foreground dark:text-darkForeground">
-                  {item.itemName}
-                </Text>
-                <Text className="text-xs text-muted-foreground dark:text-darkMutedForeground">
-                  ~{item.defaultCalories} cal
-                </Text>
-              </Pressable>
+        {showSuggestions && itemName.length > 0 && suggestions.length > 0 ? (
+          <View className="absolute left-0 right-0 top-[76px] z-20 overflow-hidden rounded-lg border border-border bg-background shadow-lg dark:border-darkBorder dark:bg-darkBackground">
+            {suggestions.map((suggestion) => (
+              <SuggestionRow
+                key={`${suggestion.source}-${suggestion.item.id}`}
+                suggestion={suggestion}
+                currentUserId={user?.uid}
+                onSelect={selectSuggestion}
+              />
             ))}
           </View>
-        )}
+        ) : null}
       </View>
 
       <View className="flex-row gap-3">
@@ -233,3 +302,5 @@ function LogEntryForm({ date, onSuccess }: { date: string; onSuccess: () => void
     </View>
   );
 }
+
+export { LogEntryForm, SuggestionRow, SourceBadge };

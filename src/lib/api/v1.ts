@@ -23,6 +23,7 @@ import type {
   PostProfilePhotoUploadUrlResponse,
   PostPushTokenBody,
   PostPushTokenResponse,
+  PatchSavedItemBody,
   PostSavedItemBody,
   PutMeWaterBody,
   SavedItemWithId,
@@ -98,8 +99,23 @@ export async function patchSavedItemUsage(itemId: string): Promise<void> {
   });
 }
 
-export async function deleteSavedItem(itemId: string): Promise<void> {
-  await apiRequest<void>(`/me/saved-items/${encodeURIComponent(itemId)}`, { method: 'DELETE' });
+export async function patchSavedItem(
+  itemId: string,
+  body: PatchSavedItemBody,
+  ifUnmodifiedSince: string
+): Promise<void> {
+  await apiRequest<void>(`/me/saved-items/${encodeURIComponent(itemId)}`, {
+    method: 'PATCH',
+    json: body,
+    headers: { 'If-Unmodified-Since': ifUnmodifiedSince },
+  });
+}
+
+export async function deleteSavedItem(itemId: string, ifUnmodifiedSince: string): Promise<void> {
+  await apiRequest<void>(`/me/saved-items/${encodeURIComponent(itemId)}`, {
+    method: 'DELETE',
+    headers: { 'If-Unmodified-Since': ifUnmodifiedSince },
+  });
 }
 
 export async function getExerciseForDate(date: string): Promise<ExerciseWithId[]> {

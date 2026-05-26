@@ -3,6 +3,7 @@ import { ExternalLink } from '@/components/ExternalLink';
 import { AppScreen } from '@/components/layout/app-screen';
 import { HabitsSettings } from '@/components/settings/habits-settings';
 import { NotificationsSettings } from '@/components/settings/notifications-settings';
+import { SavedFoodsManagementModal } from '@/components/settings/saved-foods-management-modal';
 import { Avatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -36,7 +37,7 @@ import {
 import type { ActivityLevel, GetMeResponse, GoalType, HeightUnit, Sex, WeightUnit } from '@/types';
 import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
-import { Bell, Camera, ChevronRight, Droplets, LogOut, Mail, Shield } from 'lucide-react-native';
+import { Bell, Camera, ChevronRight, Droplets, LogOut, Mail, Shield, UtensilsCrossed } from 'lucide-react-native';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Modal, Pressable, Text, View } from 'react-native';
 
@@ -150,6 +151,7 @@ export default function SettingsScreen() {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const [showHabits, setShowHabits] = useState(false);
+  const [savedFoodsOpen, setSavedFoodsOpen] = useState(false);
   const [photoSheetOpen, setPhotoSheetOpen] = useState(false);
   const [photoUploading, setPhotoUploading] = useState(false);
   const [heightUnit, setHeightUnit] = useState<HeightUnit>('cm');
@@ -761,6 +763,20 @@ export default function SettingsScreen() {
       {user && profile ? (
         <Card>
           <CardContent className="p-4">
+            <SettingsRow
+              icon={<UtensilsCrossed size={20} color={p.primary} />}
+              label="Saved foods"
+              value="Edit or remove personal items"
+              onPress={() => setSavedFoodsOpen(true)}
+              showChevron
+            />
+          </CardContent>
+        </Card>
+      ) : null}
+
+      {user && profile ? (
+        <Card>
+          <CardContent className="p-4">
             <Pressable
               onPress={() => setShowHabits(!showHabits)}
               className="active:opacity-70"
@@ -913,6 +929,8 @@ export default function SettingsScreen() {
       <Text className="text-center text-xs text-muted-foreground dark:text-darkMutedForeground">
         Calorie Tracker v1.0
       </Text>
+
+      <SavedFoodsManagementModal open={savedFoodsOpen} onOpenChange={setSavedFoodsOpen} />
 
       <Modal
         visible={photoSheetOpen}

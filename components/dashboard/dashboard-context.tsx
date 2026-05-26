@@ -9,7 +9,14 @@ import {
 } from 'react';
 
 import { useAuth } from '@/components/auth/auth-provider';
-import { getEntries, getExerciseForDate, getMe, getMeWater, getSavedItems } from '@/lib/api';
+import {
+  getEntries,
+  getExerciseForDate,
+  getFamilySharedItems,
+  getMe,
+  getMeWater,
+  getSavedItems,
+} from '@/lib/api';
 import { ApiError } from '@/lib/api/errors';
 import { logAppError, toUserErrorMessage } from '@/lib/app-errors';
 import { formatDate, formatDateInTimeZone } from '@/lib/date';
@@ -20,6 +27,7 @@ import type {
   CalorieEntryWithId,
   CalorieGoal,
   ExerciseWithId,
+  FamilySharedItemWithId,
   SavedItemWithId,
   UserHabits,
   WaterDailyWithId,
@@ -31,6 +39,8 @@ interface DashboardContextType {
   entries: CalorieEntryWithId[];
   exercises: ExerciseWithId[];
   savedItems: SavedItemWithId[];
+  familySharedItems: FamilySharedItemWithId[];
+  familyId: string | null;
   totalCalories: number;
   exerciseCalories: number;
   calorieGoal: CalorieGoal | null;
@@ -43,15 +53,33 @@ interface DashboardContextType {
   refreshSavedItems: () => Promise<void>;
   refreshWater: () => Promise<void>;
   refreshAll: () => Promise<void>;
+  updateSavedItemLocally: (itemId: string, patch: Partial<SavedItemWithId>) => void;
+  removeSavedItemLocally: (itemId: string) => void;
 }
 
 const DashboardContext = createContext<DashboardContextType | null>(null);
+
+async function loadFamilySharedItems(
+  familyId: string | null | undefined
+): Promise<FamilySharedItemWithId[]> {
+  if (!familyId) return [];
+  try {
+    return await getFamilySharedItems(familyId);
+  } catch (err) {
+    if (err instanceof ApiError && err.status === 403) {
+      return [];
+    }
+    throw err;
+  }
+}
 
 export function DashboardProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   const [entries, setEntries] = useState<CalorieEntryWithId[]>([]);
   const [exercises, setExercises] = useState<ExerciseWithId[]>([]);
   const [savedItems, setSavedItems] = useState<SavedItemWithId[]>([]);
+  const [familySharedItems, setFamilySharedItems] = useState<FamilySharedItemWithId[]>([]);
+  const [familyId, setFamilyId] = useState<string | null>(null);
   const [calorieGoal, setCalorieGoal] = useState<CalorieGoal | null>(null);
   const [maintenanceCalories, setMaintenanceCalories] = useState<number | null>(null);
   const [habits, setHabits] = useState<UserHabits>(() => mergeUserHabits(undefined));
@@ -87,9 +115,23 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
 
   const refreshSavedItems = useCallback(async () => {
     if (!user) return;
-    const data = await getSavedItems();
-    setSavedItems(data);
-  }, [user]);
+    const [personal, familyItems] = await Promise.all([
+      getSavedItems(),
+      loadFamilySharedItems(familyId),
+    ]);
+    setSavedItems(personal);
+    setFamilySharedItems(familyItems);
+  }, [user, familyId]);
+
+  const updateSavedItemLocally = useCallback((itemId: string, patch: Partial<SavedItemWithId>) => {
+    setSavedItems((prev) =>
+      prev.map((item) => (item.id === itemId ? { ...item, ...patch } : item))
+    );
+  }, []);
+
+  const removeSavedItemLocally = useCallback((itemId: string) => {
+    setSavedItems((prev) => prev.filter((item) => item.id !== itemId));
+  }, []);
 
   const refreshAll = useCallback(async () => {
     if (!user) return;
@@ -104,12 +146,17 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       const h = mergeUserHabits(profile?.habits);
       setHabits(h);
 
-      const [entriesData, savedData] = await Promise.all([
+      const nextFamilyId = profile?.familyId ?? null;
+      setFamilyId(nextFamilyId);
+
+      const [entriesData, savedData, familyItems] = await Promise.all([
         getEntries({ date: day }),
         getSavedItems(),
+        loadFamilySharedItems(nextFamilyId),
       ]);
       setEntries(entriesData);
       setSavedItems(savedData);
+      setFamilySharedItems(familyItems);
       setCalorieGoal(profile?.calorieGoal ?? null);
       setMaintenanceCalories(profile?.maintenanceCalories ?? null);
 
@@ -153,6 +200,8 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       setEntries([]);
       setExercises([]);
       setSavedItems([]);
+      setFamilySharedItems([]);
+      setFamilyId(null);
       setCalorieGoal(null);
       setMaintenanceCalories(null);
       setHabits(mergeUserHabits(undefined));
@@ -173,6 +222,8 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       entries,
       exercises,
       savedItems,
+      familySharedItems,
+      familyId,
       totalCalories,
       exerciseCalories,
       calorieGoal,
@@ -185,12 +236,16 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       refreshSavedItems,
       refreshWater,
       refreshAll,
+      updateSavedItemLocally,
+      removeSavedItemLocally,
     }),
     [
       calendarDay,
       entries,
       exercises,
       savedItems,
+      familySharedItems,
+      familyId,
       totalCalories,
       exerciseCalories,
       calorieGoal,
@@ -203,6 +258,8 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       refreshSavedItems,
       refreshWater,
       refreshAll,
+      updateSavedItemLocally,
+      removeSavedItemLocally,
     ]
   );
 
