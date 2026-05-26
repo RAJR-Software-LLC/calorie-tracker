@@ -8,7 +8,11 @@ describe('parseAppDeepLinkToSegments', () => {
   it('parses app://family and family with id', () => {
     expect(parseAppDeepLinkToSegments('app://family')).toEqual(['family']);
     expect(parseAppDeepLinkToSegments('app://family/fam1')).toEqual(['family', 'fam1']);
-    expect(parseAppDeepLinkToSegments('app://family/fam1/shared')).toEqual(['family', 'fam1', 'shared']);
+    expect(parseAppDeepLinkToSegments('app://family/fam1/shared')).toEqual([
+      'family',
+      'fam1',
+      'shared',
+    ]);
   });
 
   it('returns null for wrong scheme', () => {

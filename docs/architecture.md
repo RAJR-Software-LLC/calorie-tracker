@@ -41,11 +41,11 @@ Deep links use the scheme from `app.config.ts` (`calorietracker`).
 
 ## Where to add features
 
-| Change                | Location                                                                                    |
-| --------------------- | ------------------------------------------------------------------------------------------- |
-| New screen (main app) | `app/(tabs)/your-screen.tsx` and register in `app/(tabs)/_layout.tsx` if it should be a tab |
-| New stack screen      | Under `app/` with a `_layout.tsx` group as needed                                           |
-| API call              | Add a function in `src/lib/api/v1.ts` using `apiRequest` and types from `@/types`           |
+| Change                | Location                                                                                                       |
+| --------------------- | -------------------------------------------------------------------------------------------------------------- |
+| New screen (main app) | `app/(tabs)/your-screen.tsx` and register in `app/(tabs)/_layout.tsx` if it should be a tab                    |
+| New stack screen      | Under `app/` with a `_layout.tsx` group as needed                                                              |
+| API call              | Add a function in `src/lib/api/v1.ts` using `apiRequest` and types from `@/types`                              |
 | Habits / water        | Types in `types/index.d.ts`; UI in Settings + Dashboard; see [`docs/water-and-habits.md`](water-and-habits.md) |
-| Business logic        | Prefer `src/lib/utils/` or feature folders under `src/`                                     |
-| Styling               | Tailwind classes via `className`; extend theme in `tailwind.config.js`                      |
+| Business logic        | Prefer `src/lib/utils/` or feature folders under `src/`                                                        |
+| Styling               | Tailwind classes via `className`; extend theme in `tailwind.config.js`                                         |

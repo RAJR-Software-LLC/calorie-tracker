@@ -103,10 +103,10 @@ export function buildHeightPatch(input: {
   return { value: { unit: 'ft_in', feet, inches } };
 }
 
-export function buildWeightPatch(input: {
-  unit: WeightUnit;
-  value: string;
-}): { value: WeightPatchValue | null; error?: string } {
+export function buildWeightPatch(input: { unit: WeightUnit; value: string }): {
+  value: WeightPatchValue | null;
+  error?: string;
+} {
   const trimmed = input.value.trim();
   if (!trimmed) return { value: null };
 

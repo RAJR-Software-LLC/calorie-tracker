@@ -41,10 +41,8 @@ export function withNotificationDefaults(
       ...d.categories,
       ...(partial.categories ?? {}),
     },
-    quietHours:
-      partial.quietHours === undefined ? d.quietHours : partial.quietHours,
+    quietHours: partial.quietHours === undefined ? d.quietHours : partial.quietHours,
     timezone: partial.timezone?.trim() ? partial.timezone.trim() : d.timezone,
     goalStatusTime: partial.goalStatusTime ?? d.goalStatusTime,
   };
 }
-

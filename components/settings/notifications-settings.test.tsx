@@ -35,7 +35,9 @@ jest.mock('@/lib/toast', () => ({
   showToast: jest.fn(),
 }));
 
-function makeNotifications(overrides: Partial<NotificationsSettingsType> = {}): NotificationsSettingsType {
+function makeNotifications(
+  overrides: Partial<NotificationsSettingsType> = {}
+): NotificationsSettingsType {
   return {
     enabled: false,
     reminderTimes: ['08:30'],
@@ -130,7 +132,9 @@ describe('NotificationsSettings PATCH response handling', () => {
     (patchMe as jest.Mock).mockResolvedValue(meResponse);
     const onSaved = jest.fn();
 
-    const { getByLabelText } = render(<NotificationsSettings initial={initial} onSaved={onSaved} />);
+    const { getByLabelText } = render(
+      <NotificationsSettings initial={initial} onSaved={onSaved} />
+    );
 
     fireEvent(getByLabelText('Goal Status'), 'valueChange', false);
     jest.advanceTimersByTime(550);

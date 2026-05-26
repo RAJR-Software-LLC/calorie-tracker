@@ -1,4 +1,12 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from 'react';
 
 import { useAuth } from '@/components/auth/auth-provider';
 import { getEntries, getExerciseForDate, getMe, getMeWater, getSavedItems } from '@/lib/api';
@@ -117,7 +125,10 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
           logAppError('dashboard/getMeWater', err, { date: day, timezone: tz });
           if (err instanceof ApiError && (err.status === 400 || err.status === 422)) {
             showToast(
-              toUserErrorMessage(err, 'Could not load water for this day. Check your profile timezone in Settings.'),
+              toUserErrorMessage(
+                err,
+                'Could not load water for this day. Check your profile timezone in Settings.'
+              ),
               'error'
             );
           } else {

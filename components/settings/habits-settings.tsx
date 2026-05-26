@@ -68,7 +68,9 @@ export function HabitsSettings({
   const [goalAmountInput, setGoalAmountInput] = useState(
     merged.waterGoalAmount != null ? String(merged.waterGoalAmount) : ''
   );
-  const [goalUnit, setGoalUnit] = useState<WaterUnit>(merged.waterGoalUnit ?? merged.waterDefaultUnit);
+  const [goalUnit, setGoalUnit] = useState<WaterUnit>(
+    merged.waterGoalUnit ?? merged.waterDefaultUnit
+  );
   const [habitsBusy, setHabitsBusy] = useState(false);
   const [waterPrefsBusy, setWaterPrefsBusy] = useState(false);
 
@@ -154,116 +156,116 @@ export function HabitsSettings({
 
   const fields = (
     <>
-        <View className="flex-row items-center py-3">
-          <View className="min-w-0 flex-1 flex-row items-center gap-2 pr-3">
-            <Lock size={16} color={p.mutedForeground} />
-            <View className="min-w-0 flex-1">
-              <Text className="text-base font-medium text-foreground dark:text-darkForeground">
-                Calorie tracking
-              </Text>
-              <Text className="text-xs text-muted-foreground dark:text-darkMutedForeground">
-                Always on for your account
-              </Text>
-            </View>
-          </View>
-          <View className="shrink-0">
-            <Switch value disabled accessibilityLabel="Calorie tracking always enabled" />
-          </View>
-        </View>
-
-        <View className="h-px bg-border/50 dark:bg-darkBorder/50" />
-
-        <View className="flex-row items-center py-3">
-          <View className="min-w-0 flex-1 flex-row items-center gap-2 pr-3">
-            <Activity size={18} color={p.mutedForeground} />
-            <Text
-              className="min-w-0 flex-1 text-base font-medium text-foreground dark:text-darkForeground"
-              numberOfLines={2}
-            >
-              Exercise logging
+      <View className="flex-row items-center py-3">
+        <View className="min-w-0 flex-1 flex-row items-center gap-2 pr-3">
+          <Lock size={16} color={p.mutedForeground} />
+          <View className="min-w-0 flex-1">
+            <Text className="text-base font-medium text-foreground dark:text-darkForeground">
+              Calorie tracking
+            </Text>
+            <Text className="text-xs text-muted-foreground dark:text-darkMutedForeground">
+              Always on for your account
             </Text>
           </View>
-          <View className="shrink-0">
-            <Switch
-              value={exerciseOn}
-              onValueChange={handleExerciseToggle}
-              disabled={disabled || habitsBusy}
-              accessibilityLabel="Toggle exercise logging"
-            />
-          </View>
         </View>
+        <View className="shrink-0">
+          <Switch value disabled accessibilityLabel="Calorie tracking always enabled" />
+        </View>
+      </View>
 
-        <View className="h-px bg-border/50 dark:bg-darkBorder/50" />
+      <View className="h-px bg-border/50 dark:bg-darkBorder/50" />
 
-        <View className="flex-row items-center py-3">
-          <View className="min-w-0 flex-1 flex-row items-center gap-2 pr-3">
-            <Droplets size={18} color={p.mutedForeground} />
-            <Text
-              className="min-w-0 flex-1 text-base font-medium text-foreground dark:text-darkForeground"
-              numberOfLines={2}
-            >
-              Water tracking
+      <View className="flex-row items-center py-3">
+        <View className="min-w-0 flex-1 flex-row items-center gap-2 pr-3">
+          <Activity size={18} color={p.mutedForeground} />
+          <Text
+            className="min-w-0 flex-1 text-base font-medium text-foreground dark:text-darkForeground"
+            numberOfLines={2}
+          >
+            Exercise logging
+          </Text>
+        </View>
+        <View className="shrink-0">
+          <Switch
+            value={exerciseOn}
+            onValueChange={handleExerciseToggle}
+            disabled={disabled || habitsBusy}
+            accessibilityLabel="Toggle exercise logging"
+          />
+        </View>
+      </View>
+
+      <View className="h-px bg-border/50 dark:bg-darkBorder/50" />
+
+      <View className="flex-row items-center py-3">
+        <View className="min-w-0 flex-1 flex-row items-center gap-2 pr-3">
+          <Droplets size={18} color={p.mutedForeground} />
+          <Text
+            className="min-w-0 flex-1 text-base font-medium text-foreground dark:text-darkForeground"
+            numberOfLines={2}
+          >
+            Water tracking
+          </Text>
+        </View>
+        <View className="shrink-0">
+          <Switch
+            value={waterOn}
+            onValueChange={handleWaterToggle}
+            disabled={disabled || habitsBusy}
+            accessibilityLabel="Toggle water tracking"
+          />
+        </View>
+      </View>
+
+      {waterOn ? (
+        <>
+          <View className="mt-2 rounded-xl bg-muted/40 p-3 dark:bg-darkMuted/25">
+            <Text className="mb-2 text-sm font-medium text-foreground dark:text-darkForeground">
+              Water defaults
             </Text>
-          </View>
-          <View className="shrink-0">
-            <Switch
-              value={waterOn}
-              onValueChange={handleWaterToggle}
-              disabled={disabled || habitsBusy}
-              accessibilityLabel="Toggle water tracking"
-            />
-          </View>
-        </View>
-
-        {waterOn ? (
-          <>
-            <View className="mt-2 rounded-xl bg-muted/40 p-3 dark:bg-darkMuted/25">
-              <Text className="mb-2 text-sm font-medium text-foreground dark:text-darkForeground">
-                Water defaults
-              </Text>
-              <Text className="mb-2 text-xs text-muted-foreground dark:text-darkMutedForeground">
-                Default unit for dashboard quick-add and new totals
-              </Text>
-              <Text className="mb-1 text-xs font-medium text-muted-foreground dark:text-darkMutedForeground">
-                Default unit
-              </Text>
-              <UnitChips
-                value={waterDefaultUnit}
-                onChange={setWaterDefaultUnit}
-                disabled={disabled || waterPrefsBusy}
-              />
-
-              <Text className="mb-1 mt-4 text-xs font-medium text-muted-foreground dark:text-darkMutedForeground">
-                Goal unit
-              </Text>
-              <UnitChips
-                value={goalUnit}
-                onChange={setGoalUnit}
-                disabled={disabled || waterPrefsBusy}
-              />
-
-              <Text className="mb-1 mt-4 text-xs font-medium text-muted-foreground dark:text-darkMutedForeground">
-                Goal amount (optional)
-              </Text>
-              <Input
-                value={goalAmountInput}
-                onChangeText={setGoalAmountInput}
-                placeholder="e.g. 2000"
-                keyboardType="decimal-pad"
-                editable={!disabled && !waterPrefsBusy}
-                accessibilityLabel="Water goal amount"
-              />
-            </View>
-
-            <Button
-              className="mt-3"
-              onPress={() => void handleSaveWaterPrefs()}
+            <Text className="mb-2 text-xs text-muted-foreground dark:text-darkMutedForeground">
+              Default unit for dashboard quick-add and new totals
+            </Text>
+            <Text className="mb-1 text-xs font-medium text-muted-foreground dark:text-darkMutedForeground">
+              Default unit
+            </Text>
+            <UnitChips
+              value={waterDefaultUnit}
+              onChange={setWaterDefaultUnit}
               disabled={disabled || waterPrefsBusy}
-            >
-              {waterPrefsBusy ? 'Saving…' : 'Save water preferences'}
-            </Button>
-          </>
-        ) : null}
+            />
+
+            <Text className="mb-1 mt-4 text-xs font-medium text-muted-foreground dark:text-darkMutedForeground">
+              Goal unit
+            </Text>
+            <UnitChips
+              value={goalUnit}
+              onChange={setGoalUnit}
+              disabled={disabled || waterPrefsBusy}
+            />
+
+            <Text className="mb-1 mt-4 text-xs font-medium text-muted-foreground dark:text-darkMutedForeground">
+              Goal amount (optional)
+            </Text>
+            <Input
+              value={goalAmountInput}
+              onChangeText={setGoalAmountInput}
+              placeholder="e.g. 2000"
+              keyboardType="decimal-pad"
+              editable={!disabled && !waterPrefsBusy}
+              accessibilityLabel="Water goal amount"
+            />
+          </View>
+
+          <Button
+            className="mt-3"
+            onPress={() => void handleSaveWaterPrefs()}
+            disabled={disabled || waterPrefsBusy}
+          >
+            {waterPrefsBusy ? 'Saving…' : 'Save water preferences'}
+          </Button>
+        </>
+      ) : null}
     </>
   );
 

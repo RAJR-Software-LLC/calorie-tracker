@@ -14,7 +14,15 @@ jest.mock('@/lib/api', () => ({
 jest.mock('@/components/ui/button', () => {
   const { Pressable, Text } = jest.requireActual('react-native');
   return {
-    Button: ({ children, onPress, disabled }: { children: string; onPress: () => void; disabled?: boolean }) => (
+    Button: ({
+      children,
+      onPress,
+      disabled,
+    }: {
+      children: string;
+      onPress: () => void;
+      disabled?: boolean;
+    }) => (
       <Pressable onPress={onPress} disabled={disabled} accessibilityRole="button">
         <Text>{children}</Text>
       </Pressable>
@@ -83,7 +91,10 @@ describe('HabitsSettings', () => {
   it('PATCH /me when exercise toggle changes', async () => {
     const profile = makeProfile();
     const onUpdated = jest.fn();
-    mockPatchMe.mockResolvedValue({ ...profile, habits: { ...profile.habits!, exerciseTrackingEnabled: false } });
+    mockPatchMe.mockResolvedValue({
+      ...profile,
+      habits: { ...profile.habits!, exerciseTrackingEnabled: false },
+    });
 
     render(<HabitsSettings profile={profile} disabled={false} onUpdated={onUpdated} />);
 

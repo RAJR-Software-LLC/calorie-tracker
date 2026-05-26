@@ -7,11 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { SegmentedControl } from '@/components/ui/segmented-control';
 import { useThemePalette } from '@/lib/use-theme-palette';
-import {
-  mifflinStJeor,
-  type ActivityLevel,
-  type Sex,
-} from '@/lib/utils/calories';
+import { mifflinStJeor, type ActivityLevel, type Sex } from '@/lib/utils/calories';
 import {
   cmToFeetInches,
   feetInchesToCm,
@@ -48,17 +44,22 @@ export function AdvancedCalculator({ onResult, defaults = null }: AdvancedCalcul
   const [weight, setWeight] = useState(
     defaults ? formatDisplayWeightFromKg(defaults.weightKg, defaults.weightUnit) : ''
   );
-  const defaultImperialHeight = defaults?.heightCm != null ? cmToFeetInches(defaults.heightCm) : null;
+  const defaultImperialHeight =
+    defaults?.heightCm != null ? cmToFeetInches(defaults.heightCm) : null;
   const [heightCm, setHeightCm] = useState(
     defaults?.heightUnit === 'cm' && defaults.heightCm != null
       ? String(Math.round(defaults.heightCm * 10) / 10)
       : ''
   );
   const [heightFeet, setHeightFeet] = useState(
-    defaults?.heightUnit === 'ft_in' && defaultImperialHeight ? String(defaultImperialHeight.feet) : ''
+    defaults?.heightUnit === 'ft_in' && defaultImperialHeight
+      ? String(defaultImperialHeight.feet)
+      : ''
   );
   const [heightInches, setHeightInches] = useState(
-    defaults?.heightUnit === 'ft_in' && defaultImperialHeight ? String(defaultImperialHeight.inches) : ''
+    defaults?.heightUnit === 'ft_in' && defaultImperialHeight
+      ? String(defaultImperialHeight.inches)
+      : ''
   );
   const [age, setAge] = useState(defaults?.age != null ? String(defaults.age) : '');
   const [sex, setSex] = useState<Sex>(defaults?.sex ?? 'male');
@@ -154,9 +155,7 @@ export function AdvancedCalculator({ onResult, defaults = null }: AdvancedCalcul
       <View className="gap-2">
         <View className="flex-row items-center justify-between">
           <Label>Height</Label>
-          <Pressable
-            onPress={() => setHeightUnit(heightUnit === 'ft_in' ? 'cm' : 'ft_in')}
-          >
+          <Pressable onPress={() => setHeightUnit(heightUnit === 'ft_in' ? 'cm' : 'ft_in')}>
             <Text className="text-xs text-primary dark:text-darkPrimary">
               Switch to {heightUnit === 'ft_in' ? 'cm' : 'ft/in'}
             </Text>

@@ -1,6 +1,9 @@
 import * as Notifications from 'expo-notifications';
 
-import { MEAL_REMINDER_DATA_TAG, syncLocalMealReminders } from '@/lib/notifications/local-reminders';
+import {
+  MEAL_REMINDER_DATA_TAG,
+  syncLocalMealReminders,
+} from '@/lib/notifications/local-reminders';
 import type { NotificationsSettings } from '@/types';
 
 jest.mock('expo-notifications', () => ({
@@ -15,20 +18,22 @@ describe('syncLocalMealReminders', () => {
     jest.clearAllMocks();
   });
 
-  const baseSettings = (): NotificationsSettings => ({
-    enabled: true,
-    reminderTimes: ['09:00'],
-    categories: {
-      mealReminders: true,
-      goalStatus: true,
-      streaks: true,
-      familyEvents: true,
-      accountAdmin: true,
-    },
-    quietHours: null,
-    timezone: 'UTC',
-    goalStatusTime: '19:00',
-  });
+  function baseSettings(): NotificationsSettings {
+    return {
+      enabled: true,
+      reminderTimes: ['09:00'],
+      categories: {
+        mealReminders: true,
+        goalStatus: true,
+        streaks: true,
+        familyEvents: true,
+        accountAdmin: true,
+      },
+      quietHours: null,
+      timezone: 'UTC',
+      goalStatusTime: '19:00',
+    };
+  }
 
   it('schedules daily triggers when meal reminders enabled', async () => {
     await syncLocalMealReminders(baseSettings());

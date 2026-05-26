@@ -1,5 +1,5 @@
 import { Tabs } from 'expo-router';
-import { Calculator, Calendar, Home, Settings, Users } from 'lucide-react-native';
+import { Calculator, Calendar, Dumbbell, Home, Settings, Users } from 'lucide-react-native';
 import { Platform, View } from 'react-native';
 
 import { DashboardProvider } from '@/components/dashboard/dashboard-context';
@@ -89,6 +89,15 @@ export default function TabLayout() {
             title: 'Calculator',
             tabBarIcon: ({ color, focused }) => (
               <TabIcon Icon={Calculator} color={color} focused={focused} activeColor={p.primary} />
+            ),
+          }}
+        />
+        <Tabs.Screen
+          name="exercise"
+          options={{
+            title: 'Exercise',
+            tabBarIcon: ({ color, focused }) => (
+              <TabIcon Icon={Dumbbell} color={color} focused={focused} activeColor={p.primary} />
             ),
           }}
         />

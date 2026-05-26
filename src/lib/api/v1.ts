@@ -1,15 +1,19 @@
 import type {
+  BulkExerciseResult,
   CalorieEntryWithId,
   CreateFamilyResponse,
+  GetExercisePresetsResponse,
   ExerciseWithId,
   FamilySharedItemWithId,
   FamilyWithId,
   GetMeResponse,
   GetWaterDailyQuery,
   JoinFamilyResponse,
+  PatchExerciseBody,
   PatchMeBody,
   PatchMeWaterBody,
   PostEntryBody,
+  PostExerciseBulkBody,
   PostExerciseBody,
   PostFamilyBody,
   PostFamilySharedItemBody,
@@ -103,8 +107,43 @@ export async function getExerciseForDate(date: string): Promise<ExerciseWithId[]
   return apiRequest<ExerciseWithId[]>(`/me/exercise?${params.toString()}`);
 }
 
+export type ExerciseQuery = { date: string } | { startDate: string; endDate: string };
+
+export async function getExercises(query: ExerciseQuery): Promise<ExerciseWithId[]> {
+  const params = new URLSearchParams(
+    'date' in query ? { date: query.date } : { startDate: query.startDate, endDate: query.endDate }
+  );
+  return apiRequest<ExerciseWithId[]>(`/me/exercise?${params.toString()}`);
+}
+
+export async function getExercisesByDate(date: string): Promise<ExerciseWithId[]> {
+  return getExercises({ date });
+}
+
+export async function getExercisesByRange(
+  startDate: string,
+  endDate: string
+): Promise<ExerciseWithId[]> {
+  return getExercises({ startDate, endDate });
+}
+
+export async function getExercisePresets(): Promise<GetExercisePresetsResponse> {
+  return apiRequest<GetExercisePresetsResponse>('/me/exercise/presets');
+}
+
 export async function postExercise(body: PostExerciseBody): Promise<{ id: string }> {
   return apiRequest<{ id: string }>('/me/exercise', { method: 'POST', json: body });
+}
+
+export async function postExerciseBulk(body: PostExerciseBulkBody): Promise<BulkExerciseResult> {
+  return apiRequest<BulkExerciseResult>('/me/exercise/bulk', { method: 'POST', json: body });
+}
+
+export async function patchExercise(exerciseId: string, body: PatchExerciseBody): Promise<void> {
+  await apiRequest<void>(`/me/exercise/${encodeURIComponent(exerciseId)}`, {
+    method: 'PATCH',
+    json: body,
+  });
 }
 
 export async function deleteExercise(exerciseId: string): Promise<void> {
@@ -118,9 +157,7 @@ function normalizeWaterQueryDate(date: string): string {
 export async function getMeWater(query: GetWaterDailyQuery): Promise<WaterDailyWithId> {
   const date = normalizeWaterQueryDate(query.date);
   const params = new URLSearchParams({ date });
-  return withWater429Retry(() =>
-    apiRequest<WaterDailyWithId>(`/me/water?${params.toString()}`)
-  );
+  return withWater429Retry(() => apiRequest<WaterDailyWithId>(`/me/water?${params.toString()}`));
 }
 
 export async function putMeWater(body: PutMeWaterBody): Promise<WaterDailyWithId> {

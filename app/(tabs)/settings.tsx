@@ -272,9 +272,9 @@ export default function SettingsScreen() {
     }, [syncProfileInputs, user])
   );
 
-  const handleSignOut = () => {
+  const handleSignOut = useCallback(() => {
     void signOutUser();
-  };
+  }, []);
 
   const refreshProfileFromServer = useCallback(() => {
     if (!user) return;
@@ -568,7 +568,9 @@ export default function SettingsScreen() {
               onPress={() => setShowProfile(!showProfile)}
               className="min-w-0 flex-1 flex-row items-center gap-2 active:opacity-70"
               accessibilityRole="button"
-              accessibilityLabel={showProfile ? 'Collapse profile section' : 'Expand profile section'}
+              accessibilityLabel={
+                showProfile ? 'Collapse profile section' : 'Expand profile section'
+              }
             >
               <View className="min-w-0 flex-1">
                 <Text className="text-lg font-semibold text-foreground dark:text-darkForeground">
@@ -596,161 +598,161 @@ export default function SettingsScreen() {
             <>
               <SettingsDivider className="mt-4" />
               <SettingsRow
-            label="Daily Goal"
-            value={goalDisplay != null ? `${goalDisplay} kcal` : 'Not set'}
-            onPress={() => router.push('/(tabs)/calculator')}
-            showChevron
-          />
-          <SettingsDivider />
-          <SettingsRow label="Weight Goal" value={`${goalTypeDisplay} (coming soon)`} />
-          <SettingsDivider />
-          <View className="py-3">
-            <View className="mb-2 flex-row items-center justify-between">
-              <Text className="text-base font-medium text-foreground dark:text-darkForeground">
-                Height
-              </Text>
-              <SegmentedControl
-                value={heightUnit}
-                onChange={(next) => handleChangeHeightUnit(next as HeightUnit)}
-                options={[
-                  { value: 'cm', label: 'cm' },
-                  { value: 'ft_in', label: 'ft/in' },
-                ]}
-                className="w-32"
+                label="Daily Goal"
+                value={goalDisplay != null ? `${goalDisplay} kcal` : 'Not set'}
+                onPress={() => router.push('/(tabs)/calculator')}
+                showChevron
               />
-            </View>
-            {heightUnit === 'cm' ? (
-              <ProfileFieldInput
-                label="Height (cm)"
-                accessibilityLabel="Height (cm)"
-                value={heightCmInput}
-                placeholder="e.g. 170"
-                keyboardType="decimal-pad"
-                disabled={!user || profileSaving}
-                onChangeText={setHeightCmInput}
-                errorText={profileFieldErrors.height ?? null}
-              />
-            ) : (
-              <View className="flex-row gap-3">
-                <View className="flex-1">
-                  <ProfileFieldInput
-                    label="Feet"
-                    accessibilityLabel="Height feet"
-                    value={heightFeetInput}
-                    placeholder="e.g. 5"
-                    keyboardType="numeric"
-                    disabled={!user || profileSaving}
-                    onChangeText={setHeightFeetInput}
+              <SettingsDivider />
+              <SettingsRow label="Weight Goal" value={`${goalTypeDisplay} (coming soon)`} />
+              <SettingsDivider />
+              <View className="py-3">
+                <View className="mb-2 flex-row items-center justify-between">
+                  <Text className="text-base font-medium text-foreground dark:text-darkForeground">
+                    Height
+                  </Text>
+                  <SegmentedControl
+                    value={heightUnit}
+                    onChange={(next) => handleChangeHeightUnit(next as HeightUnit)}
+                    options={[
+                      { value: 'cm', label: 'cm' },
+                      { value: 'ft_in', label: 'ft/in' },
+                    ]}
+                    className="w-32"
                   />
                 </View>
-                <View className="flex-1">
+                {heightUnit === 'cm' ? (
                   <ProfileFieldInput
-                    label="Inches"
-                    accessibilityLabel="Height inches"
-                    value={heightInchesInput}
-                    placeholder="e.g. 8"
-                    keyboardType="numeric"
+                    label="Height (cm)"
+                    accessibilityLabel="Height (cm)"
+                    value={heightCmInput}
+                    placeholder="e.g. 170"
+                    keyboardType="decimal-pad"
                     disabled={!user || profileSaving}
-                    onChangeText={setHeightInchesInput}
+                    onChangeText={setHeightCmInput}
                     errorText={profileFieldErrors.height ?? null}
                   />
+                ) : (
+                  <View className="flex-row gap-3">
+                    <View className="flex-1">
+                      <ProfileFieldInput
+                        label="Feet"
+                        accessibilityLabel="Height feet"
+                        value={heightFeetInput}
+                        placeholder="e.g. 5"
+                        keyboardType="numeric"
+                        disabled={!user || profileSaving}
+                        onChangeText={setHeightFeetInput}
+                      />
+                    </View>
+                    <View className="flex-1">
+                      <ProfileFieldInput
+                        label="Inches"
+                        accessibilityLabel="Height inches"
+                        value={heightInchesInput}
+                        placeholder="e.g. 8"
+                        keyboardType="numeric"
+                        disabled={!user || profileSaving}
+                        onChangeText={setHeightInchesInput}
+                        errorText={profileFieldErrors.height ?? null}
+                      />
+                    </View>
+                  </View>
+                )}
+              </View>
+              <SettingsDivider />
+              <View className="py-3">
+                <View className="mb-2 flex-row items-center justify-between">
+                  <Text className="text-base font-medium text-foreground dark:text-darkForeground">
+                    Weight
+                  </Text>
+                  <SegmentedControl
+                    value={weightUnit}
+                    onChange={(next) => handleChangeWeightUnit(next as WeightUnit)}
+                    options={[
+                      { value: 'kg', label: 'kg' },
+                      { value: 'lb', label: 'lb' },
+                    ]}
+                    className="w-28"
+                  />
+                </View>
+                <ProfileFieldInput
+                  label={`Weight (${weightUnit})`}
+                  accessibilityLabel={`Weight (${weightUnit})`}
+                  value={weightInput}
+                  placeholder={weightUnit === 'kg' ? 'e.g. 70.5' : 'e.g. 155.4'}
+                  keyboardType="decimal-pad"
+                  disabled={!user || profileSaving}
+                  onChangeText={setWeightInput}
+                  errorText={profileFieldErrors.weight ?? null}
+                />
+              </View>
+              <SettingsDivider />
+              <ProfileFieldInput
+                label="Age"
+                accessibilityLabel="Age"
+                value={ageInput}
+                placeholder="e.g. 32"
+                keyboardType="numeric"
+                disabled={!user || profileSaving}
+                onChangeText={setAgeInput}
+                errorText={profileFieldErrors.age ?? ageValidationError}
+              />
+              <SettingsDivider />
+              <View className="py-3">
+                <Text className="mb-2 text-base font-medium text-foreground dark:text-darkForeground">
+                  Sex
+                </Text>
+                <View className="flex-row gap-2">
+                  {(['male', 'female'] as const).map((option) => {
+                    const selected = sexInput === option;
+                    return (
+                      <Pressable
+                        key={option}
+                        onPress={() => setSexInput(option)}
+                        disabled={!user || profileSaving}
+                        className={`rounded-full border px-3 py-2 ${selected ? 'border-primary bg-primary/10 dark:border-darkPrimary dark:bg-darkPrimary/20' : 'border-border dark:border-darkBorder'} disabled:opacity-50`}
+                      >
+                        <Text className="text-sm font-medium capitalize text-foreground dark:text-darkForeground">
+                          {option}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
                 </View>
               </View>
-            )}
-          </View>
-          <SettingsDivider />
-          <View className="py-3">
-            <View className="mb-2 flex-row items-center justify-between">
-              <Text className="text-base font-medium text-foreground dark:text-darkForeground">
-                Weight
-              </Text>
-              <SegmentedControl
-                value={weightUnit}
-                onChange={(next) => handleChangeWeightUnit(next as WeightUnit)}
-                options={[
-                  { value: 'kg', label: 'kg' },
-                  { value: 'lb', label: 'lb' },
-                ]}
-                className="w-28"
-              />
-            </View>
-            <ProfileFieldInput
-              label={`Weight (${weightUnit})`}
-              accessibilityLabel={`Weight (${weightUnit})`}
-              value={weightInput}
-              placeholder={weightUnit === 'kg' ? 'e.g. 70.5' : 'e.g. 155.4'}
-              keyboardType="decimal-pad"
-              disabled={!user || profileSaving}
-              onChangeText={setWeightInput}
-              errorText={profileFieldErrors.weight ?? null}
-            />
-          </View>
-          <SettingsDivider />
-          <ProfileFieldInput
-            label="Age"
-            accessibilityLabel="Age"
-            value={ageInput}
-            placeholder="e.g. 32"
-            keyboardType="numeric"
-            disabled={!user || profileSaving}
-            onChangeText={setAgeInput}
-            errorText={profileFieldErrors.age ?? ageValidationError}
-          />
-          <SettingsDivider />
-          <View className="py-3">
-            <Text className="mb-2 text-base font-medium text-foreground dark:text-darkForeground">
-              Sex
-            </Text>
-            <View className="flex-row gap-2">
-              {(['male', 'female'] as const).map((option) => {
-                const selected = sexInput === option;
-                return (
-                  <Pressable
-                    key={option}
-                    onPress={() => setSexInput(option)}
-                    disabled={!user || profileSaving}
-                    className={`rounded-full border px-3 py-2 ${selected ? 'border-primary bg-primary/10 dark:border-darkPrimary dark:bg-darkPrimary/20' : 'border-border dark:border-darkBorder'} disabled:opacity-50`}
-                  >
-                    <Text className="text-sm font-medium capitalize text-foreground dark:text-darkForeground">
-                      {option}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-          </View>
-          <SettingsDivider />
-          <View className="py-3">
-            <Text className="mb-2 text-base font-medium text-foreground dark:text-darkForeground">
-              Activity level
-            </Text>
-            <View className="flex-row flex-wrap gap-2">
-              {(['sedentary', 'light', 'moderate', 'active', 'very_active'] as const).map(
-                (option) => {
-                  const selected = activityLevelInput === option;
-                  return (
-                    <Pressable
-                      key={option}
-                      onPress={() => setActivityLevelInput(option)}
-                      disabled={!user || profileSaving}
-                      className={`rounded-full border px-3 py-2 ${selected ? 'border-primary bg-primary/10 dark:border-darkPrimary dark:bg-darkPrimary/20' : 'border-border dark:border-darkBorder'} disabled:opacity-50`}
-                    >
-                      <Text className="text-sm font-medium capitalize text-foreground dark:text-darkForeground">
-                        {option.replace('_', ' ')}
-                      </Text>
-                    </Pressable>
-                  );
-                }
-              )}
-            </View>
-          </View>
-          <Button
-            className="mt-2"
-            onPress={() => void handleSaveProfile()}
-            disabled={!user || !canSaveProfile}
-          >
-            {profileSaving ? 'Saving...' : 'Save profile'}
-          </Button>
+              <SettingsDivider />
+              <View className="py-3">
+                <Text className="mb-2 text-base font-medium text-foreground dark:text-darkForeground">
+                  Activity level
+                </Text>
+                <View className="flex-row flex-wrap gap-2">
+                  {(['sedentary', 'light', 'moderate', 'active', 'very_active'] as const).map(
+                    (option) => {
+                      const selected = activityLevelInput === option;
+                      return (
+                        <Pressable
+                          key={option}
+                          onPress={() => setActivityLevelInput(option)}
+                          disabled={!user || profileSaving}
+                          className={`rounded-full border px-3 py-2 ${selected ? 'border-primary bg-primary/10 dark:border-darkPrimary dark:bg-darkPrimary/20' : 'border-border dark:border-darkBorder'} disabled:opacity-50`}
+                        >
+                          <Text className="text-sm font-medium capitalize text-foreground dark:text-darkForeground">
+                            {option.replace('_', ' ')}
+                          </Text>
+                        </Pressable>
+                      );
+                    }
+                  )}
+                </View>
+              </View>
+              <Button
+                className="mt-2"
+                onPress={() => void handleSaveProfile()}
+                disabled={!user || !canSaveProfile}
+              >
+                {profileSaving ? 'Saving...' : 'Save profile'}
+              </Button>
             </>
           ) : null}
         </CardContent>

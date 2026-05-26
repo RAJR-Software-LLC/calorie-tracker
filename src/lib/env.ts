@@ -11,6 +11,12 @@ export function getApiBaseUrl(): string {
   return url.replace(/\/$/, '');
 }
 
+export function getApiPrivacyPolicyUrl(): string {
+  const origin = getApiBaseUrl();
+  const parsed = new URL(origin);
+  return new URL('/privacy-policy', parsed).toString();
+}
+
 function optionalUrl(name: string): string | undefined {
   // We intentionally read a validated dynamic EXPO_PUBLIC_* key by name here.
   // eslint-disable-next-line expo/no-dynamic-env-var

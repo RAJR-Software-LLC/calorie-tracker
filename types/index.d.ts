@@ -99,7 +99,9 @@ export type HeightPatchValue =
 
 export type WeightPatchValue = { unit: 'kg'; value: number } | { unit: 'lb'; value: number };
 
-export interface PatchProfileBody extends Partial<Omit<UserProfileFields, 'heightCm' | 'weightKg'>> {
+export interface PatchProfileBody extends Partial<
+  Omit<UserProfileFields, 'heightCm' | 'weightKg'>
+> {
   height?: HeightPatchValue | null;
   weight?: WeightPatchValue | null;
 }
@@ -222,7 +224,20 @@ export interface ExerciseDocument {
   date: DateString;
   name: string;
   caloriesBurned: number;
+  presetId?: string | null;
+  durationMinutes?: number;
+  startTime?: ApiTimestamp;
+  endTime?: ApiTimestamp;
+  distanceMeters?: number;
+  averageHeartRate?: number;
+  steps?: number;
+  intensity?: ExerciseIntensity | null;
+  source?: ExerciseSource;
+  externalSource?: ExerciseExternalSource;
+  externalId?: string;
+  notes?: string | null;
   createdAt: ApiTimestamp | unknown;
+  updatedAt?: ApiTimestamp | unknown;
 }
 
 export interface ExerciseWithId extends ExerciseDocument {
@@ -297,6 +312,70 @@ export interface PostExerciseBody {
   date: DateString;
   name: string;
   caloriesBurned: number;
+  presetId?: string | null;
+  durationMinutes?: number;
+  startTime?: ApiTimestamp;
+  endTime?: ApiTimestamp;
+  distanceMeters?: number;
+  averageHeartRate?: number;
+  steps?: number;
+  intensity?: ExerciseIntensity | null;
+  source?: ExerciseSource;
+  externalSource?: ExerciseExternalSource;
+  externalId?: string;
+  notes?: string | null;
+}
+
+export type ExerciseCategory = 'cardio' | 'strength' | 'flexibility' | 'sports' | 'other';
+
+export type ExerciseIntensity = 'low' | 'moderate' | 'high';
+
+export type ExerciseExternalSource = 'apple_healthkit' | 'health_connect' | 'google_fit';
+
+export type ExerciseSource = 'manual' | 'healthkit' | 'health_connect' | 'google_fit' | 'imported';
+
+export interface ExercisePreset {
+  id: string;
+  displayName: string;
+  category: ExerciseCategory;
+  defaultIntensity: ExerciseIntensity;
+  metValue: number;
+  iconKey: string;
+  searchKeywords: string[];
+  healthKitActivityTypes: string[];
+  healthConnectExerciseTypes: string[];
+  googleFitActivityTypes: string[];
+}
+
+export interface GetExercisePresetsResponse {
+  version: number;
+  presets: ExercisePreset[];
+}
+
+export interface PostExerciseBulkBody {
+  exercises: PostExerciseBody[];
+}
+
+export type BulkExerciseResultStatus = 'created' | 'updated' | 'skipped';
+
+export interface BulkExerciseResultItem {
+  id: string;
+  status: BulkExerciseResultStatus;
+}
+
+export interface BulkExerciseResult {
+  created: number;
+  updated: number;
+  skipped: number;
+  items: BulkExerciseResultItem[];
+}
+
+export interface PatchExerciseBody {
+  name?: string;
+  caloriesBurned?: number;
+  notes?: string | null;
+  presetId?: string | null;
+  intensity?: ExerciseIntensity | null;
 }
 
 export interface PostFamilyBody {

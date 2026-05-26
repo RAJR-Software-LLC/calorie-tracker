@@ -105,11 +105,7 @@ function applyProfilePatch(
       if (val && typeof val === 'object' && 'unit' in val) {
         const u = val as { unit: string; value?: number; feet?: number; inches?: number };
         if (u.unit === 'cm' && typeof u.value === 'number') next.heightCm = u.value;
-        if (
-          u.unit === 'ft_in' &&
-          typeof u.feet === 'number' &&
-          typeof u.inches === 'number'
-        ) {
+        if (u.unit === 'ft_in' && typeof u.feet === 'number' && typeof u.inches === 'number') {
           next.heightCm = (u.feet * 12 + u.inches) * 2.54;
         }
       } else if (val === null) {

@@ -7,7 +7,13 @@ import { Avatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { getFamily, getFamilySharedItems, getMe, getSavedItems, postFamilySharedItem } from '@/lib/api';
+import {
+  getFamily,
+  getFamilySharedItems,
+  getMe,
+  getSavedItems,
+  postFamilySharedItem,
+} from '@/lib/api';
 import { logAppError, toUserErrorMessage } from '@/lib/app-errors';
 import { showToast } from '@/lib/toast';
 import { useThemePalette } from '@/lib/use-theme-palette';
@@ -23,6 +29,19 @@ type SharedItemsListProps = {
   familyId: string;
 };
 
+function toDownloadPhoto(profilePhoto: unknown): UserProfilePhotoWithDownload | null {
+  if (
+    profilePhoto &&
+    typeof profilePhoto === 'object' &&
+    'downloadUrl' in profilePhoto &&
+    typeof profilePhoto.downloadUrl === 'string' &&
+    profilePhoto.downloadUrl.length > 0
+  ) {
+    return profilePhoto as UserProfilePhotoWithDownload;
+  }
+  return null;
+}
+
 export function SharedItemsList({ familyId }: SharedItemsListProps) {
   const p = useThemePalette();
   const { user } = useAuth();
@@ -32,21 +51,6 @@ export function SharedItemsList({ familyId }: SharedItemsListProps) {
   const [loading, setLoading] = useState(true);
   const [shareOpen, setShareOpen] = useState(false);
   const hasRetriedAvatarRefreshRef = useRef(false);
-
-  function toDownloadPhoto(
-    profilePhoto: unknown
-  ): UserProfilePhotoWithDownload | null {
-    if (
-      profilePhoto &&
-      typeof profilePhoto === 'object' &&
-      'downloadUrl' in profilePhoto &&
-      typeof profilePhoto.downloadUrl === 'string' &&
-      profilePhoto.downloadUrl.length > 0
-    ) {
-      return profilePhoto as UserProfilePhotoWithDownload;
-    }
-    return null;
-  }
 
   useEffect(() => {
     async function load() {

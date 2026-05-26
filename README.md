@@ -58,6 +58,14 @@ Copy [.env.example](.env.example) to `.env` and adjust. Never commit secrets.
 
 More detail: [docs/architecture.md](docs/architecture.md), [docs/types.md](docs/types.md), [docs/contributing.md](docs/contributing.md).
 
+## Exercise tracking
+
+- Exercise tab supports day/range queries, manual create, edit (PATCH-safe fields only), and delete.
+- Presets are loaded from `GET /api/v1/me/exercise/presets` with local versioned cache fallback.
+- Native sync pipeline is available for iOS HealthKit and Android Health Connect adapter flows, using idempotent external identity (`externalSource` + `externalId`) and bulk upload chunking (`<=100`).
+- Privacy policy deep link for sync permissions uses API-origin `GET /privacy-policy`.
+- Implementation and operations runbook: [docs/exercise-tracking.md](docs/exercise-tracking.md).
+
 ## Production compliance docs
 
 - [docs/privacy-policy.md](docs/privacy-policy.md)
@@ -68,6 +76,7 @@ More detail: [docs/architecture.md](docs/architecture.md), [docs/types.md](docs/
 - [docs/monitoring-and-alerts.md](docs/monitoring-and-alerts.md)
 - [docs/release-test-checklist.md](docs/release-test-checklist.md)
 - [docs/store-submission-runbook.md](docs/store-submission-runbook.md)
+- [docs/exercise-tracking.md](docs/exercise-tracking.md)
 
 ## EAS (builds and OTA updates)
 
