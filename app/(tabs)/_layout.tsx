@@ -1,6 +1,6 @@
 import { Tabs } from 'expo-router';
 import { Calculator, Calendar, Dumbbell, Home, Settings, Users } from 'lucide-react-native';
-import { Platform, View } from 'react-native';
+import { Platform, useWindowDimensions, View } from 'react-native';
 
 import { DashboardProvider, useDashboard } from '@/components/dashboard/dashboard-context';
 import { useColorScheme } from '@/components/useColorScheme';
@@ -11,18 +11,24 @@ function TabIcon({
   color,
   focused,
   activeColor,
+  compact,
 }: {
   Icon: typeof Home;
   color: string;
   focused: boolean;
   activeColor: string;
+  compact: boolean;
 }) {
   return (
     <View className="items-center justify-center">
       <View
-        className={`items-center justify-center rounded-2xl px-5 py-2 ${focused ? 'bg-primary/15 dark:bg-darkPrimary/20' : ''}`}
+        className={`items-center justify-center rounded-2xl py-2 ${compact ? 'px-2' : 'px-5'} ${focused ? 'bg-primary/15 dark:bg-darkPrimary/20' : ''}`}
       >
-        <Icon color={focused ? activeColor : color} size={22} strokeWidth={focused ? 2.5 : 1.8} />
+        <Icon
+          color={focused ? activeColor : color}
+          size={compact ? 20 : 22}
+          strokeWidth={focused ? 2.5 : 1.8}
+        />
       </View>
       {focused ? (
         <View className="mt-1 h-1 w-1 rounded-full bg-primary dark:bg-darkPrimary" />
@@ -36,6 +42,8 @@ function TabLayoutContent() {
   const isDark = colorScheme === 'dark';
   const p = isDark ? dark : light;
   const { habits } = useDashboard();
+  const { width } = useWindowDimensions();
+  const compactTabs = width < 390;
   const exerciseEnabled = habits.exerciseTrackingEnabled !== false;
 
   return (
@@ -48,8 +56,8 @@ function TabLayoutContent() {
         tabBarStyle: {
           position: 'absolute',
           bottom: Platform.OS === 'ios' ? 28 : 16,
-          left: 20,
-          right: 20,
+          left: compactTabs ? 12 : 20,
+          right: compactTabs ? 12 : 20,
           height: 64,
           backgroundColor: isDark ? p.card : '#ffffff',
           borderRadius: 32,
@@ -59,10 +67,11 @@ function TabLayoutContent() {
           shadowOpacity: isDark ? 0.3 : 0.1,
           shadowRadius: 12,
           elevation: 8,
-          paddingHorizontal: 8,
+          paddingHorizontal: compactTabs ? 2 : 8,
         },
         tabBarItemStyle: {
           paddingVertical: 8,
+          minWidth: 0,
         },
       }}
     >
@@ -71,7 +80,13 @@ function TabLayoutContent() {
         options={{
           title: 'Dashboard',
           tabBarIcon: ({ color, focused }) => (
-            <TabIcon Icon={Home} color={color} focused={focused} activeColor={p.primary} />
+            <TabIcon
+              Icon={Home}
+              color={color}
+              focused={focused}
+              activeColor={p.primary}
+              compact={compactTabs}
+            />
           ),
         }}
       />
@@ -80,7 +95,13 @@ function TabLayoutContent() {
         options={{
           title: 'Calendar',
           tabBarIcon: ({ color, focused }) => (
-            <TabIcon Icon={Calendar} color={color} focused={focused} activeColor={p.primary} />
+            <TabIcon
+              Icon={Calendar}
+              color={color}
+              focused={focused}
+              activeColor={p.primary}
+              compact={compactTabs}
+            />
           ),
         }}
       />
@@ -89,7 +110,13 @@ function TabLayoutContent() {
         options={{
           title: 'Calculator',
           tabBarIcon: ({ color, focused }) => (
-            <TabIcon Icon={Calculator} color={color} focused={focused} activeColor={p.primary} />
+            <TabIcon
+              Icon={Calculator}
+              color={color}
+              focused={focused}
+              activeColor={p.primary}
+              compact={compactTabs}
+            />
           ),
         }}
       />
@@ -99,7 +126,13 @@ function TabLayoutContent() {
           title: 'Exercise',
           href: exerciseEnabled ? undefined : null,
           tabBarIcon: ({ color, focused }) => (
-            <TabIcon Icon={Dumbbell} color={color} focused={focused} activeColor={p.primary} />
+            <TabIcon
+              Icon={Dumbbell}
+              color={color}
+              focused={focused}
+              activeColor={p.primary}
+              compact={compactTabs}
+            />
           ),
         }}
       />
@@ -108,7 +141,13 @@ function TabLayoutContent() {
         options={{
           title: 'Family',
           tabBarIcon: ({ color, focused }) => (
-            <TabIcon Icon={Users} color={color} focused={focused} activeColor={p.primary} />
+            <TabIcon
+              Icon={Users}
+              color={color}
+              focused={focused}
+              activeColor={p.primary}
+              compact={compactTabs}
+            />
           ),
         }}
       />
@@ -117,7 +156,13 @@ function TabLayoutContent() {
         options={{
           title: 'Settings',
           tabBarIcon: ({ color, focused }) => (
-            <TabIcon Icon={Settings} color={color} focused={focused} activeColor={p.primary} />
+            <TabIcon
+              Icon={Settings}
+              color={color}
+              focused={focused}
+              activeColor={p.primary}
+              compact={compactTabs}
+            />
           ),
         }}
       />

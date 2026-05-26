@@ -77,6 +77,7 @@ More detail: [docs/architecture.md](docs/architecture.md), [docs/types.md](docs/
 - [docs/release-test-checklist.md](docs/release-test-checklist.md)
 - [docs/store-submission-runbook.md](docs/store-submission-runbook.md)
 - [docs/exercise-tracking.md](docs/exercise-tracking.md)
+- [docs/store-health-sync-submission.md](docs/store-health-sync-submission.md)
 
 ## EAS (builds and OTA updates)
 

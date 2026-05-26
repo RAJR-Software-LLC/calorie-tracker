@@ -5,10 +5,7 @@ import {
   WorkoutActivityType,
 } from '@kingstinct/react-native-healthkit';
 
-import {
-  formatHealthKitWorkoutName,
-  toHealthKitActivityTypeName,
-} from './native-type-mapping.ios';
+import { formatHealthKitWorkoutName, toHealthKitActivityTypeName } from './native-type-mapping.ios';
 import type { NativeHealthAdapter, NativeSyncCursor, NativeWorkoutRecord } from './types';
 
 type AdapterState = {

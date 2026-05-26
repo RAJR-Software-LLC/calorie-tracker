@@ -98,6 +98,7 @@ Config plugins in `app.config.ts`:
 - Security: TLS transport, no auth token logging, safe local storage practices.
 - User control: explicit sync trigger, transparent policy link, delete pathways.
 - Incident path: feature-flag/rollback plan if policy review blocks rollout.
+- Store submission checklist: [`store-health-sync-submission.md`](store-health-sync-submission.md).
 
 ## Verification plan
 

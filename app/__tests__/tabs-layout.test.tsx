@@ -34,6 +34,11 @@ jest.mock('@/components/useColorScheme', () => ({
   useColorScheme: () => 'light',
 }));
 
+jest.mock('react-native/Libraries/Utilities/useWindowDimensions', () => ({
+  __esModule: true,
+  default: () => ({ width: 390, height: 844, scale: 2, fontScale: 1 }),
+}));
+
 jest.mock('@/components/dashboard/dashboard-context', () => {
   const actual = jest.requireActual('@/components/dashboard/dashboard-context');
   return {

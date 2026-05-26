@@ -10,12 +10,14 @@ Last updated: 2026-04-15
 
 ## Feature-To-Policy Mapping
 
-| App feature                   | Apple guideline alignment                    | Google Play alignment                | Required action                                   |
-| ----------------------------- | -------------------------------------------- | ------------------------------------ | ------------------------------------------------- |
-| Calorie logging and summaries | Health data is sensitive under 5.1.3         | Health Apps policy in scope          | Keep wellness-only claims and privacy disclosures |
-| Calorie planning calculators  | Avoid medical diagnosis/treatment claims     | No misleading medical functionality  | Include non-medical disclaimer                    |
-| Family/shared tracking        | Personal data minimization and clear purpose | Privacy + sensitive data disclosures | Document data sharing intent and controls         |
-| Auth and profile data         | Data collection/storage transparency         | Data Safety + Health declaration     | Keep store and in-app policy text consistent      |
+| App feature                    | Apple guideline alignment                    | Google Play alignment                | Required action                                                          |
+| ------------------------------ | -------------------------------------------- | ------------------------------------ | ------------------------------------------------------------------------ |
+| Calorie logging and summaries  | Health data is sensitive under 5.1.3         | Health Apps policy in scope          | Keep wellness-only claims and privacy disclosures                        |
+| Calorie planning calculators   | Avoid medical diagnosis/treatment claims     | No misleading medical functionality  | Include non-medical disclaimer                                           |
+| Family/shared tracking         | Personal data minimization and clear purpose | Privacy + sensitive data disclosures | Document data sharing intent and controls                                |
+| Exercise logging (manual)      | Health data is sensitive under 5.1.3         | Health Apps policy in scope          | Wellness-only claims; user can disable in Settings                       |
+| Native workout sync (optional) | HealthKit read requires 5.1.3 disclosure     | Health Connect + Data Safety         | See [`store-health-sync-submission.md`](store-health-sync-submission.md) |
+| Auth and profile data          | Data collection/storage transparency         | Data Safety + Health declaration     | Keep store and in-app policy text consistent                             |
 
 ## Mandatory Store Text Controls
 
@@ -33,6 +35,7 @@ Last updated: 2026-04-15
 - Disclose specific health-related data collected in privacy materials.
 - Do not use health-related data for advertising/marketing/data-mining purposes.
 - Apply compliance review for any future HealthKit or medical-adjacent integrations.
+- When HealthKit sync ships: declare fitness/health data in App Privacy; include `NSHealthShareUsageDescription`; complete checklist in [`store-health-sync-submission.md`](store-health-sync-submission.md).
 
 ## Google Play Health Apps Controls
 
@@ -40,6 +43,7 @@ Last updated: 2026-04-15
 - Select Nutrition and Weight Management category.
 - Provide public, non-geofenced privacy policy URL in Play Console.
 - Keep Data Safety form aligned with actual data collection/use/sharing behavior.
+- When Health Connect sync ships: declare optional fitness/health reads in Data Safety; complete [`store-health-sync-submission.md`](store-health-sync-submission.md).
 
 ## Submission Metadata Checklist
 

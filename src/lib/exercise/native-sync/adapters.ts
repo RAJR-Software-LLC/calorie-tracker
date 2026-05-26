@@ -19,6 +19,8 @@ export function createHealthKitAdapter(state: AdapterState): NativeHealthAdapter
     return createFallbackHealthKitAdapter(state);
   }
 
+  // Lazy load native module so Expo Go does not evaluate NitroModules at import time.
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { createHealthKitAdapterNative } =
     require('./adapters-healthkit.native.ios') as typeof import('./adapters-healthkit.native.ios');
   return createHealthKitAdapterNative(state);
@@ -29,6 +31,7 @@ export function createHealthConnectAdapter(state: AdapterState): NativeHealthAda
     return createFallbackHealthConnectAdapter(state);
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { createHealthConnectAdapterNative } =
     require('./adapters-healthconnect.native.android') as typeof import('./adapters-healthconnect.native.android');
   return createHealthConnectAdapterNative(state);

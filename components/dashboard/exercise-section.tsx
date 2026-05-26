@@ -1,15 +1,11 @@
 import { useRouter } from 'expo-router';
 import { ChevronRight, Dumbbell, Plus, Trash2 } from 'lucide-react-native';
-import { useState } from 'react';
-import { KeyboardAvoidingView, Modal, Platform, Pressable, Text, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Pressable, Text, View } from 'react-native';
 
 import { useAuth } from '@/components/auth/auth-provider';
 import { useDashboard } from '@/components/dashboard/dashboard-context';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { deleteExercise, postExercise } from '@/lib/api';
+import { deleteExercise } from '@/lib/api';
 import { logAppError, toUserErrorMessage } from '@/lib/app-errors';
 import { showToast } from '@/lib/toast';
 import { useThemePalette } from '@/lib/use-theme-palette';
@@ -18,15 +14,18 @@ type ExerciseSectionProps = {
   date: string;
 };
 
-export function ExerciseSection({ date }: ExerciseSectionProps) {
+export function ExerciseSection({ date: _date }: ExerciseSectionProps) {
   const p = useThemePalette();
   const router = useRouter();
   const { user } = useAuth();
   const { exercises, refreshExercises, habits } = useDashboard();
-  const [open, setOpen] = useState(false);
 
   if (habits.exerciseTrackingEnabled === false) {
     return null;
+  }
+
+  function openExerciseTab(): void {
+    router.push('/(tabs)/exercise');
   }
 
   async function handleDelete(exerciseId: string) {
@@ -48,7 +47,7 @@ export function ExerciseSection({ date }: ExerciseSectionProps) {
           accessibilityRole="button"
           accessibilityLabel="Open exercise tab"
           className="flex-row items-center gap-2"
-          onPress={() => router.push('/(tabs)/exercise')}
+          onPress={openExerciseTab}
         >
           <Dumbbell size={18} color={p.primary} />
           <Text className="text-sm font-semibold text-foreground dark:text-darkForeground">
@@ -56,27 +55,38 @@ export function ExerciseSection({ date }: ExerciseSectionProps) {
           </Text>
           <ChevronRight size={16} color={p.mutedForeground} />
         </Pressable>
-        <Pressable className="flex-row items-center gap-1" onPress={() => setOpen(true)}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Add exercise on exercise tab"
+          className="flex-row items-center gap-1"
+          onPress={openExerciseTab}
+        >
           <Plus size={16} color={p.primary} />
-          <Text className="text-sm font-medium text-primary dark:text-darkPrimary">
-            Log exercise
-          </Text>
+          <Text className="text-sm font-medium text-primary dark:text-darkPrimary">Add</Text>
         </Pressable>
       </View>
 
-      {exercises.length > 0 && (
+      {exercises.length > 0 ? (
         <View className="gap-2">
           {exercises.map((ex) => (
             <View
               key={ex.id}
               className="flex-row items-center justify-between rounded-xl border border-border/50 bg-card px-4 py-3 shadow-sm dark:border-darkBorder dark:bg-darkCard"
             >
-              <View className="flex-row items-center gap-2">
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={`Open exercise tab for ${ex.name}`}
+                className="min-w-0 flex-1 flex-row items-center gap-2"
+                onPress={openExerciseTab}
+              >
                 <Dumbbell size={16} color={p.mutedForeground} />
-                <Text className="text-sm font-medium text-foreground dark:text-darkForeground">
+                <Text
+                  className="min-w-0 flex-1 text-sm font-medium text-foreground dark:text-darkForeground"
+                  numberOfLines={1}
+                >
                   {ex.name}
                 </Text>
-              </View>
+              </Pressable>
               <View className="flex-row items-center gap-3">
                 <Text className="text-sm font-semibold text-primary dark:text-darkPrimary">
                   -{ex.caloriesBurned} cal
@@ -85,7 +95,7 @@ export function ExerciseSection({ date }: ExerciseSectionProps) {
                   variant="ghost"
                   size="icon"
                   accessibilityLabel={`Remove ${ex.name}`}
-                  onPress={() => handleDelete(ex.id)}
+                  onPress={() => void handleDelete(ex.id)}
                 >
                   <Trash2 size={16} color={p.mutedForeground} />
                 </Button>
@@ -93,96 +103,18 @@ export function ExerciseSection({ date }: ExerciseSectionProps) {
             </View>
           ))}
         </View>
-      )}
-
-      <ExerciseModal open={open} onOpenChange={setOpen} date={date} />
-    </View>
-  );
-}
-
-function ExerciseModal({
-  open,
-  onOpenChange,
-  date,
-}: {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  date: string;
-}) {
-  const { user } = useAuth();
-  const insets = useSafeAreaInsets();
-  const { refreshExercises } = useDashboard();
-  const [name, setName] = useState('');
-  const [caloriesBurned, setCaloriesBurned] = useState('');
-  const [loading, setLoading] = useState(false);
-
-  async function handleSubmit() {
-    if (!user || !name.trim() || !caloriesBurned) return;
-    setLoading(true);
-    try {
-      await postExercise({
-        date,
-        name: name.trim(),
-        caloriesBurned: Number(caloriesBurned),
-      });
-      await refreshExercises();
-      showToast('Exercise logged!', 'success');
-      setName('');
-      setCaloriesBurned('');
-      onOpenChange(false);
-    } catch (err) {
-      logAppError('dashboard/exercise/post', err);
-      showToast(toUserErrorMessage(err, 'Could not log exercise'), 'error');
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  return (
-    <Modal
-      visible={open}
-      animationType="slide"
-      transparent
-      onRequestClose={() => onOpenChange(false)}
-    >
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        className="flex-1 justify-end bg-black/40"
-      >
-        <Pressable className="flex-1" onPress={() => onOpenChange(false)} />
-        <View
-          className="rounded-t-3xl bg-card px-4 pt-4 dark:bg-darkCard"
-          style={{ paddingBottom: insets.bottom + 24 }}
+      ) : (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Log your first exercise"
+          className="rounded-xl border border-dashed border-border/70 bg-card px-4 py-3 dark:border-darkBorder dark:bg-darkCard"
+          onPress={openExerciseTab}
         >
-          <Text className="text-xl font-semibold text-foreground dark:text-darkForeground">
-            Log exercise
+          <Text className="text-sm text-muted-foreground dark:text-darkMutedForeground">
+            No workouts logged today. Tap to add on the Exercise tab.
           </Text>
-          <Text className="mt-1 text-sm text-muted-foreground dark:text-darkMutedForeground">
-            Add calories you burned
-          </Text>
-          <View className="mt-4 gap-4">
-            <View className="gap-2">
-              <Label>Activity</Label>
-              <Input placeholder="e.g. 30 min run" value={name} onChangeText={setName} />
-            </View>
-            <View className="gap-2">
-              <Label>Estimated calories burned</Label>
-              <Input
-                keyboardType="number-pad"
-                placeholder="e.g. 250"
-                value={caloriesBurned}
-                onChangeText={setCaloriesBurned}
-              />
-            </View>
-            <Button disabled={loading} className="w-full" onPress={handleSubmit}>
-              {loading ? 'Logging...' : 'Log exercise'}
-            </Button>
-            <Button variant="outline" onPress={() => onOpenChange(false)}>
-              Cancel
-            </Button>
-          </View>
-        </View>
-      </KeyboardAvoidingView>
-    </Modal>
+        </Pressable>
+      )}
+    </View>
   );
 }

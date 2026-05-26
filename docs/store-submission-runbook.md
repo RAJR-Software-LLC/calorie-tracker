@@ -5,6 +5,7 @@
 - Green CI: typecheck, lint, format check, tests, expo-doctor.
 - Completed checklist from `docs/release-test-checklist.md`.
 - Updated store metadata and policy declarations.
+- Health sync store checklist completed when release includes native sync ([`docs/store-health-sync-submission.md`](store-health-sync-submission.md)).
 - Production build profile secrets configured.
 
 ## Versioning
