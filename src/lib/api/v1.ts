@@ -5,7 +5,7 @@ import type {
   GetExercisePresetsResponse,
   ExerciseWithId,
   FamilySharedItemWithId,
-  FamilyWithId,
+  FamilyWithMemberProfiles,
   GetMeResponse,
   GetWaterDailyQuery,
   JoinFamilyResponse,
@@ -180,8 +180,8 @@ export async function postJoinFamily(body: PostJoinFamilyBody): Promise<JoinFami
   return apiRequest<JoinFamilyResponse>('/families/join', { method: 'POST', json: body });
 }
 
-export async function getFamily(familyId: string): Promise<FamilyWithId> {
-  return apiRequest<FamilyWithId>(`/families/${encodeURIComponent(familyId)}`);
+export async function getFamily(familyId: string): Promise<FamilyWithMemberProfiles> {
+  return apiRequest<FamilyWithMemberProfiles>(`/families/${encodeURIComponent(familyId)}`);
 }
 
 export async function getFamilySharedItems(familyId: string): Promise<FamilySharedItemWithId[]> {

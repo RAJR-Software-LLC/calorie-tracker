@@ -4,7 +4,7 @@
     "strict": true,
     "paths": {
       "@/*": ["./*"],
-      "@/types": ["./types/index.d.ts"],
+      "@/types": ["./types/client.d.ts"],
       "@/types/*": ["./types/*"],
       "@/lib/*": ["./src/lib/*"]
     }

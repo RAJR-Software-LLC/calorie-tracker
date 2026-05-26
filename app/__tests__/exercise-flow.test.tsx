@@ -1,8 +1,16 @@
+import { render, screen, waitFor } from '@testing-library/react-native';
 import { NavigationContainer } from '@react-navigation/native';
-import { render, screen } from '@testing-library/react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import ExerciseScreen from '@/app/(tabs)/exercise';
+
+const mockRefreshExercises = jest.fn(async () => undefined);
+
+jest.mock('@/components/dashboard/dashboard-context', () => ({
+  useDashboard: () => ({
+    refreshExercises: mockRefreshExercises,
+  }),
+}));
 
 jest.mock('@/lib/api', () => ({
   getExercisesByDate: jest.fn(async () => []),
@@ -13,7 +21,10 @@ jest.mock('@/lib/api', () => ({
 }));
 
 jest.mock('@/lib/exercise/presets-store', () => ({
-  loadExercisePresets: jest.fn(async () => ({ version: 1, presets: [] })),
+  loadExercisePresets: jest.fn(async () => ({
+    version: 1,
+    presets: [{ id: 'running', displayName: 'Running', category: 'cardio' }],
+  })),
 }));
 
 jest.mock('@/lib/exercise/native-sync', () => ({
@@ -29,6 +40,9 @@ jest.mock('@/lib/exercise/native-sync', () => ({
   })),
   syncNativeHealthAdapter: jest.fn(async () => ({ uploaded: 0 })),
   getNativeSyncPrivacyPolicyUrl: jest.fn(() => 'https://example.com/privacy'),
+  isNativeHealthSyncSupported: jest.fn(() => true),
+  NATIVE_SYNC_REQUIRES_DEV_CLIENT_MESSAGE:
+    'Native health sync requires a development or production build. It is not available in Expo Go.',
 }));
 
 jest.mock('expo-linking', () => ({
@@ -36,6 +50,10 @@ jest.mock('expo-linking', () => ({
 }));
 
 describe('Exercise screen', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
   it('renders key controls', async () => {
     render(
       <NavigationContainer>
@@ -44,7 +62,10 @@ describe('Exercise screen', () => {
         </SafeAreaProvider>
       </NavigationContainer>
     );
-    expect(screen.getByText('Exercise')).toBeTruthy();
+
+    await waitFor(() => {
+      expect(screen.getByText('Exercise')).toBeTruthy();
+    });
     expect(screen.getByText('Add Exercise')).toBeTruthy();
     expect(screen.getByText('Sync from native health app')).toBeTruthy();
   });

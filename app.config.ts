@@ -108,6 +108,10 @@ const config: ExpoConfig = {
     edgeToEdgeEnabled: true,
     predictiveBackGestureEnabled: false,
     package: 'com.rajrsoftware.calorieTracker',
+    permissions: [
+      'android.permission.health.READ_EXERCISE',
+      'android.permission.health.READ_ACTIVE_CALORIES_BURNED',
+    ],
   },
   web: {
     bundler: 'metro',
@@ -133,6 +137,25 @@ const config: ExpoConfig = {
     ],
     '@react-native-community/datetimepicker',
     '@sentry/react-native/expo',
+    [
+      '@kingstinct/react-native-healthkit',
+      {
+        NSHealthShareUsageDescription:
+          'Allow Calorie Tracker to read your workouts to sync exercise calories.',
+        NSHealthUpdateUsageDescription:
+          'Allow Calorie Tracker to save workouts you log in the app.',
+        background: false,
+      },
+    ],
+    'expo-health-connect',
+    [
+      'expo-build-properties',
+      {
+        android: {
+          minSdkVersion: 26,
+        },
+      },
+    ],
   ],
   experiments: {
     typedRoutes: true,

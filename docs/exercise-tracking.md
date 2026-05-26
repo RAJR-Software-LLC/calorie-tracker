@@ -40,7 +40,27 @@ This document describes the Expo mobile implementation for exercise logging and 
 
 ## Native health sync
 
-## Current implementation
+Native workout sync uses platform adapters in `src/lib/exercise/native-sync/adapters.ts`:
+
+- **iOS**: `@kingstinct/react-native-healthkit` reads `HKWorkoutTypeIdentifier` samples.
+- **Android**: `react-native-health-connect` reads `ExerciseSession` and overlapping `ActiveCaloriesBurned` records.
+
+### Dev client required (not Expo Go)
+
+These packages include native code and **do not work in Expo Go**. Use a custom dev client or EAS build:
+
+1. Install dependencies (already in `package.json`).
+2. Run `npx expo prebuild` when native projects need regeneration.
+3. Build a dev client: `eas build --profile development --platform ios|android`.
+4. Install the build on a physical device (HealthKit / Health Connect are not fully available in simulators).
+
+Config plugins in `app.config.ts`:
+
+- `@kingstinct/react-native-healthkit` — HealthKit entitlement + `NSHealthShareUsageDescription`
+- `expo-health-connect` — Health Connect manifest wiring
+- `expo-build-properties` — `minSdkVersion: 26` for Health Connect
+
+### Sync behavior
 
 - `syncNativeHealthAdapter()` performs:
   - permission gate (`ensurePermissions`)
@@ -52,9 +72,8 @@ This document describes the Expo mobile implementation for exercise logging and 
   - retry/backoff on `429` and `5xx` with jitter
   - cursor persistence after successful sync cycle
 
-- Adapters currently expose a production-safe integration surface and should be connected to concrete SDK readers in platform modules:
-  - iOS HealthKit adapter
-  - Android Health Connect adapter
+- Adapters request least-privilege read permissions and perform incremental reads from the stored ISO cursor timestamp (default lookback: 90 days on first sync).
+- Workout `nativeType` values are mapped to preset IDs via `mapping.ts` (`HKWorkoutActivityType*` on iOS, `EXERCISE_TYPE_*` on Android).
 
 ## Platform compliance requirements
 
@@ -106,5 +125,7 @@ This document describes the Expo mobile implementation for exercise logging and 
 - `src/lib/api/exercise-api.test.ts`
 - `src/lib/exercise/presets-store.test.ts`
 - `src/lib/exercise/native-sync/mapping.test.ts`
+- `src/lib/exercise/native-sync/native-type-mapping.test.ts`
+- `src/lib/exercise/native-sync/adapters.test.ts`
 - `src/lib/exercise/native-sync/bulk-sync.test.ts`
 - `app/__tests__/exercise-flow.test.tsx`

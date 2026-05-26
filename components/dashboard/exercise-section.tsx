@@ -1,4 +1,5 @@
-import { Dumbbell, Plus, Trash2 } from 'lucide-react-native';
+import { useRouter } from 'expo-router';
+import { ChevronRight, Dumbbell, Plus, Trash2 } from 'lucide-react-native';
 import { useState } from 'react';
 import { KeyboardAvoidingView, Modal, Platform, Pressable, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -19,6 +20,7 @@ type ExerciseSectionProps = {
 
 export function ExerciseSection({ date }: ExerciseSectionProps) {
   const p = useThemePalette();
+  const router = useRouter();
   const { user } = useAuth();
   const { exercises, refreshExercises, habits } = useDashboard();
   const [open, setOpen] = useState(false);
@@ -42,12 +44,18 @@ export function ExerciseSection({ date }: ExerciseSectionProps) {
   return (
     <View className="gap-3">
       <View className="flex-row items-center justify-between">
-        <View className="flex-row items-center gap-2">
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Open exercise tab"
+          className="flex-row items-center gap-2"
+          onPress={() => router.push('/(tabs)/exercise')}
+        >
           <Dumbbell size={18} color={p.primary} />
           <Text className="text-sm font-semibold text-foreground dark:text-darkForeground">
             {"Today's exercise"}
           </Text>
-        </View>
+          <ChevronRight size={16} color={p.mutedForeground} />
+        </Pressable>
         <Pressable className="flex-row items-center gap-1" onPress={() => setOpen(true)}>
           <Plus size={16} color={p.primary} />
           <Text className="text-sm font-medium text-primary dark:text-darkPrimary">

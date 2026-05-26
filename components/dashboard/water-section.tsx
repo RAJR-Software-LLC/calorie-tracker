@@ -57,7 +57,7 @@ export function WaterSection({ date }: WaterSectionProps) {
   const displayUnit = habits.waterDefaultUnit;
   const presets = getWaterQuickAddPresets(displayUnit);
   const totalInDisplayUnit = convertWaterAmount(row.totalAmount, row.unit, displayUnit);
-  const goalPair = goalForPut(row, habits.waterGoalAmount, habits.waterGoalUnit);
+  const goalPair = goalForPut(row, habits.waterGoalAmount ?? null, habits.waterGoalUnit ?? null);
   const hasGoal = goalPair.goalAmount != null && goalPair.goalUnit != null;
 
   async function on403() {
@@ -176,7 +176,7 @@ function WaterSetTotalModal({
     }
   }, [open, row.totalAmount, row.unit, displayUnit]);
 
-  const goalPair = goalForPut(row, habits.waterGoalAmount, habits.waterGoalUnit);
+  const goalPair = goalForPut(row, habits.waterGoalAmount ?? null, habits.waterGoalUnit ?? null);
 
   async function submit() {
     if (!user) return;

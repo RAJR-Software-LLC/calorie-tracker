@@ -1,6 +1,6 @@
-# Shared types (`types/index.d.ts`)
+# Shared types (`types/index.d.ts` + `types/client.d.ts`)
 
-This file is copied from **calorie-tracker-backend** so the mobile app uses the same shapes as the REST API and Firestore-backed models. When the backend changes, update this file (or re-copy from `calorie-tracker-backend/types/index.d.ts`).
+Backend types are copied into [`types/index.d.ts`](../types/index.d.ts) via `npm run sync-types`. Mobile-only aliases and extensions live in [`types/client.d.ts`](../types/client.d.ts) (import via `@/types`).
 
 ## Conventions
 
@@ -13,30 +13,35 @@ This file is copied from **calorie-tracker-backend** so the mobile app uses the 
 | Type                                                  | Meaning                                                                                                                                 |
 | ----------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
 | `UserDocument`                                        | Profile row for the signed-in user (`GET/PATCH /api/v1/me`). Includes `profile`, goals, `familyId`, `notifications`, optional `habits`. |
-| `UserHabits` / `PatchUserHabitsBody`                  | Optional habits under `PATCH /api/v1/me` (`exercise` / `water` toggles, water units & goals).                                           |
+| `HabitsSettings` / `UserHabits` (client alias)        | Optional habits under `PATCH /api/v1/me` (`exercise` / `water` toggles, water units & goals).                                           |
 | `WaterDailyDocument` / `WaterDailyWithId`             | Daily water row; `GET/PUT/PATCH /api/v1/me/water`.                                                                                      |
 | `CalorieEntryDocument` / `CalorieEntryWithId`         | Food log line items; list + create + delete under `/api/v1/me/entries`.                                                                 |
 | `SavedItemDocument` / `SavedItemWithId`               | Reusable items; `/api/v1/me/saved-items` plus usage increment.                                                                          |
 | `ExerciseDocument` / `ExerciseWithId`                 | Exercise log lines; `/api/v1/me/exercise`.                                                                                              |
+| `ExercisePreset` / `GetExercisePresetsResponse`       | Curated preset catalog from `GET /api/v1/me/exercise/presets`.                                                                          |
+| `PostExerciseBulkBody` / `BulkExerciseResult`         | Native sync bulk upload to `/api/v1/me/exercise/bulk`.                                                                                  |
 | `FamilyDocument` / `FamilyWithId`                     | Family group; create/join/get under `/api/v1/families`.                                                                                 |
 | `FamilySharedItemDocument` / `FamilySharedItemWithId` | Items shared into a family; `/api/v1/families/:id/shared-items`.                                                                        |
 
 ## Enums
 
 - `ActivityLevel`, `Sex`, `GoalType`: same string unions as backend validation (Zod) and Firestore.
+- `ExerciseIntensity`, `ExercisePresetCategory`, `ExerciseSource`, `ExerciseExternalSource`: exercise logging and native sync.
 
 ## Request/response helpers
 
-| Type                                                               | Endpoint                                                                       |
-| ------------------------------------------------------------------ | ------------------------------------------------------------------------------ | ----- |
-| `GetMeResponse`                                                    | `GET /api/v1/me` — `UserDocument                                               | null` |
-| `PatchMeBody`                                                      | `PATCH /api/v1/me` — partial update; `notifications` merges; optional `habits` |
-| `GetWaterDailyQuery`, `PutMeWaterBody`, `PatchMeWaterBody`         | Water daily read / idempotent set / delta update                               |
-| `PostEntryBody`, `PostSavedItemBody`, `PostExerciseBody`           | POST bodies for entries, saved items, exercise                                 |
-| `PostFamilyBody`, `PostJoinFamilyBody`, `PostFamilySharedItemBody` | Family create/join/shared item                                                 |
-| `CreateFamilyResponse`, `JoinFamilyResponse`                       | JSON bodies returned from family POST routes                                   |
+| Type                                                               | Endpoint                                                                                                |
+| ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------- | ----- |
+| `GetMeResponse`                                                    | `GET /api/v1/me` — `UserDocument                                                                        | null` |
+| `PatchMeBody`                                                      | `PATCH /api/v1/me` — partial update; `notifications` merges; optional `habits`                          |
+| `GetWaterDailyQuery`, `PutWaterDailyBody`, `PatchWaterDailyBody`   | Water daily read / idempotent set / delta update (client aliases: `PutMeWaterBody`, `PatchMeWaterBody`) |
+| `PostEntryBody`, `PostSavedItemBody`, `PostExerciseBody`           | POST bodies for entries, saved items, exercise                                                          |
+| `PatchExerciseBody`                                                | PATCH body for `/api/v1/me/exercise/:id`                                                                |
+| `PostFamilyBody`, `PostJoinFamilyBody`, `PostFamilySharedItemBody` | Family create/join/shared item                                                                          |
+| `CreateFamilyResponse`, `JoinFamilyResponse`                       | JSON bodies returned from family POST routes                                                            |
 
 ## Keeping types in sync
 
 1. When the backend `types/index.d.ts` changes, run `npm run sync-types` (see [`scripts/sync-types.sh`](../scripts/sync-types.sh)) or copy the file manually.
-2. Run `npm run typecheck` and fix any call sites in `src/lib/api/` or screens.
+2. Update [`types/client.d.ts`](../types/client.d.ts) if renamed backend types need mobile aliases.
+3. Run `npm run typecheck` and fix any call sites in `src/lib/api/` or screens.

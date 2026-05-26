@@ -2,7 +2,7 @@ import { render, screen, waitFor } from '@testing-library/react-native';
 import type { ReactNode } from 'react';
 
 import { SharedItemsList } from '@/components/family/shared-items-list';
-import type { FamilyWithId } from '@/types';
+import type { FamilyWithMemberProfiles } from '@/types';
 
 const mockGetFamily = jest.fn();
 const mockGetFamilySharedItems = jest.fn();
@@ -40,7 +40,7 @@ jest.mock('@/components/ui/avatar', () => ({
   },
 }));
 
-function makeFamily(overrides: Partial<FamilyWithId> = {}): FamilyWithId {
+function makeFamily(overrides: Partial<FamilyWithMemberProfiles> = {}): FamilyWithMemberProfiles {
   return {
     id: 'fam-1',
     name: 'Family One',

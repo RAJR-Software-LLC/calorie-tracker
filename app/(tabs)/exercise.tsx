@@ -2,6 +2,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Modal, Platform, Pressable, Text, View } from 'react-native';
 
 import { AppScreen } from '@/components/layout/app-screen';
+import { useDashboard } from '@/components/dashboard/dashboard-context';
+import { ExercisePresetPicker } from '@/components/exercise/exercise-preset-picker';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -18,6 +20,8 @@ import {
   createHealthConnectAdapter,
   createHealthKitAdapter,
   getNativeSyncPrivacyPolicyUrl,
+  isNativeHealthSyncSupported,
+  NATIVE_SYNC_REQUIRES_DEV_CLIENT_MESSAGE,
   syncNativeHealthAdapter,
 } from '@/lib/exercise/native-sync';
 import { loadExercisePresets } from '@/lib/exercise/presets-store';
@@ -39,6 +43,7 @@ function normalizeNullableText(value: string): string | null {
 }
 
 export default function ExerciseScreen() {
+  const { refreshExercises } = useDashboard();
   const [mode, setMode] = useState<QueryMode>('day');
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
   const [startDate, setStartDate] = useState(new Date().toISOString().slice(0, 10));
@@ -53,6 +58,11 @@ export default function ExerciseScreen() {
   const [syncing, setSyncing] = useState(false);
 
   const presetIds = useMemo(() => new Set(presets.map((preset) => preset.id)), [presets]);
+
+  const createExerciseDate = useMemo(() => {
+    if (mode === 'day') return date;
+    return startDate;
+  }, [date, mode, startDate]);
 
   const loadList = useCallback(async () => {
     try {
@@ -81,6 +91,10 @@ export default function ExerciseScreen() {
     }
   }, [date, endDate, mode, startDate]);
 
+  const refreshAfterMutation = useCallback(async () => {
+    await Promise.all([loadList(), refreshExercises()]);
+  }, [loadList, refreshExercises]);
+
   const loadPresets = useCallback(async () => {
     try {
       setLoadingPresets(true);
@@ -106,7 +120,7 @@ export default function ExerciseScreen() {
   async function handleDelete(exerciseId: string): Promise<void> {
     try {
       await deleteExercise(exerciseId);
-      await loadList();
+      await refreshAfterMutation();
       showToast('Exercise deleted.', 'success');
     } catch (error) {
       logAppError('exercise/delete', error, { exerciseId });
@@ -115,6 +129,11 @@ export default function ExerciseScreen() {
   }
 
   async function handleNativeSync(): Promise<void> {
+    if (!isNativeHealthSyncSupported()) {
+      showToast(NATIVE_SYNC_REQUIRES_DEV_CLIENT_MESSAGE, 'error');
+      return;
+    }
+
     try {
       setSyncing(true);
       const selected =
@@ -123,7 +142,7 @@ export default function ExerciseScreen() {
           : createHealthConnectAdapter({ lastReadAtIso: null });
       const result = await syncNativeHealthAdapter({ adapter: selected, presets });
       showToast(`Sync complete: uploaded ${result.uploaded} workout(s).`, 'success');
-      await loadList();
+      await refreshAfterMutation();
     } catch (error) {
       logAppError('exercise/native-sync', error);
       showToast(
@@ -186,9 +205,14 @@ export default function ExerciseScreen() {
           Native sync
         </Text>
         <Text className="text-xs text-muted-foreground dark:text-darkMutedForeground">
-          Pull workouts from Apple HealthKit (iOS) or Health Connect (Android).
+          {isNativeHealthSyncSupported()
+            ? 'Pull workouts from Apple HealthKit (iOS) or Health Connect (Android).'
+            : NATIVE_SYNC_REQUIRES_DEV_CLIENT_MESSAGE}
         </Text>
-        <Button disabled={syncing} onPress={() => void handleNativeSync()}>
+        <Button
+          disabled={syncing || !isNativeHealthSyncSupported()}
+          onPress={() => void handleNativeSync()}
+        >
           {syncing ? 'Syncing...' : 'Sync from native health app'}
         </Button>
         <Pressable onPress={() => void Linking.openURL(getNativeSyncPrivacyPolicyUrl())}>
@@ -254,22 +278,24 @@ export default function ExerciseScreen() {
 
       <CreateExerciseModal
         open={openCreate}
-        date={date}
+        date={createExerciseDate}
+        presets={presets}
         presetIds={presetIds}
         onClose={() => setOpenCreate(false)}
         onSaved={async () => {
           setOpenCreate(false);
-          await loadList();
+          await refreshAfterMutation();
         }}
       />
 
       <EditExerciseModal
         exercise={editing}
+        presets={presets}
         presetIds={presetIds}
         onClose={() => setEditing(null)}
         onSaved={async () => {
           setEditing(null);
-          await loadList();
+          await refreshAfterMutation();
         }}
       />
     </AppScreen>
@@ -279,12 +305,14 @@ export default function ExerciseScreen() {
 function CreateExerciseModal({
   open,
   date,
+  presets,
   presetIds,
   onClose,
   onSaved,
 }: {
   open: boolean;
   date: string;
+  presets: ExercisePreset[];
   presetIds: Set<string>;
   onClose: () => void;
   onSaved: () => Promise<void>;
@@ -344,6 +372,12 @@ function CreateExerciseModal({
             Add exercise
           </Text>
           <View className="gap-2">
+            <Label>Date</Label>
+            <Text className="text-sm text-muted-foreground dark:text-darkMutedForeground">
+              {date}
+            </Text>
+          </View>
+          <View className="gap-2">
             <Label>Name</Label>
             <Input value={name} onChangeText={setName} placeholder="Morning run" />
           </View>
@@ -356,10 +390,7 @@ function CreateExerciseModal({
               placeholder="320"
             />
           </View>
-          <View className="gap-2">
-            <Label>Preset ID (optional)</Label>
-            <Input value={presetId} onChangeText={setPresetId} placeholder="running" />
-          </View>
+          <ExercisePresetPicker presets={presets} value={presetId} onChange={setPresetId} />
           <View className="gap-2">
             <Label>Intensity</Label>
             <SegmentedControl<ExerciseIntensity>
@@ -382,11 +413,13 @@ function CreateExerciseModal({
 
 function EditExerciseModal({
   exercise,
+  presets,
   presetIds,
   onClose,
   onSaved,
 }: {
   exercise: ExerciseWithId | null;
+  presets: ExercisePreset[];
   presetIds: Set<string>;
   onClose: () => void;
   onSaved: () => Promise<void>;
@@ -461,10 +494,7 @@ function EditExerciseModal({
               keyboardType="number-pad"
             />
           </View>
-          <View className="gap-2">
-            <Label>Preset ID</Label>
-            <Input value={presetId} onChangeText={setPresetId} placeholder="running" />
-          </View>
+          <ExercisePresetPicker presets={presets} value={presetId} onChange={setPresetId} />
           <View className="gap-2">
             <Label>Notes</Label>
             <Input value={notes} onChangeText={setNotes} multiline className="min-h-[88px] py-3" />

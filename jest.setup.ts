@@ -59,7 +59,13 @@ jest.mock(
   'expo-constants',
   () => ({
     __esModule: true,
+    ExecutionEnvironment: {
+      StoreClient: 'storeClient',
+      Bare: 'bare',
+      Standalone: 'standalone',
+    },
     default: {
+      executionEnvironment: 'bare',
       expoConfig: {
         version: '1.0.0',
         extra: { eas: { projectId: 'jest-project-id' } },
@@ -79,4 +85,27 @@ jest.mock('expo-image-picker', () => ({
 jest.mock('expo-image-manipulator', () => ({
   manipulateAsync: jest.fn(async (uri: string) => ({ uri })),
   SaveFormat: { JPEG: 'jpeg', PNG: 'png', WEBP: 'webp' },
+}));
+
+jest.mock('@kingstinct/react-native-healthkit', () => ({
+  WorkoutActivityType: { running: 37, 37: 'running', other: 3000, 3000: 'other' },
+  isHealthDataAvailableAsync: jest.fn(async () => true),
+  requestAuthorization: jest.fn(async () => true),
+  queryWorkoutSamples: jest.fn(async () => []),
+}));
+
+jest.mock('react-native-health-connect', () => ({
+  SdkAvailabilityStatus: {
+    SDK_UNAVAILABLE: 1,
+    SDK_UNAVAILABLE_PROVIDER_UPDATE_REQUIRED: 2,
+    SDK_AVAILABLE: 3,
+  },
+  ExerciseType: { RUNNING: 56, 56: 'RUNNING', OTHER_WORKOUT: 0, 0: 'OTHER_WORKOUT' },
+  getSdkStatus: jest.fn(async () => 3),
+  initialize: jest.fn(async () => true),
+  requestPermission: jest.fn(async () => [
+    { accessType: 'read', recordType: 'ExerciseSession' },
+    { accessType: 'read', recordType: 'ActiveCaloriesBurned' },
+  ]),
+  readRecords: jest.fn(async () => ({ records: [] })),
 }));

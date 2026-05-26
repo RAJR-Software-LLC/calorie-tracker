@@ -20,7 +20,7 @@ import { useThemePalette } from '@/lib/use-theme-palette';
 
 import type {
   FamilySharedItemWithId,
-  FamilyWithId,
+  FamilyWithMemberProfiles,
   SavedItemWithId,
   UserProfilePhotoWithDownload,
 } from '@/types';
@@ -46,7 +46,7 @@ export function SharedItemsList({ familyId }: SharedItemsListProps) {
   const p = useThemePalette();
   const { user } = useAuth();
   const [sharedItems, setSharedItems] = useState<FamilySharedItemWithId[]>([]);
-  const [family, setFamily] = useState<FamilyWithId | null>(null);
+  const [family, setFamily] = useState<FamilyWithMemberProfiles | null>(null);
   const [mePhoto, setMePhoto] = useState<UserProfilePhotoWithDownload | null>(null);
   const [loading, setLoading] = useState(true);
   const [shareOpen, setShareOpen] = useState(false);

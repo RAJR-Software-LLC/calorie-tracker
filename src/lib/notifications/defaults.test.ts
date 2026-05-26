@@ -53,7 +53,9 @@ describe('withNotificationDefaults', () => {
       quietHours: { start: '23:00', end: '07:00' },
     };
 
-    expect(withNotificationDefaults(serverResponse)).toEqual({
+    expect(
+      withNotificationDefaults(serverResponse as import('@/types').PatchNotificationsBody)
+    ).toEqual({
       enabled: false,
       reminderTimes: ['10:15'],
       categories: {
