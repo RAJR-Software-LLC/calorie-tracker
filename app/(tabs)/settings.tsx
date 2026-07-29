@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { SegmentedControl } from '@/components/ui/segmented-control';
-import { getMe, patchMe } from '@/lib/api';
+import { patchMe } from '@/lib/api';
 import { ApiError } from '@/lib/api/errors';
 import { logAppError } from '@/lib/app-errors';
 import { formatCalorieGoal } from '@/lib/calorie-goal';
@@ -22,8 +22,10 @@ import {
   toUserProfilePhotoMessage,
   uploadProfilePhoto,
 } from '@/lib/profile-photo/upload';
+import { invalidateMe, updateMeCache, useMe } from '@/lib/queries';
 import { showToast } from '@/lib/toast';
 import { useThemePalette } from '@/lib/use-theme-palette';
+import { useQueryClient } from '@tanstack/react-query';
 import { cn } from '@/src/lib/cn';
 import {
   buildAnthropometricPatch,
@@ -35,7 +37,6 @@ import {
   lbToKg,
 } from '@/src/lib/utils/profile-measurements';
 import type { ActivityLevel, GetMeResponse, GoalType, HeightUnit, Sex, WeightUnit } from '@/types';
-import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
 import { Bell, Camera, ChevronRight, Droplets, LogOut, Mail, Shield, UtensilsCrossed } from 'lucide-react-native';
 import { useCallback, useEffect, useState } from 'react';
@@ -147,7 +148,8 @@ export default function SettingsScreen() {
   const { user } = useAuth();
   const router = useRouter();
   const p = useThemePalette();
-  const [profile, setProfile] = useState<GetMeResponse>(null);
+  const queryClient = useQueryClient();
+  const { data: profile = null } = useMe();
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const [showHabits, setShowHabits] = useState(false);
@@ -236,57 +238,33 @@ export default function SettingsScreen() {
     });
   }, []);
 
+  const applyMeUpdate = useCallback(
+    (me: GetMeResponse) => {
+      updateMeCache(queryClient, user?.uid, me);
+      syncProfileInputs(me);
+    },
+    [queryClient, syncProfileInputs, user?.uid]
+  );
+
   useEffect(() => {
     if (!user) {
-      setProfile(null);
+      syncProfileInputs(null);
       return;
     }
-    void getMe()
-      .then((me) => {
-        setProfile(me);
-        syncProfileInputs(me);
-      })
-      .catch((err) => {
-        logAppError('settings/getMe', err);
-        setProfile(null);
-        syncProfileInputs(null);
-      });
-  }, [syncProfileInputs, user]);
-
-  useFocusEffect(
-    useCallback(() => {
-      if (!user) return;
-      let cancelled = false;
-      void (async () => {
-        try {
-          const me = await getMe();
-          if (!cancelled) {
-            setProfile(me);
-            syncProfileInputs(me);
-          }
-        } catch (err) {
-          logAppError('settings/loadProfile', err);
-        }
-      })();
-      return () => {
-        cancelled = true;
-      };
-    }, [syncProfileInputs, user])
-  );
+    if (profile) {
+      syncProfileInputs(profile);
+    }
+  }, [profile, syncProfileInputs, user]);
 
   const handleSignOut = useCallback(() => {
     void signOutUser();
   }, []);
 
   const refreshProfileFromServer = useCallback(() => {
-    if (!user) return;
-    void getMe()
-      .then((me) => {
-        setProfile(me);
-        syncProfileInputs(me);
-      })
-      .catch((err) => logAppError('settings/refreshProfilePhoto', err));
-  }, [syncProfileInputs, user]);
+    void invalidateMe(queryClient, user?.uid).catch((err) =>
+      logAppError('settings/refreshProfilePhoto', err)
+    );
+  }, [queryClient, user?.uid]);
 
   const mapValidationErrors = useCallback((err: unknown) => {
     if (!(err instanceof ApiError) || err.status !== 400) return null;
@@ -393,12 +371,12 @@ export default function SettingsScreen() {
 
     setProfileSaving(true);
     try {
-      let me: GetMeResponse = await patchMe({ profile: changedPatch });
-      if (!me?.profile) {
-        me = await getMe();
+      const me: GetMeResponse = await patchMe({ profile: changedPatch });
+      if (me?.profile) {
+        applyMeUpdate(me);
+      } else {
+        await invalidateMe(queryClient, user?.uid);
       }
-      setProfile(me);
-      syncProfileInputs(me);
       showToast('Profile updated', 'success');
     } catch (err) {
       logAppError('settings/patchProfile', err);
@@ -427,6 +405,8 @@ export default function SettingsScreen() {
     profile?.profile,
     sexInput,
     activityLevelInput,
+    applyMeUpdate,
+    queryClient,
     syncProfileInputs,
     user,
     weightInput,
@@ -488,7 +468,7 @@ export default function SettingsScreen() {
       try {
         const me = await uploadProfilePhoto();
         if (me != null) {
-          setProfile(me);
+          applyMeUpdate(me);
           showToast('Profile photo updated', 'success');
         }
         setPhotoSheetOpen(false);
@@ -507,7 +487,7 @@ export default function SettingsScreen() {
         setPhotoUploading(false);
       }
     })();
-  }, [user]);
+  }, [applyMeUpdate, user]);
 
   const handleRemoveProfilePhoto = useCallback(() => {
     if (!user) return;
@@ -515,7 +495,7 @@ export default function SettingsScreen() {
     void (async () => {
       try {
         const me = await removeProfilePhoto();
-        setProfile(me);
+        applyMeUpdate(me);
         showToast('Profile photo removed', 'success');
         setPhotoSheetOpen(false);
       } catch (err) {
@@ -525,7 +505,7 @@ export default function SettingsScreen() {
         setPhotoUploading(false);
       }
     })();
-  }, [user]);
+  }, [applyMeUpdate, user]);
 
   return (
     <AppScreen forceLeafHeader>
@@ -812,10 +792,7 @@ export default function SettingsScreen() {
                   profile={profile}
                   disabled={!user}
                   embedded
-                  onUpdated={(me) => {
-                    setProfile(me);
-                    syncProfileInputs(me);
-                  }}
+                  onUpdated={applyMeUpdate}
                 />
               </>
             ) : null}
@@ -857,7 +834,7 @@ export default function SettingsScreen() {
                 initial={
                   profile?.notifications ? withNotificationDefaults(profile.notifications) : null
                 }
-                onSaved={(me) => setProfile(me)}
+                onSaved={applyMeUpdate}
                 embedded
               />
             </>

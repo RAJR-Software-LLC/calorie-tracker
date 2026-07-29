@@ -20,6 +20,7 @@ Backend types are copied into [`types/index.d.ts`](../types/index.d.ts) via `npm
 | `ExerciseDocument` / `ExerciseWithId`                 | Exercise log lines; `/api/v1/me/exercise`.                                                                                              |
 | `ExercisePreset` / `GetExercisePresetsResponse`       | Curated preset catalog from `GET /api/v1/me/exercise/presets`.                                                                          |
 | `PostExerciseBulkBody` / `BulkExerciseResult`         | Native sync bulk upload to `/api/v1/me/exercise/bulk`.                                                                                  |
+| `ExerciseSyncStateDocument` / `PutExerciseSyncStateBody` / `ExercisePlatformSyncState` | Durable sync watermarks via `GET/PUT /api/v1/me/exercise/sync-state`. |
 | `FamilyDocument` / `FamilyWithId`                     | Family group; create/join/get under `/api/v1/families`.                                                                                 |
 | `FamilySharedItemDocument` / `FamilySharedItemWithId` | Items shared into a family; `/api/v1/families/:id/shared-items`.                                                                        |
 
@@ -36,7 +37,8 @@ Backend types are copied into [`types/index.d.ts`](../types/index.d.ts) via `npm
 | `PatchMeBody`                                                      | `PATCH /api/v1/me` — partial update; `notifications` merges; optional `habits`                          |
 | `GetWaterDailyQuery`, `PutWaterDailyBody`, `PatchWaterDailyBody`   | Water daily read / idempotent set / delta update (client aliases: `PutMeWaterBody`, `PatchMeWaterBody`) |
 | `PostEntryBody`, `PostSavedItemBody`, `PostExerciseBody`           | POST bodies for entries, saved items, exercise                                                          |
-| `PatchExerciseBody`                                                | PATCH body for `/api/v1/me/exercise/:id`                                                                |
+| `PatchExerciseBody`                                                | PATCH body for `/api/v1/me/exercise/:id` (includes duration/distance/start/end/HR/steps)               |
+| `PutExerciseSyncStateBody`                                         | PUT body for `/api/v1/me/exercise/sync-state`                                                          |
 | `PostFamilyBody`, `PostJoinFamilyBody`, `PostFamilySharedItemBody` | Family create/join/shared item                                                                          |
 | `CreateFamilyResponse`, `JoinFamilyResponse`                       | JSON bodies returned from family POST routes                                                            |
 

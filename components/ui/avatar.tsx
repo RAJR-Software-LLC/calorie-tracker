@@ -1,4 +1,5 @@
 import { User } from 'lucide-react-native';
+import { useRef } from 'react';
 import { Image, Text, View } from 'react-native';
 
 import { useThemePalette } from '@/lib/use-theme-palette';
@@ -28,6 +29,7 @@ function avatarInitial(name?: string | null, email?: string | null): string | nu
 
 export function Avatar({ photo, name, email, size = 48, onRefreshNeeded }: AvatarProps) {
   const p = useThemePalette();
+  const hasRetriedRef = useRef(false);
   const hasDownload =
     photo != null && typeof photo === 'object' && 'downloadUrl' in photo && photo.downloadUrl;
   const initial = avatarInitial(name, email);
@@ -40,7 +42,11 @@ export function Avatar({ photo, name, email, size = 48, onRefreshNeeded }: Avata
         source={{ uri: url }}
         style={dim}
         accessibilityLabel="Profile photo"
-        onError={() => onRefreshNeeded?.()}
+        onError={() => {
+          if (hasRetriedRef.current) return;
+          hasRetriedRef.current = true;
+          onRefreshNeeded?.();
+        }}
       />
     );
   }

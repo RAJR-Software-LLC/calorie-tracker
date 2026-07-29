@@ -2,6 +2,7 @@ import { render, screen, waitFor } from '@testing-library/react-native';
 import type { ReactNode } from 'react';
 
 import { SharedItemsList } from '@/components/family/shared-items-list';
+import { TestQueryProvider } from '@/lib/queries/test-utils';
 import type { FamilyWithMemberProfiles } from '@/types';
 
 const mockGetFamily = jest.fn();
@@ -77,7 +78,11 @@ describe('SharedItemsList family members', () => {
       })
     );
 
-    render(<SharedItemsList familyId="fam-1" />);
+    render(
+      <TestQueryProvider>
+        <SharedItemsList familyId="fam-1" />
+      </TestQueryProvider>
+    );
 
     await waitFor(() => expect(mockGetFamily).toHaveBeenCalledWith('fam-1'));
     expect(screen.getByText('Family One')).toBeTruthy();
@@ -100,7 +105,11 @@ describe('SharedItemsList family members', () => {
       })
     );
 
-    render(<SharedItemsList familyId="fam-1" />);
+    render(
+      <TestQueryProvider>
+        <SharedItemsList familyId="fam-1" />
+      </TestQueryProvider>
+    );
 
     await waitFor(() => expect(mockGetFamily).toHaveBeenCalledWith('fam-1'));
     expect(screen.getByText('1 member')).toBeTruthy();
@@ -127,7 +136,11 @@ describe('SharedItemsList family members', () => {
       },
     });
 
-    render(<SharedItemsList familyId="fam-1" />);
+    render(
+      <TestQueryProvider>
+        <SharedItemsList familyId="fam-1" />
+      </TestQueryProvider>
+    );
 
     await waitFor(() => expect(mockGetFamily).toHaveBeenCalledWith('fam-1'));
     expect(mockAvatar).toHaveBeenCalledWith(

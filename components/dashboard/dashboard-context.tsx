@@ -4,23 +4,23 @@ import {
   useContext,
   useEffect,
   useMemo,
-  useState,
   type ReactNode,
 } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 
 import { useAuth } from '@/components/auth/auth-provider';
-import {
-  getEntries,
-  getExerciseForDate,
-  getFamilySharedItems,
-  getMe,
-  getMeWater,
-  getSavedItems,
-} from '@/lib/api';
 import { ApiError } from '@/lib/api/errors';
 import { logAppError, toUserErrorMessage } from '@/lib/app-errors';
 import { formatDate, formatDateInTimeZone } from '@/lib/date';
-import { getFirebaseIdTokenForApi } from '@/lib/firebase';
+import {
+  queryKeys,
+  useEntries,
+  useExercise,
+  useFamilySharedItems,
+  useMe,
+  useSavedItems,
+  useWaterDaily,
+} from '@/lib/queries';
 import { showToast } from '@/lib/toast';
 import { mergeUserHabits } from '@/lib/utils/user-habits';
 import type {
@@ -52,6 +52,7 @@ interface DashboardContextType {
   refreshExercises: () => Promise<void>;
   refreshSavedItems: () => Promise<void>;
   refreshWater: () => Promise<void>;
+  refreshDayData: () => Promise<void>;
   refreshAll: () => Promise<void>;
   updateSavedItemLocally: (itemId: string, patch: Partial<SavedItemWithId>) => void;
   removeSavedItemLocally: (itemId: string) => void;
@@ -59,159 +60,136 @@ interface DashboardContextType {
 
 const DashboardContext = createContext<DashboardContextType | null>(null);
 
-async function loadFamilySharedItems(
-  familyId: string | null | undefined
-): Promise<FamilySharedItemWithId[]> {
-  if (!familyId) return [];
-  try {
-    return await getFamilySharedItems(familyId);
-  } catch (err) {
-    if (err instanceof ApiError && err.status === 403) {
-      return [];
-    }
-    throw err;
-  }
-}
-
 export function DashboardProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
-  const [entries, setEntries] = useState<CalorieEntryWithId[]>([]);
-  const [exercises, setExercises] = useState<ExerciseWithId[]>([]);
-  const [savedItems, setSavedItems] = useState<SavedItemWithId[]>([]);
-  const [familySharedItems, setFamilySharedItems] = useState<FamilySharedItemWithId[]>([]);
-  const [familyId, setFamilyId] = useState<string | null>(null);
-  const [calorieGoal, setCalorieGoal] = useState<CalorieGoal | null>(null);
-  const [maintenanceCalories, setMaintenanceCalories] = useState<number | null>(null);
-  const [habits, setHabits] = useState<UserHabits>(() => mergeUserHabits(undefined));
-  const [waterDaily, setWaterDaily] = useState<WaterDailyWithId | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [calendarDay, setCalendarDay] = useState(() => formatDate(new Date()));
+  const queryClient = useQueryClient();
+  const { data: profile, isPending: mePending } = useMe();
 
-  const refreshEntries = useCallback(async () => {
-    if (!user) return;
-    const data = await getEntries({ date: calendarDay });
-    setEntries(data);
-  }, [user, calendarDay]);
+  const calendarDay = useMemo(() => {
+    const tz = profile?.notifications?.timezone ?? 'UTC';
+    return formatDateInTimeZone(new Date(), tz);
+  }, [profile?.notifications?.timezone]);
 
-  const refreshExercises = useCallback(async () => {
-    if (!user) return;
-    if (habits.exerciseTrackingEnabled === false) {
-      setExercises([]);
-      return;
+  const habits = useMemo(() => mergeUserHabits(profile?.habits), [profile?.habits]);
+  const familyId = profile?.familyId ?? null;
+  const calorieGoal = profile?.calorieGoal ?? null;
+  const maintenanceCalories = profile?.maintenanceCalories ?? null;
+
+  const waterEnabled = habits.waterTrackingEnabled !== false;
+  const exerciseEnabled = habits.exerciseTrackingEnabled !== false;
+
+  const entriesQuery = useEntries(calendarDay);
+  const waterQuery = useWaterDaily(calendarDay, waterEnabled);
+  const exerciseQuery = useExercise(calendarDay, exerciseEnabled);
+  const savedItemsQuery = useSavedItems();
+  const familySharedQuery = useFamilySharedItems(familyId);
+
+  const entries = entriesQuery.data ?? [];
+  const exercises = exerciseEnabled ? (exerciseQuery.data ?? []) : [];
+  const savedItems = savedItemsQuery.data ?? [];
+  const familySharedItems = familySharedQuery.data ?? [];
+  const waterDaily = waterEnabled ? (waterQuery.data ?? null) : null;
+
+  useEffect(() => {
+    if (!waterQuery.error || !waterEnabled) return;
+    const err = waterQuery.error;
+    logAppError('dashboard/getMeWater', err, {
+      date: calendarDay,
+      timezone: profile?.notifications?.timezone ?? 'UTC',
+    });
+    if (err instanceof ApiError && (err.status === 400 || err.status === 422)) {
+      showToast(
+        toUserErrorMessage(
+          err,
+          'Could not load water for this day. Check your profile timezone in Settings.'
+        ),
+        'error'
+      );
     }
-    const data = await getExerciseForDate(calendarDay);
-    setExercises(data);
-  }, [user, calendarDay, habits.exerciseTrackingEnabled]);
+  }, [waterQuery.error, waterEnabled, calendarDay, profile?.notifications?.timezone]);
 
-  const refreshWater = useCallback(async () => {
+  const loading =
+    !!user &&
+    (mePending ||
+      (entriesQuery.isPending && entriesQuery.data === undefined) ||
+      (savedItemsQuery.isPending && savedItemsQuery.data === undefined));
+
+  const invalidateEntries = useCallback(async () => {
     if (!user) return;
-    if (habits.waterTrackingEnabled === false) {
-      setWaterDaily(null);
-      return;
-    }
-    const row = await getMeWater({ date: calendarDay });
-    setWaterDaily(row);
-  }, [user, calendarDay, habits.waterTrackingEnabled]);
+    await queryClient.invalidateQueries({
+      queryKey: queryKeys.entries(user.uid, calendarDay),
+    });
+  }, [queryClient, user, calendarDay]);
+
+  const invalidateWater = useCallback(async () => {
+    if (!user) return;
+    await queryClient.invalidateQueries({
+      queryKey: queryKeys.water(user.uid, calendarDay),
+    });
+  }, [queryClient, user, calendarDay]);
+
+  const invalidateExercises = useCallback(async () => {
+    if (!user) return;
+    await queryClient.invalidateQueries({
+      queryKey: queryKeys.exercise(user.uid, calendarDay),
+    });
+  }, [queryClient, user, calendarDay]);
 
   const refreshSavedItems = useCallback(async () => {
     if (!user) return;
-    const [personal, familyItems] = await Promise.all([
-      getSavedItems(),
-      loadFamilySharedItems(familyId),
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: queryKeys.savedItems(user.uid) }),
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.familySharedItems(user.uid, familyId),
+      }),
     ]);
-    setSavedItems(personal);
-    setFamilySharedItems(familyItems);
-  }, [user, familyId]);
+  }, [queryClient, user, familyId]);
 
-  const updateSavedItemLocally = useCallback((itemId: string, patch: Partial<SavedItemWithId>) => {
-    setSavedItems((prev) =>
-      prev.map((item) => (item.id === itemId ? { ...item, ...patch } : item))
-    );
-  }, []);
-
-  const removeSavedItemLocally = useCallback((itemId: string) => {
-    setSavedItems((prev) => prev.filter((item) => item.id !== itemId));
-  }, []);
+  const refreshDayData = useCallback(async () => {
+    if (!user) return;
+    await Promise.all([
+      invalidateEntries(),
+      invalidateWater(),
+      invalidateExercises(),
+    ]);
+  }, [user, invalidateEntries, invalidateWater, invalidateExercises]);
 
   const refreshAll = useCallback(async () => {
     if (!user) return;
-    setLoading(true);
     try {
-      await getFirebaseIdTokenForApi({ forceRefresh: true });
-      const profile = await getMe();
-      const tz = profile?.notifications?.timezone ?? 'UTC';
-      const day = formatDateInTimeZone(new Date(), tz);
-      setCalendarDay(day);
-
-      const h = mergeUserHabits(profile?.habits);
-      setHabits(h);
-
-      const nextFamilyId = profile?.familyId ?? null;
-      setFamilyId(nextFamilyId);
-
-      const [entriesData, savedData, familyItems] = await Promise.all([
-        getEntries({ date: day }),
-        getSavedItems(),
-        loadFamilySharedItems(nextFamilyId),
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: queryKeys.me(user.uid) }),
+        refreshDayData(),
+        refreshSavedItems(),
       ]);
-      setEntries(entriesData);
-      setSavedItems(savedData);
-      setFamilySharedItems(familyItems);
-      setCalorieGoal(profile?.calorieGoal ?? null);
-      setMaintenanceCalories(profile?.maintenanceCalories ?? null);
-
-      const exercisesData =
-        h.exerciseTrackingEnabled === false ? [] : await getExerciseForDate(day);
-      setExercises(exercisesData);
-
-      let waterRow: WaterDailyWithId | null = null;
-      if (h.waterTrackingEnabled !== false) {
-        try {
-          waterRow = await getMeWater({ date: day });
-        } catch (err) {
-          logAppError('dashboard/getMeWater', err, { date: day, timezone: tz });
-          if (err instanceof ApiError && (err.status === 400 || err.status === 422)) {
-            showToast(
-              toUserErrorMessage(
-                err,
-                'Could not load water for this day. Check your profile timezone in Settings.'
-              ),
-              'error'
-            );
-          } else {
-            throw err;
-          }
-        }
-      }
-      setWaterDaily(waterRow);
     } catch (err) {
       logAppError('dashboard/refreshAll', err);
       showToast(
         toUserErrorMessage(err, "Couldn't load today's data. Pull to refresh or try again."),
         'error'
       );
-    } finally {
-      setLoading(false);
     }
-  }, [user]);
+  }, [user, queryClient, refreshDayData, refreshSavedItems]);
 
-  useEffect(() => {
-    if (!user) {
-      setEntries([]);
-      setExercises([]);
-      setSavedItems([]);
-      setFamilySharedItems([]);
-      setFamilyId(null);
-      setCalorieGoal(null);
-      setMaintenanceCalories(null);
-      setHabits(mergeUserHabits(undefined));
-      setWaterDaily(null);
-      setCalendarDay(formatDate(new Date()));
-      setLoading(false);
-      return;
-    }
-    void refreshAll();
-  }, [user, refreshAll]);
+  const updateSavedItemLocally = useCallback(
+    (itemId: string, patch: Partial<SavedItemWithId>) => {
+      if (!user) return;
+      queryClient.setQueryData<SavedItemWithId[]>(queryKeys.savedItems(user.uid), (prev) =>
+        (prev ?? []).map((item) => (item.id === itemId ? { ...item, ...patch } : item))
+      );
+    },
+    [queryClient, user]
+  );
+
+  const removeSavedItemLocally = useCallback(
+    (itemId: string) => {
+      if (!user) return;
+      queryClient.setQueryData<SavedItemWithId[]>(queryKeys.savedItems(user.uid), (prev) =>
+        (prev ?? []).filter((item) => item.id !== itemId)
+      );
+    },
+    [queryClient, user]
+  );
 
   const totalCalories = entries.reduce((sum, e) => sum + (e.estimatedCalories || 0), 0);
   const exerciseCalories = exercises.reduce((sum, e) => sum + (e.caloriesBurned || 0), 0);
@@ -231,10 +209,11 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       habits,
       waterDaily,
       loading,
-      refreshEntries,
-      refreshExercises,
+      refreshEntries: invalidateEntries,
+      refreshExercises: invalidateExercises,
       refreshSavedItems,
-      refreshWater,
+      refreshWater: invalidateWater,
+      refreshDayData,
       refreshAll,
       updateSavedItemLocally,
       removeSavedItemLocally,
@@ -253,10 +232,11 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       habits,
       waterDaily,
       loading,
-      refreshEntries,
-      refreshExercises,
+      invalidateEntries,
+      invalidateExercises,
       refreshSavedItems,
-      refreshWater,
+      invalidateWater,
+      refreshDayData,
       refreshAll,
       updateSavedItemLocally,
       removeSavedItemLocally,

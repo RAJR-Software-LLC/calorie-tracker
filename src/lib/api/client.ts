@@ -1,7 +1,7 @@
 import { getApiBaseUrl } from '@/lib/env';
 import { getFirebaseIdTokenForApi } from '@/lib/firebase';
 
-import { ApiError } from './errors';
+import { ApiError, parseRetryAfterHeader } from './errors';
 
 export type RequestOptions = Omit<RequestInit, 'body'> & {
   /** When false, do not attach Authorization (defaults to true). */
@@ -109,7 +109,8 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
       typeof parsed === 'object' && parsed !== null && 'error' in parsed
         ? String((parsed as { error?: unknown }).error)
         : res.statusText;
-    throw new ApiError(res.status, msg || 'Request failed', parsed, url);
+    const retryAfterSeconds = parseRetryAfterHeader(res.headers.get('Retry-After'));
+    throw new ApiError(res.status, msg || 'Request failed', parsed, url, retryAfterSeconds);
   }
 
   return parsed as T;

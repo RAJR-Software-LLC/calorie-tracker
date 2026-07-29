@@ -1,16 +1,14 @@
-import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
-import type { GetMeResponse } from '@/types';
+import { Leaf } from 'lucide-react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useQueryClient } from '@tanstack/react-query';
 
 import { useAuth } from '@/components/auth/auth-provider';
 import { Avatar } from '@/components/ui/avatar';
-import { getMe } from '@/lib/api';
+import { invalidateMe, useMeProfilePhoto } from '@/lib/queries';
 import { logAppError } from '@/lib/app-errors';
 import { useThemePalette } from '@/lib/use-theme-palette';
-import { Leaf } from 'lucide-react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 function getGreeting(): string {
   const hour = new Date().getHours();
@@ -28,30 +26,16 @@ export function AppHeader({ forceLeaf = false }: AppHeaderProps = {}) {
   const { user } = useAuth();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const [profile, setProfile] = useState<GetMeResponse>(null);
+  const queryClient = useQueryClient();
+  const profilePhoto = useMeProfilePhoto({ enabled: !forceLeaf });
   const displayName = user?.displayName?.split(' ')[0] || 'Friend';
-  const hasProfilePhoto = !forceLeaf && profile?.profilePhoto != null;
+  const hasProfilePhoto = !forceLeaf && profilePhoto != null;
 
-  useEffect(() => {
-    if (!user) setProfile(null);
-  }, [user]);
-
-  useFocusEffect(
-    useCallback(() => {
-      if (forceLeaf || !user) return;
-      let cancelled = false;
-      void getMe()
-        .then((me) => {
-          if (!cancelled) setProfile(me);
-        })
-        .catch((err) => {
-          logAppError('header/getMe', err);
-        });
-      return () => {
-        cancelled = true;
-      };
-    }, [user, forceLeaf])
-  );
+  const handleAvatarRefreshNeeded = () => {
+    void invalidateMe(queryClient, user?.uid).catch((err) =>
+      logAppError('header/refreshProfilePhoto', err)
+    );
+  };
 
   return (
     <View
@@ -73,17 +57,13 @@ export function AppHeader({ forceLeaf = false }: AppHeaderProps = {}) {
           accessibilityRole="button"
           accessibilityLabel="Open settings"
         >
-          {hasProfilePhoto && profile?.profilePhoto ? (
+          {hasProfilePhoto && profilePhoto ? (
             <Avatar
-              photo={profile.profilePhoto}
+              photo={profilePhoto}
               name={user?.displayName}
               email={user?.email}
               size={30}
-              onRefreshNeeded={() => {
-                void getMe()
-                  .then(setProfile)
-                  .catch((err) => logAppError('header/refreshProfilePhoto', err));
-              }}
+              onRefreshNeeded={handleAvatarRefreshNeeded}
             />
           ) : (
             <Leaf size={20} color={p.primary} />

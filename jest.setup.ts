@@ -109,3 +109,17 @@ jest.mock('react-native-health-connect', () => ({
   ]),
   readRecords: jest.fn(async () => ({ records: [] })),
 }));
+
+jest.mock('expo-background-task', () => ({
+  BackgroundTaskResult: { Success: 1, Failed: 2 },
+  BackgroundTaskStatus: { Restricted: 1, Available: 2 },
+  getStatusAsync: jest.fn(async () => 2),
+  registerTaskAsync: jest.fn(async () => undefined),
+  unregisterTaskAsync: jest.fn(async () => undefined),
+}));
+
+jest.mock('expo-task-manager', () => ({
+  defineTask: jest.fn(),
+  isTaskDefined: jest.fn(() => false),
+  isTaskRegisteredAsync: jest.fn(async () => false),
+}));

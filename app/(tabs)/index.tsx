@@ -12,7 +12,7 @@ import { AppScreen } from '@/components/layout/app-screen';
 import { useFocusEffect } from '@react-navigation/native';
 
 function DashboardBody() {
-  const { totalCalories, exerciseCalories, calorieGoal, habits, refreshAll, calendarDay } =
+  const { totalCalories, exerciseCalories, calorieGoal, habits, refreshDayData, calendarDay } =
     useDashboard();
   const skipNextFocusRefresh = useRef(true);
 
@@ -22,8 +22,8 @@ function DashboardBody() {
         skipNextFocusRefresh.current = false;
         return;
       }
-      void refreshAll();
-    }, [refreshAll])
+      void refreshDayData();
+    }, [refreshDayData])
   );
 
   return (

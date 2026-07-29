@@ -1,41 +1,25 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { ActivityIndicator, Text, View } from 'react-native';
 
 import { useAuth } from '@/components/auth/auth-provider';
 import { FamilyManager } from '@/components/family/family-manager';
 import { SharedItemsList } from '@/components/family/shared-items-list';
 import { AppScreen } from '@/components/layout/app-screen';
-import { logAppError } from '@/lib/app-errors';
-import { getMe } from '@/lib/api';
+import { useMe } from '@/lib/queries';
 import { useThemePalette } from '@/lib/use-theme-palette';
 
 export default function FamilyScreen() {
   const p = useThemePalette();
   const { user } = useAuth();
   const [version, setVersion] = useState(0);
-  const [familyId, setFamilyId] = useState<string | null | undefined>(undefined);
-
-  const load = useCallback(async () => {
-    if (!user) {
-      setFamilyId(undefined);
-      return;
-    }
-    try {
-      const me = await getMe();
-      setFamilyId(me?.familyId ?? null);
-    } catch (err) {
-      logAppError('family/screen-loadMe', err);
-      setFamilyId(null);
-    }
-  }, [user]);
-
-  useEffect(() => {
-    void load();
-  }, [load, version]);
+  const { data: profile, isPending, refetch } = useMe();
 
   const onFamilyJoined = useCallback(() => {
     setVersion((v) => v + 1);
-  }, []);
+    void refetch();
+  }, [refetch]);
+
+  const familyId = user ? (isPending ? undefined : (profile?.familyId ?? null)) : undefined;
 
   return (
     <AppScreen>
@@ -55,7 +39,7 @@ export default function FamilyScreen() {
       ) : !familyId ? (
         <FamilyManager onFamilyJoined={onFamilyJoined} />
       ) : (
-        <SharedItemsList familyId={familyId} />
+        <SharedItemsList key={version} familyId={familyId} />
       )}
     </AppScreen>
   );

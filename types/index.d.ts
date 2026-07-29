@@ -246,6 +246,12 @@ export interface PatchExerciseBody {
   notes?: string | null
   presetId?: string | null
   intensity?: ExerciseIntensity | null
+  durationMinutes?: number | null
+  startTime?: string | null
+  endTime?: string | null
+  distanceMeters?: number | null
+  averageHeartRate?: number | null
+  steps?: number | null
 }
 
 export interface PostExerciseBulkBody {
@@ -269,6 +275,38 @@ export interface BulkExerciseResult {
 export interface GetExercisePresetsResponse {
   version: number
   presets: ExercisePreset[]
+}
+
+/** Per-platform cursor for native health sync (`users/{uid}/syncState/exercise`) */
+export interface ExercisePlatformSyncState {
+  lastSyncedAt?: ApiTimestamp | string | null
+  cursor?: string | null
+  deviceId?: string | null
+}
+
+/** `users/{uid}/syncState/exercise` — durable sync watermarks for background client sync */
+export interface ExerciseSyncStateDocument {
+  lastSuccessfulSyncAt?: ApiTimestamp | string | null
+  lastAttemptAt?: ApiTimestamp | string | null
+  lastError?: string | null
+  platforms?: Partial<Record<ExerciseExternalSource, ExercisePlatformSyncState>>
+  updatedAt?: ApiTimestamp | unknown
+}
+
+export interface PutExerciseSyncStateBody {
+  lastSuccessfulSyncAt?: string | null
+  lastAttemptAt?: string | null
+  lastError?: string | null
+  platforms?: Partial<
+    Record<
+      ExerciseExternalSource,
+      {
+        lastSyncedAt?: string
+        cursor?: string | null
+        deviceId?: string | null
+      }
+    >
+  >
 }
 
 /** `users/{uid}/waterDaily/{date}` */

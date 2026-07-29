@@ -13,7 +13,7 @@ Last updated: 2026-05-26
   - That health data is **not** sold or used for advertising
 - [ ] In-app **View privacy policy** link on Exercise tab opens the same URL declared in store consoles.
 - [ ] Exercise logging can be disabled in Settings (`habits.exerciseTrackingEnabled`).
-- [ ] Native sync is **opt-in** (user taps sync; no background upload without action).
+- [ ] Native sync is **opt-in** (user connects/syncs and may enable periodic background sync). Background upload only runs after the user enables it; OS delivery is best-effort.
 - [ ] QA completed exercise items in [`release-test-checklist.md`](release-test-checklist.md) on physical devices with a **dev/production build** (not Expo Go).
 
 ## Apple App Store
@@ -63,8 +63,8 @@ When native sync is enabled, declare (align with actual behavior):
 
 | Data type    | Collected                           | Shared | Purpose           |
 | ------------ | ----------------------------------- | ------ | ----------------- |
-| Fitness info | Yes (optional, user-initiated sync) | No     | App functionality |
-| Health info  | Yes (optional, user-initiated sync) | No     | App functionality |
+| Fitness info | Yes (optional; user sync / optional background after opt-in) | No     | App functionality |
+| Health info  | Yes (optional; user sync / optional background after opt-in) | No     | App functionality |
 
 - [ ] Data is **encrypted in transit** (HTTPS API).
 - [ ] Users can **delete** uploaded exercise records in-app.

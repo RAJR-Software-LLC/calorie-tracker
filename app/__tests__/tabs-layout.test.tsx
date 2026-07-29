@@ -2,7 +2,7 @@ import { render } from '@testing-library/react-native';
 import type { ReactNode } from 'react';
 
 import TabLayout from '@/app/(tabs)/_layout';
-import { useDashboard } from '@/components/dashboard/dashboard-context';
+import { TestQueryProvider } from '@/lib/queries/test-utils';
 
 const capturedScreens: { name: string; href?: string | null }[] = [];
 
@@ -39,48 +39,34 @@ jest.mock('react-native/Libraries/Utilities/useWindowDimensions', () => ({
   default: () => ({ width: 390, height: 844, scale: 2, fontScale: 1 }),
 }));
 
-jest.mock('@/components/dashboard/dashboard-context', () => {
-  const actual = jest.requireActual('@/components/dashboard/dashboard-context');
-  return {
-    ...actual,
-    useDashboard: jest.fn(),
-  };
-});
+jest.mock('@/lib/api', () => ({
+  getMe: jest.fn(async () => null),
+  getEntries: jest.fn(async () => []),
+  getSavedItems: jest.fn(async () => []),
+  getFamilySharedItems: jest.fn(async () => []),
+  getExerciseForDate: jest.fn(async () => []),
+  getMeWater: jest.fn(async () => null),
+}));
 
-const mockUseDashboard = useDashboard as jest.MockedFunction<typeof useDashboard>;
+jest.mock('@/components/auth/auth-provider', () => ({
+  useAuth: () => ({ user: null, loading: false }),
+}));
 
-function mockHabits(exerciseTrackingEnabled: boolean) {
-  mockUseDashboard.mockReturnValue({
-    habits: {
-      calorieTrackingEnabled: true,
-      exerciseTrackingEnabled,
-      waterTrackingEnabled: true,
-      waterDefaultUnit: 'ml',
-      waterGoalAmount: null,
-      waterGoalUnit: null,
-    },
-  } as ReturnType<typeof useDashboard>);
-}
-
-describe('Tab layout exercise gating', () => {
+describe('Tab layout exercise tab', () => {
   beforeEach(() => {
     capturedScreens.length = 0;
     jest.clearAllMocks();
   });
 
-  it('shows exercise tab when exercise tracking is enabled', () => {
-    mockHabits(true);
-    render(<TabLayout />);
+  it('always shows the exercise tab', () => {
+    render(
+      <TestQueryProvider>
+        <TabLayout />
+      </TestQueryProvider>
+    );
 
     const exercise = capturedScreens.find((screen) => screen.name === 'exercise');
+    expect(exercise).toBeTruthy();
     expect(exercise?.href).not.toBeNull();
-  });
-
-  it('hides exercise tab when exercise tracking is disabled', () => {
-    mockHabits(false);
-    render(<TabLayout />);
-
-    const exercise = capturedScreens.find((screen) => screen.name === 'exercise');
-    expect(exercise?.href).toBeNull();
   });
 });

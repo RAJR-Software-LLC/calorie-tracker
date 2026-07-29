@@ -1,28 +1,14 @@
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
-import type { EffectCallback } from 'react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 
 import { AppHeader } from '@/components/layout/app-header';
+import { TestQueryProvider } from '@/lib/queries/test-utils';
 
 const mockPush = jest.fn();
 const mockUseAuth = jest.fn();
 const mockGetMe = jest.fn();
-const focusCallbacks: EffectCallback[] = [];
 
 jest.mock('expo-router', () => ({
   useRouter: () => ({ push: mockPush }),
-}));
-
-jest.mock('@react-navigation/native', () => ({
-  useFocusEffect: (callback: EffectCallback) => {
-    const { useEffect: useReactEffect } = jest.requireActual<typeof import('react')>('react');
-    useReactEffect(() => {
-      focusCallbacks.push(callback);
-      const cleanup = callback();
-      return () => {
-        if (typeof cleanup === 'function') cleanup();
-      };
-    }, [callback]);
-  },
 }));
 
 jest.mock('@/components/auth/auth-provider', () => ({
@@ -47,14 +33,21 @@ jest.mock('@/components/ui/avatar', () => ({
   },
 }));
 
+function renderHeader(props?: { forceLeaf?: boolean }) {
+  return render(
+    <TestQueryProvider>
+      <AppHeader {...props} />
+    </TestQueryProvider>
+  );
+}
+
 describe('AppHeader', () => {
   beforeEach(() => {
     mockPush.mockReset();
     mockGetMe.mockReset();
     mockUseAuth.mockReset();
-    focusCallbacks.length = 0;
     mockUseAuth.mockReturnValue({
-      user: { displayName: 'Alex Doe', email: 'alex@example.com' },
+      user: { uid: 'u1', displayName: 'Alex Doe', email: 'alex@example.com' },
       loading: false,
     });
   });
@@ -62,9 +55,9 @@ describe('AppHeader', () => {
   it('shows leaf fallback when no profile photo exists', async () => {
     mockGetMe.mockResolvedValue({ profilePhoto: null });
 
-    render(<AppHeader />);
+    renderHeader();
 
-    await waitFor(() => expect(mockGetMe).toHaveBeenCalled());
+    await waitFor(() => expect(mockGetMe).toHaveBeenCalledTimes(1));
     expect(screen.getByText('LeafIcon')).toBeTruthy();
   });
 
@@ -78,15 +71,16 @@ describe('AppHeader', () => {
       },
     });
 
-    render(<AppHeader />);
+    renderHeader();
 
     await waitFor(() => expect(screen.getByText('AvatarImage')).toBeTruthy());
+    expect(mockGetMe).toHaveBeenCalledTimes(1);
   });
 
   it('navigates to settings when the right action is pressed', async () => {
     mockGetMe.mockResolvedValue({ profilePhoto: null });
 
-    render(<AppHeader />);
+    renderHeader();
     await waitFor(() => expect(mockGetMe).toHaveBeenCalled());
 
     fireEvent.press(screen.getByLabelText('Open settings'));
@@ -104,7 +98,7 @@ describe('AppHeader', () => {
       },
     });
 
-    render(<AppHeader forceLeaf />);
+    renderHeader({ forceLeaf: true });
 
     expect(screen.getByText('LeafIcon')).toBeTruthy();
     expect(screen.queryByText('AvatarImage')).toBeNull();
@@ -113,33 +107,9 @@ describe('AppHeader', () => {
   it('does not call getMe when forceLeaf is set', async () => {
     mockGetMe.mockResolvedValue({ profilePhoto: null });
 
-    render(<AppHeader forceLeaf />);
+    renderHeader({ forceLeaf: true });
 
-    await waitFor(() => expect(focusCallbacks.length).toBeGreaterThan(0));
-    expect(mockGetMe).not.toHaveBeenCalled();
-  });
-
-  it('refetches getMe when the screen regains focus', async () => {
-    mockGetMe.mockResolvedValueOnce({ profilePhoto: null });
-
-    render(<AppHeader />);
     await waitFor(() => expect(screen.getByText('LeafIcon')).toBeTruthy());
-    expect(mockGetMe).toHaveBeenCalledTimes(1);
-
-    mockGetMe.mockResolvedValueOnce({
-      profilePhoto: {
-        storagePath: 'users/u/profile-photo.jpg',
-        contentType: 'image/jpeg',
-        updatedAt: new Date().toISOString(),
-        downloadUrl: 'https://example.com/photo.jpg',
-      },
-    });
-
-    await act(async () => {
-      focusCallbacks[focusCallbacks.length - 1]?.();
-    });
-
-    await waitFor(() => expect(mockGetMe).toHaveBeenCalledTimes(2));
-    await waitFor(() => expect(screen.getByText('AvatarImage')).toBeTruthy());
+    expect(mockGetMe).not.toHaveBeenCalled();
   });
 });

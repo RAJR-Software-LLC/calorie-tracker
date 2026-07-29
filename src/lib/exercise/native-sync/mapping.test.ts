@@ -55,4 +55,20 @@ describe('native sync mapping', () => {
     expect(payload?.presetId).toBe('running');
     expect(payload?.caloriesBurned).toBe(342);
   });
+
+  it('uploads missing calories as 0 with not-reported sentinel notes', () => {
+    const payload = toPreparedSyncExercise({
+      presets,
+      workout: {
+        externalId: 'native-2',
+        externalSource: 'health_connect',
+        source: 'health_connect',
+        date: '2026-05-08',
+        name: 'Yoga',
+        nativeType: 'EXERCISE_TYPE_YOGA',
+      },
+    });
+    expect(payload?.caloriesBurned).toBe(0);
+    expect(payload?.notes).toContain('__calories_not_reported__');
+  });
 });

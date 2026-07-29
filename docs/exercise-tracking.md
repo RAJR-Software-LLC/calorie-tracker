@@ -2,131 +2,124 @@
 
 This document describes the Expo mobile implementation for exercise logging and native health sync against `/api/v1`.
 
+## Production readiness audit
+
+- **REST only** — no Firestore client SDK for exercise or sync-state (`firestore.rules` deny-all).
+- **Auth** — Firebase ID token via `Authorization: Bearer`.
+- **External identity** — synced workouts always send `externalSource` + `externalId` together; never unpaired.
+- **Bulk** — max 100 items per `POST /me/exercise/bulk`; honor `429` + `Retry-After` header (fallback: body `retryAfter`).
+- **Cursor advance** — platform cursors / `lastSuccessfulSyncAt` advance only after all bulk chunks return `200`.
+- **Habit gate** — when `habits.exerciseTrackingEnabled === false`, hide write/sync UI; abort sync on `403`; Exercise tab stays visible (read-only + Settings CTA).
+- **Expo Go** — native adapters fall back to denied/empty; sync requires a custom/dev or production build.
+- **Unreported calories** — native workouts without active energy upload `caloriesBurned: 0` with notes sentinel `__calories_not_reported__`; UI shows **Not reported** (dashboard remaining still treats burn as 0).
+- **Background sync** — optional, user-enabled; OS delivery is best-effort (`expo-background-task`).
+
 ## Architecture overview
 
-- API access runs through `src/lib/api/client.ts` with Firebase bearer auth and automatic one-time 401 retry + token refresh.
-- Exercise endpoint wrappers live in `src/lib/api/v1.ts`.
-- Shared exercise contracts are in `types/index.d.ts`.
-- Preset caching lives in `src/lib/exercise/presets-store.ts`.
-- Native sync logic lives in `src/lib/exercise/native-sync/`.
-- UI route is `app/(tabs)/exercise.tsx`.
+- API access: [`src/lib/api/client.ts`](../src/lib/api/client.ts) (Firebase bearer, one-time 401 retry, `Retry-After` on `ApiError`).
+- Exercise wrappers: [`src/lib/api/v1.ts`](../src/lib/api/v1.ts).
+- Shared contracts: [`types/index.d.ts`](../types/index.d.ts) (keep in sync with backend via `npm run sync-types`).
+- Preset cache: [`src/lib/exercise/presets-store.ts`](../src/lib/exercise/presets-store.ts).
+- Native sync: [`src/lib/exercise/native-sync/`](../src/lib/exercise/native-sync/) (adapters, orchestrator, server sync-state, background task).
+- UI: [`app/(tabs)/exercise.tsx`](../app/(tabs)/exercise.tsx); dashboard section: [`components/dashboard/exercise-section.tsx`](../components/dashboard/exercise-section.tsx).
 
 ## API contract usage
 
-- Presets: `GET /me/exercise/presets`
-- List day: `GET /me/exercise?date=YYYY-MM-DD`
-- List range: `GET /me/exercise?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD`
-- Create: `POST /me/exercise`
-- Bulk sync: `POST /me/exercise/bulk` (`<=100` items per request)
-- Edit user fields: `PATCH /me/exercise/:exerciseId` (`name`, `caloriesBurned`, `notes`, `presetId`, `intensity`)
-- Delete: `DELETE /me/exercise/:exerciseId`
+| Method | Path | Notes |
+|--------|------|--------|
+| GET | `/me/exercise/presets` | Catalog + `version` |
+| GET | `/me/exercise/sync-state` | Defaults when unset; hydrate local cursor cache |
+| PUT | `/me/exercise/sync-state` | Attempt / success / error + platform cursors (habit-gated) |
+| GET | `/me/exercise?date=` \| `startDate`+`endDate` \| `updatedSince=` | Mutually exclusive query modes |
+| POST | `/me/exercise` | Manual create (duration, distance, start/end, notes, …) |
+| POST | `/me/exercise/bulk` | ≤100; native upsert |
+| PATCH | `/me/exercise/:id` | Editable fields only (not `externalId` / `externalSource`) |
+| DELETE | `/me/exercise/:id` | Hard delete |
 
-### Identity and dedupe rules
+### Habit gate
 
-- For synced workouts, always send `externalSource` and `externalId` together.
-- Re-sending the same pair is idempotent and should update the same record server-side.
-- Do not PATCH immutable identity/date fields; delete + re-import if linkage replacement is required.
+Writes (`POST`, `PATCH`, `DELETE`, `/bulk`, `PUT /sync-state`) return `403` when exercise tracking is disabled. GET list/presets/sync-state remain allowed.
+
+## Manual CRUD UI
+
+Create and edit forms include: name, calories, preset, intensity, duration, distance, start/end (ISO), notes. Client validates `endTime >= startTime` and rejects empty patches.
 
 ## Preset cache strategy
 
-- On screen load, fetches presets through `loadExercisePresets()`.
-- Cache key stores `{ version, fetchedAt, presets }`.
-- Network success:
-  - If version changed, overwrite cache.
-  - If version unchanged, continue using cached payload.
-- Network failure:
-  - Return cached payload if present.
-  - Bubble error if no cache exists.
+- `loadExercisePresets()` caches `{ version, fetchedAt, presets }`.
+- Refresh overwrites cache when `version` changes; network failure falls back to cache.
 
 ## Native health sync
 
-Native workout sync uses platform adapters in `src/lib/exercise/native-sync/adapters.ts`:
+- **iOS**: `@kingstinct/react-native-healthkit`
+- **Android**: `react-native-health-connect` (+ `expo-health-connect` config plugin)
 
-- **iOS**: `@kingstinct/react-native-healthkit` reads `HKWorkoutTypeIdentifier` samples.
-- **Android**: `react-native-health-connect` reads `ExerciseSession` and overlapping `ActiveCaloriesBurned` records.
+### Sync orchestration
+
+1. Hydrate `GET /sync-state` → local AsyncStorage mirror.
+2. `PUT` `lastAttemptAt`.
+3. Read workouts since platform cursor (or user-selected **7 / 30 / 90** day lookback on first sync).
+4. Map → payloads (preset match; missing calories → 0 + sentinel).
+5. Dedupe by `externalSource:externalId`; chunk ≤100; retry `429`/`5xx`.
+6. On full success: `PUT` success + cursor/`deviceId`; clear `lastError`.
+7. On failure: `PUT` `lastError`; do not advance cursor.
+8. Optionally `GET ?updatedSince=` then invalidate TanStack `queryKeys.exercise`.
+
+### Background sync
+
+- Packages: `expo-background-task`, `expo-task-manager`.
+- User opts in once on Exercise tab (“Enable background sync”).
+- Task registered at app start via `installExerciseBackgroundSyncTask()` in root layout.
+- Also refresh sync status when app becomes active.
+- OS may delay or skip runs — disclosed in UI and store docs.
 
 ### Dev client required (not Expo Go)
 
-These packages include native code and **do not work in Expo Go**. Use a custom dev client or EAS build:
+1. Install deps (including background packages).
+2. `npx expo prebuild` when native projects need regeneration.
+3. `eas build --profile development --platform ios|android`.
+4. Physical device for HealthKit / Health Connect.
 
-1. Install dependencies (already in `package.json`).
-2. Run `npx expo prebuild` when native projects need regeneration.
-3. Build a dev client: `eas build --profile development --platform ios|android`.
-4. Install the build on a physical device (HealthKit / Health Connect are not fully available in simulators).
+## Net calories (dashboard)
 
-Config plugins in `app.config.ts`:
+Client-side remaining: `goal - consumed + burned`. Unreported native calories contribute `0` to burned (honest unknown energy).
 
-- `@kingstinct/react-native-healthkit` — HealthKit entitlement + `NSHealthShareUsageDescription`
-- `expo-health-connect` — Health Connect manifest wiring
-- `expo-build-properties` — `minSdkVersion: 26` for Health Connect
+## Platform compliance
 
-### Sync behavior
-
-- `syncNativeHealthAdapter()` performs:
-  - permission gate (`ensurePermissions`)
-  - incremental read from adapter cursor
-  - native-type to preset mapping with fallback to `other`
-  - payload normalization
-  - dedupe by `externalSource:externalId` in-client
-  - chunking into batches of `<=100`
-  - retry/backoff on `429` and `5xx` with jitter
-  - cursor persistence after successful sync cycle
-
-- Adapters request least-privilege read permissions and perform incremental reads from the stored ISO cursor timestamp (default lookback: 90 days on first sync).
-- Workout `nativeType` values are mapped to preset IDs via `mapping.ts` (`HKWorkoutActivityType*` on iOS, `EXERCISE_TYPE_*` on Android).
-
-## Platform compliance requirements
-
-## iOS / App Store (HealthKit)
-
-- Enable HealthKit capability and entitlements for release builds.
-- Add and validate all required `Info.plist` permission usage descriptions.
-- Request least-privilege read permissions only for used metrics/workout classes.
-- Keep in-app permission rationale, App Store privacy labels, and privacy policy consistent.
-- Ensure no medical diagnosis/treatment claims are made in copy or metadata.
-
-## Android / Play Store (Health Connect)
-
-- Declare Health Connect permissions in Android manifest and runtime prompts.
-- Match Play Console Data Safety disclosures to actual collected/synced data.
-- Support denied/revoked permission paths gracefully.
-- Keep privacy policy and listing language aligned with behavior.
-
-## Cross-platform guardrails
-
-- Data minimization: upload only fields needed for feature behavior.
-- Security: TLS transport, no auth token logging, safe local storage practices.
-- User control: explicit sync trigger, transparent policy link, delete pathways.
-- Incident path: feature-flag/rollback plan if policy review blocks rollout.
-- Store submission checklist: [`store-health-sync-submission.md`](store-health-sync-submission.md).
+See [`store-health-sync-submission.md`](store-health-sync-submission.md) and [`health-policy-mapping.md`](health-policy-mapping.md).
 
 ## Verification plan
 
-## Automated checks
+### Automated
 
-- `npm run typecheck`
-- `npm test -- exercise-api presets-store native-sync exercise-flow`
+```bash
+npm run typecheck
+npm test -- exercise-api presets-store native-sync exercise-flow calories-display sync-state background-sync tabs-layout
+```
 
-## Manual checks
+### Manual (device build)
 
-1. Presets load and display; simulate version change and verify cache updates.
-2. Manual add creates record and appears in day list.
-3. Range query returns expected records.
-4. Edit flow updates only allowed fields without creating duplicates.
-5. Delete flow removes record.
-6. Native sync button:
-   - permission allowed -> sync runs
-   - permission denied/revoked -> user-facing error, no crash
-7. Bulk behavior:
-   - verify chunking never exceeds 100
-   - verify 429 handling backs off and retries
+1. Manual create with duration, distance, start/end, notes; appears in day list.
+2. Edit expanded fields; PATCH never sends `externalId`.
+3. Presets load and cache by `version`.
+4. HealthKit / Health Connect: same workout twice → one row, second `updated`.
+5. Chunked sync >100; `429` backoff.
+6. Background/periodic: cursor advances only after successful bulk.
+7. `updatedSince` + dashboard refresh after sync.
+8. `exerciseTrackingEnabled: false` — tab visible, writes hidden, 403 toast.
+9. Not reported label when native calories missing.
+10. Export/account-delete still coherent.
 
 ## Test files
 
 - `src/lib/api/exercise-api.test.ts`
+- `src/lib/exercise/calories-display.test.ts`
 - `src/lib/exercise/presets-store.test.ts`
 - `src/lib/exercise/native-sync/mapping.test.ts`
 - `src/lib/exercise/native-sync/native-type-mapping.test.ts`
 - `src/lib/exercise/native-sync/adapters.test.ts`
 - `src/lib/exercise/native-sync/bulk-sync.test.ts`
+- `src/lib/exercise/native-sync/sync-state.test.ts`
+- `src/lib/exercise/native-sync/background-sync.test.ts`
 - `app/__tests__/exercise-flow.test.tsx`
+- `app/__tests__/tabs-layout.test.tsx`

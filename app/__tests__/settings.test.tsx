@@ -1,7 +1,6 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
-import type { EffectCallback } from 'react';
-
 import SettingsScreen from '@/app/(tabs)/settings';
+import { TestQueryProvider } from '@/lib/queries/test-utils';
 import type { UserDocument } from '@/types';
 
 const mockPush = jest.fn();
@@ -11,15 +10,6 @@ const mockPatchMe = jest.fn();
 
 jest.mock('expo-router', () => ({
   useRouter: () => ({ push: mockPush }),
-}));
-
-jest.mock('@react-navigation/native', () => ({
-  useFocusEffect: (callback: EffectCallback) => {
-    const mockReact = jest.requireActual<typeof import('react')>('react');
-    mockReact.useEffect(() => {
-      callback();
-    }, [callback]);
-  },
 }));
 
 jest.mock('@/components/auth/auth-provider', () => ({
@@ -159,8 +149,16 @@ describe('SettingsScreen profile editing', () => {
     });
   });
 
+  function renderSettings() {
+    return render(
+      <TestQueryProvider>
+        <SettingsScreen />
+      </TestQueryProvider>
+    );
+  }
+
   it('shows goal type in profile card', async () => {
-    render(<SettingsScreen />);
+    renderSettings();
 
     await waitFor(() => expect(mockGetMe).toHaveBeenCalled());
     expandProfileForEditing();
@@ -170,7 +168,7 @@ describe('SettingsScreen profile editing', () => {
   });
 
   it('saves unit-aware anthropometric profile fields from settings form', async () => {
-    render(<SettingsScreen />);
+    renderSettings();
 
     await waitFor(() => expect(mockGetMe).toHaveBeenCalled());
     expandProfileForEditing();
@@ -191,7 +189,7 @@ describe('SettingsScreen profile editing', () => {
   });
 
   it('stages age and sex changes until save is clicked', async () => {
-    render(<SettingsScreen />);
+    renderSettings();
 
     await waitFor(() => expect(mockGetMe).toHaveBeenCalled());
     expandProfileForEditing();
@@ -217,7 +215,7 @@ describe('SettingsScreen profile editing', () => {
       goalType: 'lose',
       profile: { ...makeMe().profile, heightCm: 180, heightUnit: 'ft_in' },
     });
-    render(<SettingsScreen />);
+    renderSettings();
 
     await waitFor(() => expect(mockGetMe).toHaveBeenCalled());
     expandProfileForEditing();
