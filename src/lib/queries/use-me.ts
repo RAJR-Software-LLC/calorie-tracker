@@ -2,11 +2,13 @@ import { useQuery, type QueryClient } from '@tanstack/react-query';
 
 import { useAuth } from '@/components/auth/auth-provider';
 import { getMe } from '@/lib/api';
+import { clearMeEtag } from '@/lib/api/etag-cache';
 import type { GetMeResponse, UserProfilePhotoWithDownload } from '@/types';
 
 import { queryKeys } from './keys';
 
-const ME_STALE_TIME = 5 * 60_000;
+/** Under signed profile-photo URL TTL (~2h); raise only with solid refresh strategy. */
+const ME_STALE_TIME = 10 * 60_000;
 const ME_GC_TIME = 30 * 60_000;
 
 export function useMe(options?: { enabled?: boolean }) {
@@ -42,11 +44,15 @@ export function updateMeCache(
   data: GetMeResponse
 ): void {
   if (!uid) return;
+  // PATCH /me response may omit validators — drop ETag so next GET is unconditional.
+  clearMeEtag(uid);
   queryClient.setQueryData(queryKeys.me(uid), data);
 }
 
 export function invalidateMe(queryClient: QueryClient, uid: string | undefined): Promise<void> {
   if (!uid) return Promise.resolve();
+  // Drop ETag so the next GET cannot 304 with an expired signed photo URL.
+  clearMeEtag(uid);
   return queryClient.invalidateQueries({ queryKey: queryKeys.me(uid) }).then(() => undefined);
 }
 

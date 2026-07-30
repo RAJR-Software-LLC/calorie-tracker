@@ -1,25 +1,28 @@
+import { useCallback, useRef, useState } from 'react';
 import { Share2, Users, UtensilsCrossed } from 'lucide-react-native';
-import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Modal, Pressable, ScrollView, Text, View } from 'react-native';
+import { useQueryClient } from '@tanstack/react-query';
 
 import { useAuth } from '@/components/auth/auth-provider';
 import { Avatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { getFamily, getFamilySharedItems, getSavedItems, postFamilySharedItem } from '@/lib/api';
-import { invalidateMe, useMeProfilePhoto } from '@/lib/queries';
-import { useQueryClient } from '@tanstack/react-query';
+import { postFamilySharedItem } from '@/lib/api';
 import { logAppError, toUserErrorMessage } from '@/lib/app-errors';
+import {
+  invalidateMe,
+  queryKeys,
+  useFamily,
+  useFamilySharedItems,
+  useMeProfilePhoto,
+  useSavedItems,
+} from '@/lib/queries';
 import { isKnownCalories } from '@/lib/utils/saved-items';
 import { showToast } from '@/lib/toast';
 import { useThemePalette } from '@/lib/use-theme-palette';
 
-import type {
-  FamilySharedItemWithId,
-  FamilyWithMemberProfiles,
-  SavedItemWithId,
-} from '@/types';
+import type { SavedItemWithId } from '@/types';
 
 type SharedItemsListProps = {
   familyId: string;
@@ -30,35 +33,28 @@ export function SharedItemsList({ familyId }: SharedItemsListProps) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const mePhoto = useMeProfilePhoto();
-  const [sharedItems, setSharedItems] = useState<FamilySharedItemWithId[]>([]);
-  const [family, setFamily] = useState<FamilyWithMemberProfiles | null>(null);
-  const [loading, setLoading] = useState(true);
+  const familyQuery = useFamily(familyId);
+  const sharedQuery = useFamilySharedItems(familyId);
   const [shareOpen, setShareOpen] = useState(false);
   const hasRetriedAvatarRefreshRef = useRef(false);
 
-  useEffect(() => {
-    async function load() {
-      if (!familyId) return;
-      setLoading(true);
-      hasRetriedAvatarRefreshRef.current = false;
-      try {
-        const [items, familyData] = await Promise.all([
-          getFamilySharedItems(familyId),
-          getFamily(familyId),
-        ]);
-        setSharedItems(items);
-        setFamily(familyData);
-      } finally {
-        setLoading(false);
-      }
-    }
-    void load();
-  }, [familyId]);
+  const family = familyQuery.data ?? null;
+  const sharedItems = sharedQuery.data ?? [];
+  const loading =
+    (familyQuery.isPending && familyQuery.data === undefined) ||
+    (sharedQuery.isPending && sharedQuery.data === undefined);
 
-  async function refreshFamily() {
-    const familyData = await getFamily(familyId);
-    setFamily(familyData);
-  }
+  const refreshFamily = useCallback(async () => {
+    await queryClient.invalidateQueries({
+      queryKey: queryKeys.family(user?.uid, familyId),
+    });
+  }, [queryClient, user?.uid, familyId]);
+
+  const refreshItems = useCallback(async () => {
+    await queryClient.invalidateQueries({
+      queryKey: queryKeys.familySharedItems(user?.uid, familyId),
+    });
+  }, [queryClient, user?.uid, familyId]);
 
   async function handleAvatarRefreshNeeded() {
     if (hasRetriedAvatarRefreshRef.current) return;
@@ -68,11 +64,6 @@ export function SharedItemsList({ familyId }: SharedItemsListProps) {
     } catch {
       // Keep existing avatar fallback UI if refresh fails.
     }
-  }
-
-  async function refreshItems() {
-    const items = await getFamilySharedItems(familyId);
-    setSharedItems(items);
   }
 
   const displayMembers =
@@ -217,7 +208,7 @@ export function SharedItemsList({ familyId }: SharedItemsListProps) {
         open={shareOpen}
         onOpenChange={setShareOpen}
         familyId={familyId}
-        onSuccess={refreshItems}
+        onSuccess={() => void refreshItems()}
       />
     </View>
   );
@@ -235,17 +226,13 @@ function ShareItemModal({
   onSuccess: () => void;
 }) {
   const { user } = useAuth();
-  const [myItems, setMyItems] = useState<SavedItemWithId[]>([]);
+  const { data: savedItems = [] } = useSavedItems();
   const [itemName, setItemName] = useState('');
   const [quantity, setQuantity] = useState('1');
   const [calories, setCalories] = useState('');
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    if (open && user) {
-      void getSavedItems().then(setMyItems);
-    }
-  }, [open, user]);
+  const myItems = open ? savedItems : [];
 
   function selectMyItem(item: SavedItemWithId) {
     if (!isKnownCalories(item.defaultCalories)) {
@@ -314,20 +301,20 @@ function ShareItemModal({
                     .filter((item) => isKnownCalories(item.defaultCalories))
                     .slice(0, 6)
                     .map((item) => (
-                    <Pressable
-                      key={item.id}
-                      className={`rounded-full border px-3 py-1.5 ${
-                        itemName === item.itemName
-                          ? 'border-primary bg-primary/5 dark:border-darkPrimary dark:bg-darkPrimary/5'
-                          : 'border-border dark:border-darkBorder'
-                      }`}
-                      onPress={() => selectMyItem(item)}
-                    >
-                      <Text className="text-xs font-medium text-foreground dark:text-darkForeground">
-                        {item.itemName}
-                      </Text>
-                    </Pressable>
-                  ))}
+                      <Pressable
+                        key={item.id}
+                        className={`rounded-full border px-3 py-1.5 ${
+                          itemName === item.itemName
+                            ? 'border-primary bg-primary/5 dark:border-darkPrimary dark:bg-darkPrimary/5'
+                            : 'border-border dark:border-darkBorder'
+                        }`}
+                        onPress={() => selectMyItem(item)}
+                      >
+                        <Text className="text-xs font-medium text-foreground dark:text-darkForeground">
+                          {item.itemName}
+                        </Text>
+                      </Pressable>
+                    ))}
                 </View>
               </View>
             ) : null}

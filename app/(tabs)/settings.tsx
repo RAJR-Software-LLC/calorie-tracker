@@ -22,7 +22,7 @@ import {
   toUserProfilePhotoMessage,
   uploadProfilePhoto,
 } from '@/lib/profile-photo/upload';
-import { invalidateMe, updateMeCache, useMe } from '@/lib/queries';
+import { invalidateMe, queryKeys, updateMeCache, useMe } from '@/lib/queries';
 import { showToast } from '@/lib/toast';
 import { useThemePalette } from '@/lib/use-theme-palette';
 import { useQueryClient } from '@tanstack/react-query';
@@ -40,7 +40,7 @@ import type { ActivityLevel, GetMeResponse, GoalType, HeightUnit, Sex, WeightUni
 import { useRouter } from 'expo-router';
 import { Bell, Camera, ChevronRight, Droplets, LogOut, Mail, Shield, UtensilsCrossed } from 'lucide-react-native';
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Modal, Pressable, Text, View } from 'react-native';
+import { ActivityIndicator, Modal, Pressable, RefreshControl, Text, View } from 'react-native';
 
 type SettingsRowProps = {
   icon?: React.ReactNode;
@@ -156,6 +156,7 @@ export default function SettingsScreen() {
   const [savedFoodsOpen, setSavedFoodsOpen] = useState(false);
   const [photoSheetOpen, setPhotoSheetOpen] = useState(false);
   const [photoUploading, setPhotoUploading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [heightUnit, setHeightUnit] = useState<HeightUnit>('cm');
   const [weightUnit, setWeightUnit] = useState<WeightUnit>('kg');
   const [heightCmInput, setHeightCmInput] = useState('');
@@ -508,7 +509,28 @@ export default function SettingsScreen() {
   }, [applyMeUpdate, user]);
 
   return (
-    <AppScreen forceLeafHeader>
+    <AppScreen
+      forceLeafHeader
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={() => {
+            void (async () => {
+              if (!user) return;
+              setRefreshing(true);
+              try {
+                await Promise.all([
+                  invalidateMe(queryClient, user.uid),
+                  queryClient.invalidateQueries({ queryKey: queryKeys.savedItems(user.uid) }),
+                ]);
+              } finally {
+                setRefreshing(false);
+              }
+            })();
+          }}
+        />
+      }
+    >
       <View className="mb-2">
         <Text className="text-2xl font-bold text-foreground dark:text-darkForeground">
           Settings

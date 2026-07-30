@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { AppState, Modal, Platform, Pressable, ScrollView, Text, View } from 'react-native';
+import { AppState, Modal, Platform, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
 import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import * as Linking from 'expo-linking';
@@ -15,8 +15,6 @@ import { SegmentedControl } from '@/components/ui/segmented-control';
 import {
   deleteExercise,
   getExerciseSyncState,
-  getExercisesByDate,
-  getExercisesByRange,
   getExercisesUpdatedSince,
   patchExercise,
   postExercise,
@@ -46,7 +44,7 @@ import {
   setExerciseBackgroundSyncEnabled,
 } from '@/lib/exercise/native-sync/background-sync';
 import { loadExercisePresets } from '@/lib/exercise/presets-store';
-import { queryKeys } from '@/lib/queries';
+import { queryKeys, useExercise, useExerciseRange } from '@/lib/queries';
 import { showToast } from '@/lib/toast';
 import type {
   ExerciseIntensity,
@@ -142,17 +140,36 @@ export default function ExerciseScreen() {
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
   const [startDate, setStartDate] = useState(new Date().toISOString().slice(0, 10));
   const [endDate, setEndDate] = useState(new Date().toISOString().slice(0, 10));
-  const [items, setItems] = useState<ExerciseWithId[]>([]);
   const [presets, setPresets] = useState<ExercisePreset[]>([]);
   const [presetsVersion, setPresetsVersion] = useState<number | null>(null);
-  const [loading, setLoading] = useState(false);
   const [loadingPresets, setLoadingPresets] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [openCreate, setOpenCreate] = useState(false);
   const [editing, setEditing] = useState<ExerciseWithId | null>(null);
   const [syncing, setSyncing] = useState(false);
   const [lookbackDays, setLookbackDays] = useState<'7' | '30' | '90'>('30');
   const [syncState, setSyncState] = useState<ExerciseSyncStateDocument | null>(null);
   const [backgroundEnabled, setBackgroundEnabled] = useState(false);
+
+  const dayQueryEnabled = exerciseEnabled && mode === 'day' && isValidDateInput(date);
+  const rangeQueryEnabled =
+    exerciseEnabled && mode === 'range' && isValidDateInput(startDate) && isValidDateInput(endDate);
+  const dayQuery = useExercise(date.trim(), dayQueryEnabled);
+  const rangeQuery = useExerciseRange(startDate.trim(), endDate.trim(), rangeQueryEnabled);
+
+  const items = mode === 'day' ? (dayQuery.data ?? []) : (rangeQuery.data ?? []);
+  const loading =
+    mode === 'day'
+      ? dayQuery.isPending && dayQuery.data === undefined
+      : rangeQuery.isPending && rangeQuery.data === undefined;
+
+  const listError = mode === 'day' ? dayQuery.error : rangeQuery.error;
+
+  useEffect(() => {
+    if (!listError) return;
+    logAppError('exercise/list', listError, { mode, date, startDate, endDate });
+    showToast(toUserErrorMessage(listError, 'Could not load exercises right now.'), 'error');
+  }, [listError, mode, date, startDate, endDate]);
 
   const presetIds = useMemo(() => new Set(presets.map((preset) => preset.id)), [presets]);
 
@@ -164,41 +181,23 @@ export default function ExerciseScreen() {
   const platformKey = Platform.OS === 'ios' ? 'apple_healthkit' : 'health_connect';
   const platformSync = syncState?.platforms?.[platformKey];
 
-  const loadList = useCallback(async () => {
-    try {
-      setLoading(true);
-      if (mode === 'day') {
-        if (!isValidDateInput(date)) {
-          showToast('Enter date as YYYY-MM-DD.', 'error');
-          return;
-        }
-        const next = await getExercisesByDate(date.trim());
-        setItems(next);
-        return;
-      }
-
-      if (!isValidDateInput(startDate) || !isValidDateInput(endDate)) {
-        showToast('Enter start and end date as YYYY-MM-DD.', 'error');
-        return;
-      }
-      const next = await getExercisesByRange(startDate.trim(), endDate.trim());
-      setItems(next);
-    } catch (error) {
-      logAppError('exercise/list', error, { mode, date, startDate, endDate });
-      showToast(toUserErrorMessage(error, 'Could not load exercises right now.'), 'error');
-    } finally {
-      setLoading(false);
-    }
-  }, [date, endDate, mode, startDate]);
-
   const invalidateExerciseQueries = useCallback(async () => {
     await queryClient.invalidateQueries({ queryKey: queryKeys.exercise(user?.uid) });
     await refreshExercises();
   }, [queryClient, refreshExercises, user?.uid]);
 
   const refreshAfterMutation = useCallback(async () => {
-    await Promise.all([loadList(), invalidateExerciseQueries()]);
-  }, [invalidateExerciseQueries, loadList]);
+    await invalidateExerciseQueries();
+  }, [invalidateExerciseQueries]);
+
+  const onPullRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await invalidateExerciseQueries();
+    } finally {
+      setRefreshing(false);
+    }
+  }, [invalidateExerciseQueries]);
 
   const loadPresets = useCallback(async () => {
     try {
@@ -233,10 +232,6 @@ export default function ExerciseScreen() {
     void loadPresets();
     void loadSyncStatus();
   }, [loadPresets, loadSyncStatus]);
-
-  useEffect(() => {
-    void loadList();
-  }, [loadList]);
 
   useEffect(() => {
     if (!exerciseEnabled || !isNativeHealthSyncSupported()) return;
@@ -328,7 +323,11 @@ export default function ExerciseScreen() {
   }
 
   return (
-    <AppScreen>
+    <AppScreen
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={() => void onPullRefresh()} />
+      }
+    >
       <View className="gap-1">
         <Text className="text-lg font-semibold text-foreground dark:text-darkForeground">
           Exercise
@@ -381,7 +380,7 @@ export default function ExerciseScreen() {
       )}
 
       <View className="flex-row gap-2">
-        <Button className="flex-1" disabled={loading} onPress={() => void loadList()}>
+        <Button className="flex-1" disabled={loading} onPress={() => void invalidateExerciseQueries()}>
           {loading ? 'Loading...' : 'Refresh'}
         </Button>
         {exerciseEnabled ? (

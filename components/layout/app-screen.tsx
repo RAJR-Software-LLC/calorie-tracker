@@ -6,6 +6,8 @@ type AppScreenProps = ViewProps & {
   scroll?: boolean;
   showHeader?: boolean;
   forceLeafHeader?: boolean;
+  /** Passed to ScrollView when `scroll` is true (e.g. RefreshControl). */
+  refreshControl?: React.ReactElement;
 };
 
 const contentPad = {
@@ -23,6 +25,7 @@ export function AppScreen({
   scroll = true,
   showHeader = true,
   forceLeafHeader = false,
+  refreshControl,
   className,
   ...rest
 }: AppScreenProps) {
@@ -34,6 +37,7 @@ export function AppScreen({
           className="flex-1"
           contentContainerStyle={contentPad}
           keyboardShouldPersistTaps="handled"
+          refreshControl={refreshControl}
         >
           {children}
         </ScrollView>

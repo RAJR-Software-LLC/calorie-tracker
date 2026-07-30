@@ -14,7 +14,7 @@ jest.mock('@/lib/api', () => ({
   getFamily: (...args: unknown[]) => mockGetFamily(...args),
   getFamilySharedItems: (...args: unknown[]) => mockGetFamilySharedItems(...args),
   getMe: (...args: unknown[]) => mockGetMe(...args),
-  getSavedItems: jest.fn(),
+  getSavedItems: jest.fn().mockResolvedValue([]),
   postFamilySharedItem: jest.fn(),
 }));
 
@@ -84,8 +84,8 @@ describe('SharedItemsList family members', () => {
       </TestQueryProvider>
     );
 
-    await waitFor(() => expect(mockGetFamily).toHaveBeenCalledWith('fam-1'));
-    expect(screen.getByText('Family One')).toBeTruthy();
+    await waitFor(() => expect(screen.getByText('Family One')).toBeTruthy());
+    expect(mockGetFamily).toHaveBeenCalledWith('fam-1');
     expect(screen.getByText('2 members')).toBeTruthy();
     expect(screen.getByText('ABCD1234')).toBeTruthy();
     expect(screen.getByText('Me')).toBeTruthy();
@@ -111,8 +111,7 @@ describe('SharedItemsList family members', () => {
       </TestQueryProvider>
     );
 
-    await waitFor(() => expect(mockGetFamily).toHaveBeenCalledWith('fam-1'));
-    expect(screen.getByText('1 member')).toBeTruthy();
+    await waitFor(() => expect(screen.getByText('1 member')).toBeTruthy());
     expect(screen.getByText('Me')).toBeTruthy();
     expect(mockAvatar).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -142,13 +141,15 @@ describe('SharedItemsList family members', () => {
       </TestQueryProvider>
     );
 
-    await waitFor(() => expect(mockGetFamily).toHaveBeenCalledWith('fam-1'));
-    expect(mockAvatar).toHaveBeenCalledWith(
-      expect.objectContaining({
-        photo: expect.objectContaining({
-          downloadUrl: 'https://example.com/me-photo.png',
-        }),
-      })
+    await waitFor(() => expect(screen.getByText('Me')).toBeTruthy());
+    await waitFor(() =>
+      expect(mockAvatar).toHaveBeenCalledWith(
+        expect.objectContaining({
+          photo: expect.objectContaining({
+            downloadUrl: 'https://example.com/me-photo.png',
+          }),
+        })
+      )
     );
   });
 });
