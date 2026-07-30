@@ -172,4 +172,4 @@ const config: ExpoConfig = {
   },
 };
 
-export default { expo: config };
+export default config;
