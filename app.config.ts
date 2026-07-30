@@ -120,6 +120,8 @@ const config: ExpoConfig = {
   },
   plugins: [
     'expo-router',
+    'expo-font',
+    'expo-background-task',
     'expo-apple-authentication',
     'expo-web-browser',
     [
