@@ -4,6 +4,7 @@ import { flushPendingPushSync, registerPushToken, unregisterPushToken } from './
 import { syncLocalMealReminders } from './local-reminders';
 import { fetchMeIfStale, queryClient } from '@/lib/queries';
 import { queryKeys } from '@/lib/queries/keys';
+import type { GetMeResponse } from '@/types';
 
 /**
  * After Firebase session is ready: sync preferences retry, push token, and local meal reminders.
@@ -13,8 +14,8 @@ export async function runNotificationStartup(uid: string): Promise<void> {
   await flushPendingPushSync(uid);
 
   let settings = getDefaultNotifications();
-  const cached = queryClient.getQueryData(queryKeys.me(uid));
-  if (cached && typeof cached === 'object' && 'notifications' in cached && cached.notifications) {
+  const cached = queryClient.getQueryData<GetMeResponse>(queryKeys.me(uid));
+  if (cached?.notifications) {
     settings = withNotificationDefaults(cached.notifications);
   } else {
     try {

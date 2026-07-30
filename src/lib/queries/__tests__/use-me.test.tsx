@@ -1,4 +1,6 @@
 import { renderHook, waitFor } from '@testing-library/react-native';
+import type { QueryClient } from '@tanstack/react-query';
+import type { ReactNode } from 'react';
 
 import { getMe } from '@/lib/api';
 import { useMe } from '@/lib/queries/use-me';
@@ -16,6 +18,12 @@ jest.mock('@/lib/api', () => ({
 }));
 
 const mockGetMe = getMe as jest.Mock;
+
+function createWrapper(client: QueryClient) {
+  return function Wrapper({ children }: { children: ReactNode }) {
+    return <TestQueryProvider client={client}>{children}</TestQueryProvider>;
+  };
+}
 
 describe('useMe', () => {
   beforeEach(() => {
@@ -38,9 +46,7 @@ describe('useMe', () => {
 
   it('deduplicates parallel fetches for the same user', async () => {
     const client = createTestQueryClient();
-    const wrapper = ({ children }: { children: React.ReactNode }) => (
-      <TestQueryProvider client={client}>{children}</TestQueryProvider>
-    );
+    const wrapper = createWrapper(client);
 
     const { result: r1 } = renderHook(() => useMe(), { wrapper });
     const { result: r2 } = renderHook(() => useMe(), { wrapper });

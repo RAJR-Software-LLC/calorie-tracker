@@ -383,7 +383,11 @@ function EditSavedFoodModal({
           <View className="mt-4 gap-4">
             <View className="gap-2">
               <Label>Item name</Label>
-              <Input value={itemName} onChangeText={setItemName} placeholder="e.g. Chicken sandwich" />
+              <Input
+                value={itemName}
+                onChangeText={setItemName}
+                placeholder="e.g. Chicken sandwich"
+              />
               {nameError ? <Text className="text-sm text-destructive">{nameError}</Text> : null}
             </View>
 

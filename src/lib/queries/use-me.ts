@@ -21,7 +21,9 @@ export function useMe(options?: { enabled?: boolean }) {
   });
 }
 
-export function useMeProfilePhoto(options?: { enabled?: boolean }): UserProfilePhotoWithDownload | null {
+export function useMeProfilePhoto(options?: {
+  enabled?: boolean;
+}): UserProfilePhotoWithDownload | null {
   const { data } = useMe(options);
   const photo = data?.profilePhoto;
   if (

@@ -1,11 +1,4 @@
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  type ReactNode,
-} from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, type ReactNode } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 
 import { useAuth } from '@/components/auth/auth-provider';
@@ -66,7 +59,8 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   const { data: profile, isPending: mePending } = useMe();
 
   const calendarDay = useMemo(() => {
-    const tz = profile?.notifications?.timezone ?? 'UTC';
+    const tz = profile?.notifications?.timezone;
+    if (!tz) return formatDate(new Date());
     return formatDateInTimeZone(new Date(), tz);
   }, [profile?.notifications?.timezone]);
 
@@ -147,11 +141,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
 
   const refreshDayData = useCallback(async () => {
     if (!user) return;
-    await Promise.all([
-      invalidateEntries(),
-      invalidateWater(),
-      invalidateExercises(),
-    ]);
+    await Promise.all([invalidateEntries(), invalidateWater(), invalidateExercises()]);
   }, [user, invalidateEntries, invalidateWater, invalidateExercises]);
 
   const refreshAll = useCallback(async () => {

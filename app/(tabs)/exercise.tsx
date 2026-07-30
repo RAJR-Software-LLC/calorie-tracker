@@ -123,7 +123,9 @@ function toastExerciseWriteError(error: unknown, fallback: string): void {
   if (error instanceof ApiError && error.status === 429) {
     const wait = error.retryAfterSeconds;
     showToast(
-      wait != null ? `Too many requests. Retry in ${wait}s.` : 'Too many requests. Try again shortly.',
+      wait != null
+        ? `Too many requests. Retry in ${wait}s.`
+        : 'Too many requests. Try again shortly.',
       'error'
     );
     return;
@@ -192,7 +194,7 @@ export default function ExerciseScreen() {
   }, [date, endDate, mode, startDate]);
 
   const invalidateExerciseQueries = useCallback(async () => {
-    await queryClient.invalidateQueries({ queryKey: queryKeys.exercise(user?.uid) });
+    await queryClient.invalidateQueries({ queryKey: queryKeys.exerciseRoot(user?.uid) });
     await refreshExercises();
   }, [queryClient, refreshExercises, user?.uid]);
 
@@ -302,10 +304,7 @@ export default function ExerciseScreen() {
     } catch (error) {
       logAppError('exercise/native-sync', error);
       await loadSyncStatus();
-      toastExerciseWriteError(
-        error,
-        'Native sync failed. Check permissions and try again.'
-      );
+      toastExerciseWriteError(error, 'Native sync failed. Check permissions and try again.');
     } finally {
       setSyncing(false);
     }
@@ -344,8 +343,8 @@ export default function ExerciseScreen() {
             Exercise tracking is disabled
           </Text>
           <Text className="text-xs text-muted-foreground dark:text-darkMutedForeground">
-            You can still view history. Enable exercise tracking in Settings to add, edit, delete, or
-            sync workouts.
+            You can still view history. Enable exercise tracking in Settings to add, edit, delete,
+            or sync workouts.
           </Text>
           <Button variant="outline" onPress={() => router.push('/(tabs)/settings')}>
             Open Settings
@@ -659,83 +658,88 @@ function CreateExerciseModal({
             contentContainerClassName="gap-3 pb-8"
             keyboardShouldPersistTaps="handled"
           >
-          <Text className="text-lg font-semibold text-foreground dark:text-darkForeground">
-            Add exercise
-          </Text>
-          <View className="gap-2">
-            <Label>Date</Label>
-            <Text className="text-sm text-muted-foreground dark:text-darkMutedForeground">
-              {date}
+            <Text className="text-lg font-semibold text-foreground dark:text-darkForeground">
+              Add exercise
             </Text>
-          </View>
-          <View className="gap-2">
-            <Label>Name</Label>
-            <Input value={name} onChangeText={setName} placeholder="Morning run" />
-          </View>
-          <View className="gap-2">
-            <Label>Calories</Label>
-            <Input
-              value={caloriesBurned}
-              onChangeText={setCaloriesBurned}
-              keyboardType="number-pad"
-              placeholder="320"
-            />
-          </View>
-          <ExercisePresetPicker presets={presets} value={presetId} onChange={setPresetId} />
-          <View className="gap-2">
-            <Label>Intensity</Label>
-            <SegmentedControl<ExerciseIntensity>
-              value={intensity}
-              options={intensityOptions.map((value) => ({ value, label: value }))}
-              onChange={setIntensity}
-            />
-          </View>
-          <View className="gap-2">
-            <Label>Duration (minutes)</Label>
-            <Input
-              value={durationMinutes}
-              onChangeText={setDurationMinutes}
-              keyboardType="number-pad"
-              placeholder="45"
-            />
-          </View>
-          <View className="gap-2">
-            <Label>Distance (meters)</Label>
-            <Input
-              value={distanceMeters}
-              onChangeText={setDistanceMeters}
-              keyboardType="decimal-pad"
-              placeholder="5000"
-            />
-          </View>
-          <View className="gap-2">
-            <Label>Start time (ISO)</Label>
-            <Input
-              value={startTime}
-              onChangeText={setStartTime}
-              autoCapitalize="none"
-              placeholder="2026-05-08T07:00:00.000Z"
-            />
-          </View>
-          <View className="gap-2">
-            <Label>End time (ISO)</Label>
-            <Input
-              value={endTime}
-              onChangeText={setEndTime}
-              autoCapitalize="none"
-              placeholder="2026-05-08T07:45:00.000Z"
-            />
-          </View>
-          <View className="gap-2">
-            <Label>Notes</Label>
-            <Input value={notes} onChangeText={setNotes} multiline className="min-h-[72px] py-3" />
-          </View>
-          <Button disabled={saving} onPress={() => void handleSave()}>
-            {saving ? 'Saving...' : 'Save'}
-          </Button>
-          <Button variant="outline" onPress={onClose}>
-            Cancel
-          </Button>
+            <View className="gap-2">
+              <Label>Date</Label>
+              <Text className="text-sm text-muted-foreground dark:text-darkMutedForeground">
+                {date}
+              </Text>
+            </View>
+            <View className="gap-2">
+              <Label>Name</Label>
+              <Input value={name} onChangeText={setName} placeholder="Morning run" />
+            </View>
+            <View className="gap-2">
+              <Label>Calories</Label>
+              <Input
+                value={caloriesBurned}
+                onChangeText={setCaloriesBurned}
+                keyboardType="number-pad"
+                placeholder="320"
+              />
+            </View>
+            <ExercisePresetPicker presets={presets} value={presetId} onChange={setPresetId} />
+            <View className="gap-2">
+              <Label>Intensity</Label>
+              <SegmentedControl<ExerciseIntensity>
+                value={intensity}
+                options={intensityOptions.map((value) => ({ value, label: value }))}
+                onChange={setIntensity}
+              />
+            </View>
+            <View className="gap-2">
+              <Label>Duration (minutes)</Label>
+              <Input
+                value={durationMinutes}
+                onChangeText={setDurationMinutes}
+                keyboardType="number-pad"
+                placeholder="45"
+              />
+            </View>
+            <View className="gap-2">
+              <Label>Distance (meters)</Label>
+              <Input
+                value={distanceMeters}
+                onChangeText={setDistanceMeters}
+                keyboardType="decimal-pad"
+                placeholder="5000"
+              />
+            </View>
+            <View className="gap-2">
+              <Label>Start time (ISO)</Label>
+              <Input
+                value={startTime}
+                onChangeText={setStartTime}
+                autoCapitalize="none"
+                placeholder="2026-05-08T07:00:00.000Z"
+              />
+            </View>
+            <View className="gap-2">
+              <Label>End time (ISO)</Label>
+              <Input
+                value={endTime}
+                onChangeText={setEndTime}
+                autoCapitalize="none"
+                placeholder="2026-05-08T07:45:00.000Z"
+              />
+            </View>
+            <View className="gap-2">
+              <Label>Notes</Label>
+              <Input
+                value={notes}
+                onChangeText={setNotes}
+                multiline
+                className="min-h-[72px] py-3"
+              />
+            </View>
+            <Button disabled={saving} onPress={() => void handleSave()}>
+              {saving ? 'Saving...' : 'Save'}
+            </Button>
+            <Button variant="outline" onPress={onClose}>
+              Cancel
+            </Button>
           </ScrollView>
         </View>
       </View>
@@ -774,9 +778,7 @@ function EditExerciseModal({
     setNotes(displayExerciseNotes(exercise.notes) ?? '');
     setPresetId(exercise.presetId ?? '');
     setIntensity(exercise.intensity ?? 'moderate');
-    setDurationMinutes(
-      exercise.durationMinutes != null ? String(exercise.durationMinutes) : ''
-    );
+    setDurationMinutes(exercise.durationMinutes != null ? String(exercise.durationMinutes) : '');
     setDistanceMeters(exercise.distanceMeters != null ? String(exercise.distanceMeters) : '');
     setStartTime(typeof exercise.startTime === 'string' ? exercise.startTime : '');
     setEndTime(typeof exercise.endTime === 'string' ? exercise.endTime : '');
@@ -864,64 +866,69 @@ function EditExerciseModal({
             contentContainerClassName="gap-3 pb-8"
             keyboardShouldPersistTaps="handled"
           >
-          <Text className="text-lg font-semibold text-foreground dark:text-darkForeground">
-            Edit exercise
-          </Text>
-          <View className="gap-2">
-            <Label>Name</Label>
-            <Input value={name} onChangeText={setName} />
-          </View>
-          <View className="gap-2">
-            <Label>Calories</Label>
-            <Input
-              value={caloriesBurned}
-              onChangeText={setCaloriesBurned}
-              keyboardType="number-pad"
-            />
-          </View>
-          <ExercisePresetPicker presets={presets} value={presetId} onChange={setPresetId} />
-          <View className="gap-2">
-            <Label>Intensity</Label>
-            <SegmentedControl<ExerciseIntensity>
-              value={intensity}
-              options={intensityOptions.map((value) => ({ value, label: value }))}
-              onChange={setIntensity}
-            />
-          </View>
-          <View className="gap-2">
-            <Label>Duration (minutes)</Label>
-            <Input
-              value={durationMinutes}
-              onChangeText={setDurationMinutes}
-              keyboardType="number-pad"
-            />
-          </View>
-          <View className="gap-2">
-            <Label>Distance (meters)</Label>
-            <Input
-              value={distanceMeters}
-              onChangeText={setDistanceMeters}
-              keyboardType="decimal-pad"
-            />
-          </View>
-          <View className="gap-2">
-            <Label>Start time (ISO)</Label>
-            <Input value={startTime} onChangeText={setStartTime} autoCapitalize="none" />
-          </View>
-          <View className="gap-2">
-            <Label>End time (ISO)</Label>
-            <Input value={endTime} onChangeText={setEndTime} autoCapitalize="none" />
-          </View>
-          <View className="gap-2">
-            <Label>Notes</Label>
-            <Input value={notes} onChangeText={setNotes} multiline className="min-h-[72px] py-3" />
-          </View>
-          <Button disabled={saving} onPress={() => void handleSave()}>
-            {saving ? 'Saving...' : 'Save changes'}
-          </Button>
-          <Button variant="outline" onPress={onClose}>
-            Cancel
-          </Button>
+            <Text className="text-lg font-semibold text-foreground dark:text-darkForeground">
+              Edit exercise
+            </Text>
+            <View className="gap-2">
+              <Label>Name</Label>
+              <Input value={name} onChangeText={setName} />
+            </View>
+            <View className="gap-2">
+              <Label>Calories</Label>
+              <Input
+                value={caloriesBurned}
+                onChangeText={setCaloriesBurned}
+                keyboardType="number-pad"
+              />
+            </View>
+            <ExercisePresetPicker presets={presets} value={presetId} onChange={setPresetId} />
+            <View className="gap-2">
+              <Label>Intensity</Label>
+              <SegmentedControl<ExerciseIntensity>
+                value={intensity}
+                options={intensityOptions.map((value) => ({ value, label: value }))}
+                onChange={setIntensity}
+              />
+            </View>
+            <View className="gap-2">
+              <Label>Duration (minutes)</Label>
+              <Input
+                value={durationMinutes}
+                onChangeText={setDurationMinutes}
+                keyboardType="number-pad"
+              />
+            </View>
+            <View className="gap-2">
+              <Label>Distance (meters)</Label>
+              <Input
+                value={distanceMeters}
+                onChangeText={setDistanceMeters}
+                keyboardType="decimal-pad"
+              />
+            </View>
+            <View className="gap-2">
+              <Label>Start time (ISO)</Label>
+              <Input value={startTime} onChangeText={setStartTime} autoCapitalize="none" />
+            </View>
+            <View className="gap-2">
+              <Label>End time (ISO)</Label>
+              <Input value={endTime} onChangeText={setEndTime} autoCapitalize="none" />
+            </View>
+            <View className="gap-2">
+              <Label>Notes</Label>
+              <Input
+                value={notes}
+                onChangeText={setNotes}
+                multiline
+                className="min-h-[72px] py-3"
+              />
+            </View>
+            <Button disabled={saving} onPress={() => void handleSave()}>
+              {saving ? 'Saving...' : 'Save changes'}
+            </Button>
+            <Button variant="outline" onPress={onClose}>
+              Cancel
+            </Button>
           </ScrollView>
         </View>
       </View>

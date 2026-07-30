@@ -133,7 +133,6 @@ export function isPersonalItemSharedWithFamily(
   if (!userId) return false;
   const normalized = item.itemName.trim().toLowerCase();
   return familySharedItems.some(
-    (shared) =>
-      shared.sharedBy === userId && shared.itemName.trim().toLowerCase() === normalized
+    (shared) => shared.sharedBy === userId && shared.itemName.trim().toLowerCase() === normalized
   );
 }

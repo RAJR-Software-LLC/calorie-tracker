@@ -61,8 +61,8 @@ See [`health-policy-mapping.md`](health-policy-mapping.md). Do not use HealthKit
 
 When native sync is enabled, declare (align with actual behavior):
 
-| Data type    | Collected                           | Shared | Purpose           |
-| ------------ | ----------------------------------- | ------ | ----------------- |
+| Data type    | Collected                                                    | Shared | Purpose           |
+| ------------ | ------------------------------------------------------------ | ------ | ----------------- |
 | Fitness info | Yes (optional; user sync / optional background after opt-in) | No     | App functionality |
 | Health info  | Yes (optional; user sync / optional background after opt-in) | No     | App functionality |
 

@@ -15,11 +15,7 @@ import { isKnownCalories } from '@/lib/utils/saved-items';
 import { showToast } from '@/lib/toast';
 import { useThemePalette } from '@/lib/use-theme-palette';
 
-import type {
-  FamilySharedItemWithId,
-  FamilyWithMemberProfiles,
-  SavedItemWithId,
-} from '@/types';
+import type { FamilySharedItemWithId, FamilyWithMemberProfiles, SavedItemWithId } from '@/types';
 
 type SharedItemsListProps = {
   familyId: string;
@@ -314,20 +310,20 @@ function ShareItemModal({
                     .filter((item) => isKnownCalories(item.defaultCalories))
                     .slice(0, 6)
                     .map((item) => (
-                    <Pressable
-                      key={item.id}
-                      className={`rounded-full border px-3 py-1.5 ${
-                        itemName === item.itemName
-                          ? 'border-primary bg-primary/5 dark:border-darkPrimary dark:bg-darkPrimary/5'
-                          : 'border-border dark:border-darkBorder'
-                      }`}
-                      onPress={() => selectMyItem(item)}
-                    >
-                      <Text className="text-xs font-medium text-foreground dark:text-darkForeground">
-                        {item.itemName}
-                      </Text>
-                    </Pressable>
-                  ))}
+                      <Pressable
+                        key={item.id}
+                        className={`rounded-full border px-3 py-1.5 ${
+                          itemName === item.itemName
+                            ? 'border-primary bg-primary/5 dark:border-darkPrimary dark:bg-darkPrimary/5'
+                            : 'border-border dark:border-darkBorder'
+                        }`}
+                        onPress={() => selectMyItem(item)}
+                      >
+                        <Text className="text-xs font-medium text-foreground dark:text-darkForeground">
+                          {item.itemName}
+                        </Text>
+                      </Pressable>
+                    ))}
                 </View>
               </View>
             ) : null}

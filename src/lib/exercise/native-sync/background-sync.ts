@@ -8,10 +8,7 @@ import { logAppError } from '@/lib/app-errors';
 import { loadExercisePresets } from '@/lib/exercise/presets-store';
 import { mergeUserHabits } from '@/lib/utils/user-habits';
 
-import {
-  createHealthConnectAdapter,
-  createHealthKitAdapter,
-} from './adapters';
+import { createHealthConnectAdapter, createHealthKitAdapter } from './adapters';
 import { syncNativeHealthAdapter } from './orchestrator';
 import { isNativeHealthSyncSupported } from './runtime';
 

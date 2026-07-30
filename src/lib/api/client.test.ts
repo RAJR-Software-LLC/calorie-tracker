@@ -27,12 +27,14 @@ describe('apiRequest', () => {
         status: 401,
         ok: false,
         statusText: 'Unauthorized',
+        headers: new Headers(),
         text: async () => '{"error":"Unauthorized"}',
       })
       .mockResolvedValueOnce({
         status: 200,
         ok: true,
         statusText: 'OK',
+        headers: new Headers(),
         text: async () => '{"ok":true}',
       });
     global.fetch = fetchMock as unknown as typeof fetch;
@@ -50,6 +52,7 @@ describe('apiRequest', () => {
       status: 422,
       ok: false,
       statusText: 'Unprocessable',
+      headers: new Headers(),
       text: async () => '{"error":"Validation failed"}',
     }) as unknown as typeof fetch;
 
