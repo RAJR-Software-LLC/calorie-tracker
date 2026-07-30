@@ -36,11 +36,11 @@ flowchart LR
 - **`(tabs)`** [`app/(tabs)/_layout.tsx`](<../app/(tabs)/_layout.tsx>): bottom tabs — Dashboard (`index`), Calendar, Calculator, Family, Settings.
 - **`(auth)`** [`app/(auth)/_layout.tsx`](<../app/(auth)/_layout.tsx>): stack for login and signup placeholders.
 
-Deep links use the scheme from `app.config.ts` (`calorietracker`).
+Deep links use the scheme from `app.config.js` (`calorietracker`).
 
 ## Configuration
 
-- [`app.config.ts`](../app.config.ts): Expo config, `extra.firebase` placeholders, `extra.mockFirebaseIdToken`, `extra.eas.projectId` from `EAS_PROJECT_ID`.
+- [`app.config.js`](../app.config.js): Expo config, `extra.firebase` placeholders, `extra.mockFirebaseIdToken`, `extra.eas.projectId` from `EAS_PROJECT_ID`.
 - [`metro.config.js`](../metro.config.js): `withNativeWind` for CSS/Tailwind processing.
 - [`babel.config.js`](../babel.config.js): `babel-preset-expo` + `nativewind/babel`.
 

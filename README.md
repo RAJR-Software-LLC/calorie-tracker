@@ -41,7 +41,7 @@ npx expo-doctor
 | --------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
 | `EXPO_PUBLIC_API_URL`       | Base URL of the API (required for `src/lib/api`). No trailing slash.                                                             |
 | `EXPO_PUBLIC_MOCK_ID_TOKEN` | Optional Firebase **ID token** string for development when Auth UI is not wired; sent as `Authorization: Bearer`.                |
-| `EXPO_PUBLIC_FIREBASE_*`    | Optional real Firebase web config; see [app.config.ts](app.config.ts). Placeholder values skip initializing a real Firebase app. |
+| `EXPO_PUBLIC_FIREBASE_*`    | Optional real Firebase web config; see [app.config.js](app.config.js). Placeholder values skip initializing a real Firebase app. |
 | `EAS_PROJECT_ID`            | Expo project UUID for EAS Build/Update (set after `eas init` or in CI secrets).                                                  |
 
 Copy [.env.example](.env.example) to `.env` and adjust. Never commit secrets.
@@ -83,7 +83,7 @@ More detail: [docs/architecture.md](docs/architecture.md), [docs/types.md](docs/
 
 1. Install EAS CLI: `npm install -g eas-cli` (or use `npx eas-cli`).
 2. Log in: `eas login`; create/link a project: `eas init`.
-3. Set `EAS_PROJECT_ID` in your environment or in `app.config.ts` / EAS secrets so `extra.eas.projectId` is populated.
+3. Set `EAS_PROJECT_ID` in your environment or in `app.config.js` / EAS secrets so `extra.eas.projectId` is populated.
 4. GitHub Actions can run `eas update` for PR previews when `EXPO_TOKEN` is configured (see workflow comments in [.github/workflows/](.github/workflows/)).
 
 Until `EXPO_TOKEN` and a valid project ID exist, the EAS Update workflow is expected to fail; CI still validates lint, types, tests, and `expo-doctor`.

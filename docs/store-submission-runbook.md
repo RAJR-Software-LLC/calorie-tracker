@@ -10,7 +10,7 @@
 
 ## Versioning
 
-- Source of truth: app version in `app.config.ts`.
+- Source of truth: app version in `app.config.js`.
 - EAS build numbering: remote auto-increment in `eas.json`.
 - Release tag format: `v<appVersion>-build<storeBuildNumber>`.
 
