@@ -84,6 +84,9 @@ module.exports = {
     runtimeVersion: {
       policy: 'appVersion',
     },
+    updates: {
+      url: 'https://u.expo.dev/436fb9c4-ab3d-4020-8a6d-126575b631f5',
+    },
     orientation: 'portrait',
     owner: 'rajr-software',
     icon: './assets/images/icon.png',

@@ -44,7 +44,15 @@ jobs:
         if: env.EXPO_TOKEN != ''
         run: |
           if [ "${{ github.event_name }}" = "pull_request" ]; then
-            eas update --non-interactive --branch "pr-${{ github.event.pull_request.number }}" --message "PR #${{ github.event.pull_request.number }} @ ${{ github.sha }}"
+            eas update \
+              --non-interactive \
+              --branch "pr-${{ github.event.pull_request.number }}" \
+              --message "PR #${{ github.event.pull_request.number }} @ ${{ github.sha }}" \
+              --environment preview
           else
-            eas update --non-interactive --branch "manual-${{ github.run_id }}" --message "workflow_dispatch ${{ github.sha }}"
+            eas update \
+              --non-interactive \
+              --branch "manual-${{ github.run_id }}" \
+              --message "workflow_dispatch ${{ github.sha }}" \
+              --environment preview
           fi
