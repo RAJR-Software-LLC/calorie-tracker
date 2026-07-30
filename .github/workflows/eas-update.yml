@@ -13,8 +13,18 @@ jobs:
     runs-on: ubuntu-latest
     env:
       EXPO_PUBLIC_API_URL: http://localhost:3000
+      # Map secret to env so steps can check presence (secrets cannot be used in `if:`).
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
     steps:
       - uses: actions/checkout@v4
+
+      - name: Validate Expo token
+        run: |
+          if [ -z "$EXPO_TOKEN" ]; then
+            echo "EXPO_TOKEN is missing. Add it in repo Settings > Secrets and variables > Actions."
+            echo "Create a token at https://expo.dev/settings/access-tokens (account must access this Expo project)."
+            exit 1
+          fi
 
       - uses: actions/setup-node@v4
         with:
@@ -31,6 +41,7 @@ jobs:
           token: ${{ secrets.EXPO_TOKEN }}
 
       - name: Publish update
+        if: env.EXPO_TOKEN != ''
         run: |
           if [ "${{ github.event_name }}" = "pull_request" ]; then
             eas update --non-interactive --branch "pr-${{ github.event.pull_request.number }}" --message "PR #${{ github.event.pull_request.number }} @ ${{ github.sha }}"
