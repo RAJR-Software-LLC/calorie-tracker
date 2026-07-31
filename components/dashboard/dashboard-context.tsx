@@ -6,6 +6,7 @@ import { ApiError } from '@/lib/api/errors';
 import { logAppError, toUserErrorMessage } from '@/lib/app-errors';
 import { formatDate, formatDateInTimeZone } from '@/lib/date';
 import {
+  invalidateMe,
   queryKeys,
   useEntries,
   useExercise,
@@ -168,7 +169,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     if (!user) return;
     try {
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: queryKeys.me(user.uid) }),
+        invalidateMe(queryClient, user.uid),
         refreshDayData(),
         refreshSavedItems(),
       ]);

@@ -84,7 +84,9 @@ describe('SharedItemsList family members', () => {
       </TestQueryProvider>
     );
 
-    await waitFor(() => expect(screen.getByText('Family One')).toBeTruthy());
+    await waitFor(() => {
+      expect(screen.getByText('Family One')).toBeTruthy();
+    });
     expect(mockGetFamily).toHaveBeenCalledWith('fam-1');
     expect(screen.getByText('2 members')).toBeTruthy();
     expect(screen.getByText('ABCD1234')).toBeTruthy();
@@ -111,7 +113,9 @@ describe('SharedItemsList family members', () => {
       </TestQueryProvider>
     );
 
-    await waitFor(() => expect(screen.getByText('1 member')).toBeTruthy());
+    await waitFor(() => {
+      expect(screen.getByText('1 member')).toBeTruthy();
+    });
     expect(screen.getByText('Me')).toBeTruthy();
     expect(mockAvatar).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -141,15 +145,17 @@ describe('SharedItemsList family members', () => {
       </TestQueryProvider>
     );
 
-    await waitFor(() => expect(screen.getByText('Me')).toBeTruthy());
-    await waitFor(() =>
+    await waitFor(() => {
+      expect(screen.getByText('Me')).toBeTruthy();
+    });
+    await waitFor(() => {
       expect(mockAvatar).toHaveBeenCalledWith(
         expect.objectContaining({
           photo: expect.objectContaining({
             downloadUrl: 'https://example.com/me-photo.png',
           }),
         })
-      )
-    );
+      );
+    });
   });
 });

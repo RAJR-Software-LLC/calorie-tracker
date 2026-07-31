@@ -6,7 +6,7 @@ import { useAuth } from '@/components/auth/auth-provider';
 import { FamilyManager } from '@/components/family/family-manager';
 import { SharedItemsList } from '@/components/family/shared-items-list';
 import { AppScreen } from '@/components/layout/app-screen';
-import { queryKeys, useMe } from '@/lib/queries';
+import { invalidateMe, queryKeys, useMe } from '@/lib/queries';
 import { useThemePalette } from '@/lib/use-theme-palette';
 
 export default function FamilyScreen() {
@@ -30,7 +30,7 @@ export default function FamilyScreen() {
     try {
       const fid = profile?.familyId ?? null;
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: queryKeys.me(user.uid) }),
+        invalidateMe(queryClient, user.uid),
         fid
           ? queryClient.invalidateQueries({ queryKey: queryKeys.family(user.uid, fid) })
           : Promise.resolve(),

@@ -5,7 +5,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { CalorieCalendar } from '@/components/calendar/calorie-calendar';
 import { AppScreen } from '@/components/layout/app-screen';
 import { useAuth } from '@/components/auth/auth-provider';
-import { queryKeys } from '@/lib/queries';
+import { invalidateMe } from '@/lib/queries';
 
 export default function CalendarScreen() {
   const { user } = useAuth();
@@ -17,7 +17,7 @@ export default function CalendarScreen() {
     setRefreshing(true);
     try {
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: queryKeys.me(user.uid) }),
+        invalidateMe(queryClient, user.uid),
         queryClient.invalidateQueries({ queryKey: ['entries', user.uid] }),
       ]);
     } finally {
