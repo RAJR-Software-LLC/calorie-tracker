@@ -6,6 +6,7 @@ import { ApiError } from '@/lib/api/errors';
 import { logAppError, toUserErrorMessage } from '@/lib/app-errors';
 import { formatDate, formatDateInTimeZone } from '@/lib/date';
 import {
+  invalidateMe,
   queryKeys,
   useEntries,
   useExercise,
@@ -46,6 +47,8 @@ interface DashboardContextType {
   refreshSavedItems: () => Promise<void>;
   refreshWater: () => Promise<void>;
   refreshDayData: () => Promise<void>;
+  /** Refetch today's day queries only when already stale (tab focus). */
+  refreshDayDataIfStale: () => Promise<void>;
   refreshAll: () => Promise<void>;
   updateSavedItemLocally: (itemId: string, patch: Partial<SavedItemWithId>) => void;
   removeSavedItemLocally: (itemId: string) => void;
@@ -144,11 +147,29 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     await Promise.all([invalidateEntries(), invalidateWater(), invalidateExercises()]);
   }, [user, invalidateEntries, invalidateWater, invalidateExercises]);
 
+  const refreshDayDataIfStale = useCallback(async () => {
+    if (!user) return;
+    await Promise.all([
+      queryClient.refetchQueries({
+        queryKey: queryKeys.entries(user.uid, calendarDay),
+        stale: true,
+      }),
+      queryClient.refetchQueries({
+        queryKey: queryKeys.water(user.uid, calendarDay),
+        stale: true,
+      }),
+      queryClient.refetchQueries({
+        queryKey: queryKeys.exercise(user.uid, calendarDay),
+        stale: true,
+      }),
+    ]);
+  }, [queryClient, user, calendarDay]);
+
   const refreshAll = useCallback(async () => {
     if (!user) return;
     try {
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: queryKeys.me(user.uid) }),
+        invalidateMe(queryClient, user.uid),
         refreshDayData(),
         refreshSavedItems(),
       ]);
@@ -204,6 +225,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       refreshSavedItems,
       refreshWater: invalidateWater,
       refreshDayData,
+      refreshDayDataIfStale,
       refreshAll,
       updateSavedItemLocally,
       removeSavedItemLocally,
@@ -227,6 +249,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       refreshSavedItems,
       invalidateWater,
       refreshDayData,
+      refreshDayDataIfStale,
       refreshAll,
       updateSavedItemLocally,
       removeSavedItemLocally,

@@ -1,5 +1,5 @@
-import { useCallback, useRef } from 'react';
-import { Text, View } from 'react-native';
+import { useCallback, useRef, useState } from 'react';
+import { RefreshControl, Text, View } from 'react-native';
 
 import { useDashboard } from '@/components/dashboard/dashboard-context';
 import { DailySummary } from '@/components/dashboard/daily-summary';
@@ -12,9 +12,17 @@ import { AppScreen } from '@/components/layout/app-screen';
 import { useFocusEffect } from '@react-navigation/native';
 
 function DashboardBody() {
-  const { totalCalories, exerciseCalories, calorieGoal, habits, refreshDayData, calendarDay } =
-    useDashboard();
+  const {
+    totalCalories,
+    exerciseCalories,
+    calorieGoal,
+    habits,
+    refreshDayDataIfStale,
+    refreshAll,
+    calendarDay,
+  } = useDashboard();
   const skipNextFocusRefresh = useRef(true);
+  const [refreshing, setRefreshing] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -22,12 +30,23 @@ function DashboardBody() {
         skipNextFocusRefresh.current = false;
         return;
       }
-      void refreshDayData();
-    }, [refreshDayData])
+      void refreshDayDataIfStale();
+    }, [refreshDayDataIfStale])
   );
 
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await refreshAll();
+    } finally {
+      setRefreshing(false);
+    }
+  }, [refreshAll]);
+
   return (
-    <>
+    <AppScreen
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void onRefresh()} />}
+    >
       <View className="flex-row items-center justify-between">
         <Text className="text-lg font-semibold text-foreground dark:text-darkForeground">
           Dashboard
@@ -39,14 +58,10 @@ function DashboardBody() {
       <EntryList />
       {habits.waterTrackingEnabled !== false ? <WaterSection date={calendarDay} /> : null}
       {habits.exerciseTrackingEnabled !== false ? <ExerciseSection date={calendarDay} /> : null}
-    </>
+    </AppScreen>
   );
 }
 
 export default function DashboardScreen() {
-  return (
-    <AppScreen>
-      <DashboardBody />
-    </AppScreen>
-  );
+  return <DashboardBody />;
 }

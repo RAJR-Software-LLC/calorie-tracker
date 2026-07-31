@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useMemo, useState, type ReactNode
 import { AppState, type AppStateStatus } from 'react-native';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 
+import { clearEtagCache } from '@/lib/api/etag-cache';
 import { getFirebaseAuth } from '@/lib/firebase';
 import { runNotificationStartup } from '@/lib/notifications/on-authenticated';
 import { queryClient } from '@/lib/queries/query-client';
@@ -31,6 +32,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser((prev) => {
         if (prev && !u) {
           queryClient.clear();
+          clearEtagCache();
         }
         return u;
       });

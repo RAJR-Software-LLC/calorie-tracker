@@ -92,6 +92,13 @@
       "exclude": [
         "@sentry/react-native"
       ]
+    },
+    "doctor": {
+      "reactNativeDirectoryCheck": {
+        "exclude": [
+          "expo-health-connect"
+        ]
+      }
     }
   },
   "private": true

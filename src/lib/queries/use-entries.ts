@@ -5,7 +5,7 @@ import { getEntries } from '@/lib/api';
 
 import { queryKeys } from './keys';
 
-const DAY_STALE_TIME = 60_000;
+const DAY_STALE_TIME = 45_000;
 const DAY_GC_TIME = 10 * 60_000;
 
 export function useEntries(date: string) {
