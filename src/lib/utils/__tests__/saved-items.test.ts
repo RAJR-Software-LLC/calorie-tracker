@@ -101,9 +101,7 @@ describe('saved-items utils', () => {
   });
 
   it('mergeSavedFoodSuggestions prefers personal over family for same name', () => {
-    const personal = [
-      makeSavedItem({ id: 'p1', itemName: 'Jimmy Dean Breakfast Sandwich' }),
-    ];
+    const personal = [makeSavedItem({ id: 'p1', itemName: 'Jimmy Dean Breakfast Sandwich' })];
     const family = [
       makeFamilyItem({
         id: 'f1',

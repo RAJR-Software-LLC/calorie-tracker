@@ -8,6 +8,8 @@ export const queryKeys = {
   exercise: (uid?: string, date?: string) => ['exercise', uid, date] as const,
   exerciseRange: (uid?: string, start?: string, end?: string) =>
     ['exercise', uid, 'range', start, end] as const,
+  /** Prefix key for invalidating all day-scoped exercise queries for a user. */
+  exerciseRoot: (uid?: string) => ['exercise', uid] as const,
   savedItems: (uid?: string) => ['savedItems', uid] as const,
   family: (uid?: string, familyId?: string | null) => ['family', uid, familyId] as const,
   familySharedItems: (uid?: string, familyId?: string | null) =>

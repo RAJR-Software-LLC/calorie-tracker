@@ -25,4 +25,3 @@ export type {
   NativeWorkoutRecord,
   PreparedSyncExercise,
 } from './types';
-

@@ -21,20 +21,20 @@ This document describes the Expo mobile implementation for exercise logging and 
 - Shared contracts: [`types/index.d.ts`](../types/index.d.ts) (keep in sync with backend via `npm run sync-types`).
 - Preset cache: [`src/lib/exercise/presets-store.ts`](../src/lib/exercise/presets-store.ts).
 - Native sync: [`src/lib/exercise/native-sync/`](../src/lib/exercise/native-sync/) (adapters, orchestrator, server sync-state, background task).
-- UI: [`app/(tabs)/exercise.tsx`](../app/(tabs)/exercise.tsx); dashboard section: [`components/dashboard/exercise-section.tsx`](../components/dashboard/exercise-section.tsx).
+- UI: [`app/(tabs)/exercise.tsx`](<../app/(tabs)/exercise.tsx>); dashboard section: [`components/dashboard/exercise-section.tsx`](../components/dashboard/exercise-section.tsx).
 
 ## API contract usage
 
-| Method | Path | Notes |
-|--------|------|--------|
-| GET | `/me/exercise/presets` | Catalog + `version` |
-| GET | `/me/exercise/sync-state` | Defaults when unset; hydrate local cursor cache |
-| PUT | `/me/exercise/sync-state` | Attempt / success / error + platform cursors (habit-gated) |
-| GET | `/me/exercise?date=` \| `startDate`+`endDate` \| `updatedSince=` | Mutually exclusive query modes |
-| POST | `/me/exercise` | Manual create (duration, distance, start/end, notes, …) |
-| POST | `/me/exercise/bulk` | ≤100; native upsert |
-| PATCH | `/me/exercise/:id` | Editable fields only (not `externalId` / `externalSource`) |
-| DELETE | `/me/exercise/:id` | Hard delete |
+| Method | Path                                                             | Notes                                                      |
+| ------ | ---------------------------------------------------------------- | ---------------------------------------------------------- |
+| GET    | `/me/exercise/presets`                                           | Catalog + `version`                                        |
+| GET    | `/me/exercise/sync-state`                                        | Defaults when unset; hydrate local cursor cache            |
+| PUT    | `/me/exercise/sync-state`                                        | Attempt / success / error + platform cursors (habit-gated) |
+| GET    | `/me/exercise?date=` \| `startDate`+`endDate` \| `updatedSince=` | Mutually exclusive query modes                             |
+| POST   | `/me/exercise`                                                   | Manual create (duration, distance, start/end, notes, …)    |
+| POST   | `/me/exercise/bulk`                                              | ≤100; native upsert                                        |
+| PATCH  | `/me/exercise/:id`                                               | Editable fields only (not `externalId` / `externalSource`) |
+| DELETE | `/me/exercise/:id`                                               | Hard delete                                                |
 
 ### Habit gate
 

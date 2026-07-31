@@ -40,11 +40,11 @@ See [`docs/client-caching-and-revalidation.md`](client-caching-and-revalidation.
 - **`(tabs)`** [`app/(tabs)/_layout.tsx`](<../app/(tabs)/_layout.tsx>): bottom tabs — Dashboard (`index`), Calendar, Calculator, Family, Settings.
 - **`(auth)`** [`app/(auth)/_layout.tsx`](<../app/(auth)/_layout.tsx>): stack for login and signup placeholders.
 
-Deep links use the scheme from `app.config.ts` (`calorietracker`).
+Deep links use the scheme from `app.config.js` (`calorietracker`).
 
 ## Configuration
 
-- [`app.config.ts`](../app.config.ts): Expo config, `extra.firebase` placeholders, `extra.mockFirebaseIdToken`, `extra.eas.projectId` from `EAS_PROJECT_ID`.
+- [`app.config.js`](../app.config.js): Expo config, `extra.firebase` placeholders, `extra.mockFirebaseIdToken`, `extra.eas.projectId` from `EAS_PROJECT_ID`.
 - [`metro.config.js`](../metro.config.js): `withNativeWind` for CSS/Tailwind processing.
 - [`babel.config.js`](../babel.config.js): `babel-preset-expo` + `nativewind/babel`.
 
@@ -55,12 +55,12 @@ Deep links use the scheme from `app.config.ts` (`calorietracker`).
 
 ## Where to add features
 
-| Change                | Location                                                                                                       |
-| --------------------- | -------------------------------------------------------------------------------------------------------------- |
-| New screen (main app) | `app/(tabs)/your-screen.tsx` and register in `app/(tabs)/_layout.tsx` if it should be a tab                    |
-| New stack screen      | Under `app/` with a `_layout.tsx` group as needed                                                              |
-| API call              | Add a function in `src/lib/api/v1.ts` using `apiRequest` and types from `@/types`                              |
-| Habits / water        | Types in `types/index.d.ts`; UI in Settings + Dashboard; see [`docs/water-and-habits.md`](water-and-habits.md) |
+| Change                | Location                                                                                                                                              |
+| --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| New screen (main app) | `app/(tabs)/your-screen.tsx` and register in `app/(tabs)/_layout.tsx` if it should be a tab                                                           |
+| New stack screen      | Under `app/` with a `_layout.tsx` group as needed                                                                                                     |
+| API call              | Add a function in `src/lib/api/v1.ts` using `apiRequest` and types from `@/types`                                                                     |
+| Habits / water        | Types in `types/index.d.ts`; UI in Settings + Dashboard; see [`docs/water-and-habits.md`](water-and-habits.md)                                        |
 | Saved foods           | API in `src/lib/api/v1.ts`; utils in `src/lib/utils/saved-items.ts`; Settings modal + dashboard combobox; see [`docs/saved-foods.md`](saved-foods.md) |
-| Business logic        | Prefer `src/lib/utils/` or feature folders under `src/`                                                        |
-| Styling               | Tailwind classes via `className`; extend theme in `tailwind.config.js`                                         |
+| Business logic        | Prefer `src/lib/utils/` or feature folders under `src/`                                                                                               |
+| Styling               | Tailwind classes via `className`; extend theme in `tailwind.config.js`                                                                                |

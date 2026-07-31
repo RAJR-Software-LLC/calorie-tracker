@@ -38,7 +38,16 @@ import {
 } from '@/src/lib/utils/profile-measurements';
 import type { ActivityLevel, GetMeResponse, GoalType, HeightUnit, Sex, WeightUnit } from '@/types';
 import { useRouter } from 'expo-router';
-import { Bell, Camera, ChevronRight, Droplets, LogOut, Mail, Shield, UtensilsCrossed } from 'lucide-react-native';
+import {
+  Bell,
+  Camera,
+  ChevronRight,
+  Droplets,
+  LogOut,
+  Mail,
+  Shield,
+  UtensilsCrossed,
+} from 'lucide-react-native';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Modal, Pressable, RefreshControl, Text, View } from 'react-native';
 

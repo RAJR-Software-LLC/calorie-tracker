@@ -2,7 +2,7 @@ import { useRouter } from 'expo-router';
 import { Pressable, Text, View } from 'react-native';
 import { Leaf } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQueryClient, type QueryClient } from '@tanstack/react-query';
 
 import { useAuth } from '@/components/auth/auth-provider';
 import { Avatar } from '@/components/ui/avatar';
@@ -15,6 +15,12 @@ function getGreeting(): string {
   if (hour < 12) return 'Good morning';
   if (hour < 17) return 'Good afternoon';
   return 'Good evening';
+}
+
+function refreshProfilePhoto(queryClient: QueryClient, uid: string | undefined): void {
+  void invalidateMe(queryClient, uid).catch((err) =>
+    logAppError('header/refreshProfilePhoto', err)
+  );
 }
 
 export type AppHeaderProps = {
@@ -30,12 +36,7 @@ export function AppHeader({ forceLeaf = false }: AppHeaderProps = {}) {
   const profilePhoto = useMeProfilePhoto({ enabled: !forceLeaf });
   const displayName = user?.displayName?.split(' ')[0] || 'Friend';
   const hasProfilePhoto = !forceLeaf && profilePhoto != null;
-
-  const handleAvatarRefreshNeeded = () => {
-    void invalidateMe(queryClient, user?.uid).catch((err) =>
-      logAppError('header/refreshProfilePhoto', err)
-    );
-  };
+  const uid = user?.uid;
 
   return (
     <View
@@ -63,7 +64,7 @@ export function AppHeader({ forceLeaf = false }: AppHeaderProps = {}) {
               name={user?.displayName}
               email={user?.email}
               size={30}
-              onRefreshNeeded={handleAvatarRefreshNeeded}
+              onRefreshNeeded={() => refreshProfilePhoto(queryClient, uid)}
             />
           ) : (
             <Leaf size={20} color={p.primary} />

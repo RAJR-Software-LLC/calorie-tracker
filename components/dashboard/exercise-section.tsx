@@ -105,7 +105,9 @@ export function ExerciseSection({ date: _date }: ExerciseSectionProps) {
                 </Pressable>
                 <View className="flex-row items-center gap-3">
                   <Text className="text-sm font-semibold text-primary dark:text-darkPrimary">
-                    {caloriesLabel === 'Not reported' ? 'Not reported' : `-${ex.caloriesBurned} cal`}
+                    {caloriesLabel === 'Not reported'
+                      ? 'Not reported'
+                      : `-${ex.caloriesBurned} cal`}
                   </Text>
                   <Button
                     variant="ghost"

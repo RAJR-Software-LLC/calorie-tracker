@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Crypto from 'expo-crypto';
 
 import { getExerciseSyncState, putExerciseSyncState } from '@/lib/api';
 import type {
@@ -46,10 +47,7 @@ export async function writeLocalCursor(
 export async function getStableDeviceId(): Promise<string> {
   const existing = await AsyncStorage.getItem(DEVICE_ID_KEY);
   if (existing && existing.length > 0) return existing;
-  const generated =
-    typeof globalThis.crypto?.randomUUID === 'function'
-      ? globalThis.crypto.randomUUID()
-      : `install_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`;
+  const generated = Crypto.randomUUID();
   await AsyncStorage.setItem(DEVICE_ID_KEY, generated);
   return generated;
 }

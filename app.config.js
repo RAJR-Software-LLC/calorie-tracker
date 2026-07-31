@@ -1,6 +1,5 @@
-import { parseProjectEnv } from '@expo/env';
-import type { ExpoConfig } from 'expo/config';
-import path from 'node:path';
+const { parseProjectEnv } = require('@expo/env');
+const path = require('node:path');
 
 /**
  * Prefer non-empty values from .env files over process.env. Expo's env loader does not
@@ -10,7 +9,7 @@ const { env: fileEnv } = parseProjectEnv(path.resolve(process.cwd()), { silent: 
 const buildProfile = process.env.EAS_BUILD_PROFILE ?? '';
 const isProductionBuild = buildProfile === 'production';
 
-function envPublic(name: string): string | undefined {
+function envPublic(name) {
   const fromFile = fileEnv[name];
   if (typeof fromFile === 'string' && fromFile.trim() !== '') {
     return fromFile.trim();
@@ -24,7 +23,7 @@ function envPublic(name: string): string | undefined {
   return undefined;
 }
 
-function requirePublic(name: string): string {
+function requirePublic(name) {
   const value = envPublic(name);
   if (!value) {
     throw new Error(`[app.config] Missing required env var for production build: ${name}`);
@@ -77,97 +76,103 @@ if (firebaseExtra.apiKey !== 'placeholder' && !firebaseExtra.appId.includes(':we
   );
 }
 
-const config: ExpoConfig = {
-  name: 'calorie-tracker',
-  slug: 'calorie-tracker',
-  version: '1.0.0',
-  runtimeVersion: {
-    policy: 'appVersion',
-  },
-  orientation: 'portrait',
-  owner: 'rajr-software',
-  icon: './assets/images/icon.png',
-  scheme: 'calorietracker',
-  userInterfaceStyle: 'automatic',
-  newArchEnabled: true,
-  splash: {
-    image: './assets/images/splash-icon.png',
-    resizeMode: 'contain',
-    backgroundColor: '#faf8f5',
-  },
-  ios: {
-    bundleIdentifier: 'com.rajrsoftware.calorieTracker',
-    supportsTablet: true,
-    usesAppleSignIn: true,
-  },
-  android: {
-    adaptiveIcon: {
-      foregroundImage: './assets/images/adaptive-icon.png',
+module.exports = {
+  expo: {
+    name: 'calorie-tracker',
+    slug: 'calorie-tracker',
+    version: '1.0.0',
+    runtimeVersion: {
+      policy: 'appVersion',
+    },
+    updates: {
+      url: 'https://u.expo.dev/436fb9c4-ab3d-4020-8a6d-126575b631f5',
+    },
+    orientation: 'portrait',
+    owner: 'rajr-software',
+    icon: './assets/images/icon.png',
+    scheme: 'calorietracker',
+    userInterfaceStyle: 'automatic',
+    newArchEnabled: true,
+    splash: {
+      image: './assets/images/splash-icon.png',
+      resizeMode: 'contain',
       backgroundColor: '#faf8f5',
     },
-    edgeToEdgeEnabled: true,
-    predictiveBackGestureEnabled: false,
-    package: 'com.rajrsoftware.calorieTracker',
-    permissions: [
-      'android.permission.health.READ_EXERCISE',
-      'android.permission.health.READ_ACTIVE_CALORIES_BURNED',
-    ],
-  },
-  web: {
-    bundler: 'metro',
-    output: 'static',
-    favicon: './assets/images/favicon.png',
-  },
-  plugins: [
-    'expo-router',
-    'expo-apple-authentication',
-    'expo-web-browser',
-    [
-      'expo-image-picker',
-      {
-        photosPermission: 'Allow Calorie Tracker to access your photos to set your profile photo.',
+    ios: {
+      bundleIdentifier: 'com.rajrsoftware.calorieTracker',
+      supportsTablet: true,
+      usesAppleSignIn: true,
+    },
+    android: {
+      adaptiveIcon: {
+        foregroundImage: './assets/images/adaptive-icon.png',
+        backgroundColor: '#faf8f5',
       },
-    ],
-    [
-      'expo-notifications',
-      {
-        icon: './assets/images/icon.png',
-        color: '#faf8f5',
-      },
-    ],
-    '@react-native-community/datetimepicker',
-    '@sentry/react-native/expo',
-    [
-      '@kingstinct/react-native-healthkit',
-      {
-        NSHealthShareUsageDescription:
-          'Allow Calorie Tracker to read your workouts to sync exercise calories.',
-        NSHealthUpdateUsageDescription:
-          'Allow Calorie Tracker to save workouts you log in the app.',
-        background: false,
-      },
-    ],
-    'expo-health-connect',
-    [
-      'expo-build-properties',
-      {
-        android: {
-          minSdkVersion: 26,
+      edgeToEdgeEnabled: true,
+      predictiveBackGestureEnabled: false,
+      package: 'com.rajrsoftware.calorieTracker',
+      permissions: [
+        'android.permission.health.READ_EXERCISE',
+        'android.permission.health.READ_ACTIVE_CALORIES_BURNED',
+      ],
+    },
+    web: {
+      bundler: 'metro',
+      output: 'static',
+      favicon: './assets/images/favicon.png',
+    },
+    plugins: [
+      'expo-router',
+      'expo-font',
+      'expo-background-task',
+      'expo-apple-authentication',
+      'expo-web-browser',
+      [
+        'expo-image-picker',
+        {
+          photosPermission:
+            'Allow Calorie Tracker to access your photos to set your profile photo.',
         },
-      },
+      ],
+      [
+        'expo-notifications',
+        {
+          icon: './assets/images/icon.png',
+          color: '#faf8f5',
+        },
+      ],
+      '@react-native-community/datetimepicker',
+      '@sentry/react-native/expo',
+      [
+        '@kingstinct/react-native-healthkit',
+        {
+          NSHealthShareUsageDescription:
+            'Allow Calorie Tracker to read your workouts to sync exercise calories.',
+          NSHealthUpdateUsageDescription:
+            'Allow Calorie Tracker to save workouts you log in the app.',
+          background: false,
+        },
+      ],
+      'expo-health-connect',
+      [
+        'expo-build-properties',
+        {
+          android: {
+            minSdkVersion: 26,
+          },
+        },
+      ],
     ],
-  ],
-  experiments: {
-    typedRoutes: true,
-  },
-  extra: {
-    firebase: firebaseExtra,
-    google: googleOAuthExtra,
-    legal: legalExtra,
-    eas: {
-      projectId: '436fb9c4-ab3d-4020-8a6d-126575b631f5',
+    experiments: {
+      typedRoutes: true,
+    },
+    extra: {
+      firebase: firebaseExtra,
+      google: googleOAuthExtra,
+      legal: legalExtra,
+      eas: {
+        projectId: '436fb9c4-ab3d-4020-8a6d-126575b631f5',
+      },
     },
   },
 };
-
-export default { expo: config };

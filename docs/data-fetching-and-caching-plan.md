@@ -29,12 +29,12 @@ Estimated effort: **Phase 1 (high impact)** — 2–4 engineering days; **Phase 
 
 ### Observed symptoms
 
-| Symptom | User impact | Backend impact |
-| ------- | ----------- | -------------- |
-| Profile photo empty briefly on Settings | Looks broken / “lazy loaded” | Extra `GET /me` per visit |
-| Many log lines on tab switch | N/A (dev noise) | Repeated handler execution; 304 still hits server |
-| Dashboard feels slow when revisiting Home | Spinner / stale-then-update | Full refresh including token force-refresh |
-| Duplicate calls on Settings first open | Brief double flash possible | 2× `GET /me` from `useEffect` + `useFocusEffect` |
+| Symptom                                   | User impact                  | Backend impact                                    |
+| ----------------------------------------- | ---------------------------- | ------------------------------------------------- |
+| Profile photo empty briefly on Settings   | Looks broken / “lazy loaded” | Extra `GET /me` per visit                         |
+| Many log lines on tab switch              | N/A (dev noise)              | Repeated handler execution; 304 still hits server |
+| Dashboard feels slow when revisiting Home | Spinner / stale-then-update  | Full refresh including token force-refresh        |
+| Duplicate calls on Settings first open    | Brief double flash possible  | 2× `GET /me` from `useEffect` + `useFocusEffect`  |
 
 ### Root causes (code-backed)
 
@@ -44,20 +44,20 @@ There is no TanStack Query, SWR, or equivalent. Each feature owns its fetch life
 
 `getMe()` is invoked from at least:
 
-| Location | Trigger |
-| -------- | ------- |
-| [`app/(tabs)/settings.tsx`](../app/(tabs)/settings.tsx) | `useEffect` on `user`; `useFocusEffect` on tab focus; photo refresh callbacks |
-| [`components/layout/app-header.tsx`](../components/layout/app-header.tsx) | `useFocusEffect` on tab focus |
-| [`components/dashboard/dashboard-context.tsx`](../components/dashboard/dashboard-context.tsx) | `refreshAll()` on mount and Dashboard tab refocus |
-| [`app/(tabs)/index.tsx`](../app/(tabs)/index.tsx) | `useFocusEffect` → `refreshAll()` |
-| [`app/(tabs)/family.tsx`](../app/(tabs)/family.tsx) | `useEffect` on load |
-| [`app/(tabs)/calculator.tsx`](../app/(tabs)/calculator.tsx) | `useEffect` on mount |
-| [`components/family/shared-items-list.tsx`](../components/family/shared-items-list.tsx) | Load and refresh paths |
-| [`components/settings/habits-settings.tsx`](../components/settings/habits-settings.tsx) | Fallback after patch |
-| [`src/lib/notifications/on-authenticated.ts`](../src/lib/notifications/on-authenticated.ts) | Auth startup and app foreground |
-| [`src/lib/auth-bootstrap.ts`](../src/lib/auth-bootstrap.ts) | Post sign-in bootstrap |
-| [`src/lib/notifications/preference-sync.ts`](../src/lib/notifications/preference-sync.ts) | Preference flush |
-| [`components/calendar/calorie-calendar.tsx`](../components/calendar/calorie-calendar.tsx) | Calendar range load |
+| Location                                                                                      | Trigger                                                                       |
+| --------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| [`app/(tabs)/settings.tsx`](<../app/(tabs)/settings.tsx>)                                     | `useEffect` on `user`; `useFocusEffect` on tab focus; photo refresh callbacks |
+| [`components/layout/app-header.tsx`](../components/layout/app-header.tsx)                     | `useFocusEffect` on tab focus                                                 |
+| [`components/dashboard/dashboard-context.tsx`](../components/dashboard/dashboard-context.tsx) | `refreshAll()` on mount and Dashboard tab refocus                             |
+| [`app/(tabs)/index.tsx`](<../app/(tabs)/index.tsx>)                                           | `useFocusEffect` → `refreshAll()`                                             |
+| [`app/(tabs)/family.tsx`](<../app/(tabs)/family.tsx>)                                         | `useEffect` on load                                                           |
+| [`app/(tabs)/calculator.tsx`](<../app/(tabs)/calculator.tsx>)                                 | `useEffect` on mount                                                          |
+| [`components/family/shared-items-list.tsx`](../components/family/shared-items-list.tsx)       | Load and refresh paths                                                        |
+| [`components/settings/habits-settings.tsx`](../components/settings/habits-settings.tsx)       | Fallback after patch                                                          |
+| [`src/lib/notifications/on-authenticated.ts`](../src/lib/notifications/on-authenticated.ts)   | Auth startup and app foreground                                               |
+| [`src/lib/auth-bootstrap.ts`](../src/lib/auth-bootstrap.ts)                                   | Post sign-in bootstrap                                                        |
+| [`src/lib/notifications/preference-sync.ts`](../src/lib/notifications/preference-sync.ts)     | Preference flush                                                              |
+| [`components/calendar/calorie-calendar.tsx`](../components/calendar/calorie-calendar.tsx)     | Calendar range load                                                           |
 
 Parallel callers cannot deduplicate in-flight requests without a shared cache.
 
@@ -85,7 +85,7 @@ The [`Avatar`](../components/ui/avatar.tsx) component renders initials or a gene
 
 #### 4. HTTP cache bypass
 
-[`apiRequest`](../src/lib/api/client.ts) sets `cache: 'reload'` on every fetch (intentionally, to avoid query-string cache-busting issues on strict endpoints like `GET /me/water`). Backend **304 Not Modified** responses therefore still reach the server for validation. Client-side reduction of call *count* matters more than relying on browser HTTP cache.
+[`apiRequest`](../src/lib/api/client.ts) sets `cache: 'reload'` on every fetch (intentionally, to avoid query-string cache-busting issues on strict endpoints like `GET /me/water`). Backend **304 Not Modified** responses therefore still reach the server for validation. Client-side reduction of call _count_ matters more than relying on browser HTTP cache.
 
 #### 5. Foreground lifecycle amplification
 
@@ -116,12 +116,12 @@ The [`Avatar`](../components/ui/avatar.tsx) component renders initials or a gene
 
 Modern React Native / Expo applications typically separate concerns as follows:
 
-| Concern | Standard tool | This app today |
-| ------- | ------------- | -------------- |
-| Auth session | Firebase Auth + context | ✅ `AuthProvider` |
-| Server / remote state | **TanStack Query** | ❌ Ad hoc `useState` + fetch |
-| Ephemeral UI state | React `useState` / context | ✅ Appropriate |
-| Image assets | `expo-image` + disk cache | `Image` + signed URLs |
+| Concern               | Standard tool              | This app today               |
+| --------------------- | -------------------------- | ---------------------------- |
+| Auth session          | Firebase Auth + context    | ✅ `AuthProvider`            |
+| Server / remote state | **TanStack Query**         | ❌ Ad hoc `useState` + fetch |
+| Ephemeral UI state    | React `useState` / context | ✅ Appropriate               |
+| Image assets          | `expo-image` + disk cache  | `Image` + signed URLs        |
 
 **TanStack Query** is the de facto choice for REST-backed Expo apps because it provides:
 
@@ -133,12 +133,12 @@ Modern React Native / Expo applications typically separate concerns as follows:
 
 Alternatives considered:
 
-| Option | Verdict |
-| ------ | ------- |
+| Option                       | Verdict                                                                                                                     |
+| ---------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
 | **Manual context + TTL map** | Lower dependency cost but reinvents deduplication, invalidation, and loading/error semantics. Acceptable only as a stopgap. |
-| **SWR** | Viable; less common in RN monorepos than TanStack Query. |
-| **RTK Query** | Better when Redux is already central; this app has no Redux store. |
-| **Apollo / urql** | For GraphQL, not applicable. |
+| **SWR**                      | Viable; less common in RN monorepos than TanStack Query.                                                                    |
+| **RTK Query**                | Better when Redux is already central; this app has no Redux store.                                                          |
+| **Apollo / urql**            | For GraphQL, not applicable.                                                                                                |
 
 **Recommendation:** adopt TanStack Query v5.
 
@@ -211,40 +211,40 @@ On sign-out, call `queryClient.clear()` to avoid leaking prior user data.
 
 Use stable, hierarchical keys:
 
-| Query | Key | Notes |
-| ----- | --- | ----- |
-| Current user profile | `['me', uid]` | `uid` from Firebase user |
-| Entries for a day | `['entries', uid, date]` | `date` = `YYYY-MM-DD` |
-| Water for a day | `['water', uid, date]` | |
-| Exercise for a day | `['exercise', uid, date]` | |
-| Saved items | `['savedItems', uid]` | |
-| Family shared items | `['familySharedItems', uid, familyId]` | Disabled when `familyId` null |
-| Exercise presets | `['exercisePresets', uid]` | Rarely changes |
+| Query                | Key                                    | Notes                         |
+| -------------------- | -------------------------------------- | ----------------------------- |
+| Current user profile | `['me', uid]`                          | `uid` from Firebase user      |
+| Entries for a day    | `['entries', uid, date]`               | `date` = `YYYY-MM-DD`         |
+| Water for a day      | `['water', uid, date]`                 |                               |
+| Exercise for a day   | `['exercise', uid, date]`              |                               |
+| Saved items          | `['savedItems', uid]`                  |                               |
+| Family shared items  | `['familySharedItems', uid, familyId]` | Disabled when `familyId` null |
+| Exercise presets     | `['exercisePresets', uid]`             | Rarely changes                |
 
 ### Stale-time policy
 
-| Data | `staleTime` | `gcTime` | Refetch triggers |
-| ---- | ----------- | -------- | ---------------- |
-| `GET /me` | 5–15 minutes | 30 minutes | `patchMe`, photo upload/delete, pull-to-refresh, sign-in bootstrap |
-| Today's entries | 30–60 seconds | 10 minutes | After log/edit/delete entry, Dashboard focus (optional) |
-| Water / exercise (day) | 30–60 seconds | 10 minutes | After write, Dashboard focus |
-| Saved items | 2–5 minutes | 15 minutes | After saved-item CRUD, invalidate |
-| Family shared items | 2–5 minutes | 15 minutes | After share/unshare |
-| Exercise presets | 1 hour | 24 hours | Manual refresh only |
+| Data                   | `staleTime`   | `gcTime`   | Refetch triggers                                                   |
+| ---------------------- | ------------- | ---------- | ------------------------------------------------------------------ |
+| `GET /me`              | 5–15 minutes  | 30 minutes | `patchMe`, photo upload/delete, pull-to-refresh, sign-in bootstrap |
+| Today's entries        | 30–60 seconds | 10 minutes | After log/edit/delete entry, Dashboard focus (optional)            |
+| Water / exercise (day) | 30–60 seconds | 10 minutes | After write, Dashboard focus                                       |
+| Saved items            | 2–5 minutes   | 15 minutes | After saved-item CRUD, invalidate                                  |
+| Family shared items    | 2–5 minutes   | 15 minutes | After share/unshare                                                |
+| Exercise presets       | 1 hour        | 24 hours   | Manual refresh only                                                |
 
 **Principle:** data that changes multiple times per day gets short stale times; profile and presets get long stale times.
 
 ### Mutation → cache invalidation map
 
-| Mutation | Invalidate |
-| -------- | ---------- |
-| `patchMe` | `['me', uid]` |
-| Profile photo upload / delete | `['me', uid]` |
-| `postEntry` / edit / delete entry | `['entries', uid, date]` |
-| Water PUT/PATCH | `['water', uid, date]` |
-| Exercise write | `['exercise', uid, date]` |
-| Saved item CRUD | `['savedItems', uid]`; optionally combobox-related UI |
-| Family join / leave | `['me', uid]`, `['familySharedItems', ...]` |
+| Mutation                          | Invalidate                                            |
+| --------------------------------- | ----------------------------------------------------- |
+| `patchMe`                         | `['me', uid]`                                         |
+| Profile photo upload / delete     | `['me', uid]`                                         |
+| `postEntry` / edit / delete entry | `['entries', uid, date]`                              |
+| Water PUT/PATCH                   | `['water', uid, date]`                                |
+| Exercise write                    | `['exercise', uid, date]`                             |
+| Saved item CRUD                   | `['savedItems', uid]`; optionally combobox-related UI |
+| Family join / leave               | `['me', uid]`, `['familySharedItems', ...]`           |
 
 Prefer returning updated entities from mutations and calling `queryClient.setQueryData` when the API already returns the new profile (`patchMe` returns `GetMeResponse`).
 
@@ -291,13 +291,13 @@ Export helpers:
 
 Replace local `useState` + `useFocusEffect` / `useEffect` fetch patterns:
 
-| File | Change |
-| ---- | ------ |
-| [`app/(tabs)/settings.tsx`](../app/(tabs)/settings.tsx) | Use `useMe()`; **remove** duplicate `useEffect` + `useFocusEffect` pair; keep form-local state synced from query data via `useEffect` on `data` |
-| [`components/layout/app-header.tsx`](../components/layout/app-header.tsx) | Use `useMe()`; remove `useFocusEffect` fetch |
-| [`app/(tabs)/family.tsx`](../app/(tabs)/family.tsx) | Derive `familyId` from `useMe()` |
-| [`app/(tabs)/calculator.tsx`](../app/(tabs)/calculator.tsx) | Seed defaults from `useMe()` |
-| [`components/family/shared-items-list.tsx`](../components/family/shared-items-list.tsx) | Use `useMe()` for sharer profile; avoid redundant fetch |
+| File                                                                                    | Change                                                                                                                                          |
+| --------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`app/(tabs)/settings.tsx`](<../app/(tabs)/settings.tsx>)                               | Use `useMe()`; **remove** duplicate `useEffect` + `useFocusEffect` pair; keep form-local state synced from query data via `useEffect` on `data` |
+| [`components/layout/app-header.tsx`](../components/layout/app-header.tsx)               | Use `useMe()`; remove `useFocusEffect` fetch                                                                                                    |
+| [`app/(tabs)/family.tsx`](<../app/(tabs)/family.tsx>)                                   | Derive `familyId` from `useMe()`                                                                                                                |
+| [`app/(tabs)/calculator.tsx`](<../app/(tabs)/calculator.tsx>)                           | Seed defaults from `useMe()`                                                                                                                    |
+| [`components/family/shared-items-list.tsx`](../components/family/shared-items-list.tsx) | Use `useMe()` for sharer profile; avoid redundant fetch                                                                                         |
 
 **Settings profile form:** continue to keep editable field state local (height, weight, age, etc.) but initialize from `me` query data when the modal/section opens or when `me.updatedAt` changes — not from a separate fetch.
 
@@ -305,13 +305,13 @@ Replace local `useState` + `useFocusEffect` / `useEffect` fetch patterns:
 
 Refactor [`components/dashboard/dashboard-context.tsx`](../components/dashboard/dashboard-context.tsx):
 
-| Current `refreshAll` behavior | Proposed |
-| ----------------------------- | -------- |
-| Force Firebase token refresh | Remove from routine refresh; keep only on 401 retry path in `apiRequest` |
-| Always `getMe()` | Read from `useMe()` or `queryClient.fetchQuery` with stale check |
-| Fetch entries, water, exercise, saved items | Keep, but expose as separate query hooks or `refreshDayData()` |
+| Current `refreshAll` behavior               | Proposed                                                                 |
+| ------------------------------------------- | ------------------------------------------------------------------------ |
+| Force Firebase token refresh                | Remove from routine refresh; keep only on 401 retry path in `apiRequest` |
+| Always `getMe()`                            | Read from `useMe()` or `queryClient.fetchQuery` with stale check         |
+| Fetch entries, water, exercise, saved items | Keep, but expose as separate query hooks or `refreshDayData()`           |
 
-Dashboard tab focus ([`app/(tabs)/index.tsx`](../app/(tabs)/index.tsx)):
+Dashboard tab focus ([`app/(tabs)/index.tsx`](<../app/(tabs)/index.tsx>)):
 
 - Call **`refreshDayData()`** (entries, water, exercise) — not full profile reload.
 - Optionally skip refetch if data is still fresh (`staleTime`).
@@ -336,12 +336,12 @@ Dashboard tab focus ([`app/(tabs)/index.tsx`](../app/(tabs)/index.tsx)):
 
 #### 2.1 Query hooks for day-scoped and list data
 
-| Hook | Replaces |
-| ---- | -------- |
-| `useEntries(date)` | Dashboard context entries fetch |
-| `useWaterDaily(date)` | Dashboard water fetch |
-| `useExercise(date)` | Dashboard exercise fetch |
-| `useSavedItems()` | Dashboard saved items fetch |
+| Hook                             | Replaces                        |
+| -------------------------------- | ------------------------------- |
+| `useEntries(date)`               | Dashboard context entries fetch |
+| `useWaterDaily(date)`            | Dashboard water fetch           |
+| `useExercise(date)`              | Dashboard exercise fetch        |
+| `useSavedItems()`                | Dashboard saved items fetch     |
 | `useFamilySharedItems(familyId)` | Dashboard / family shared fetch |
 
 Gradually thin [`DashboardProvider`](../components/dashboard/dashboard-context.tsx) into a coordinator that composes query hooks rather than owning fetch imperatives — or colocate hooks in screens and pass data via context only where truly shared.
@@ -398,24 +398,24 @@ Do **not** switch global `cache: 'reload'` without auditing all endpoints. If pu
 
 ## File change inventory (expected)
 
-| Action | Path |
-| ------ | ---- |
-| Add | `src/lib/queries/query-client.ts` |
-| Add | `src/lib/queries/use-me.ts` |
-| Add | `src/lib/queries/use-entries.ts` (Phase 2) |
-| Add | `src/lib/queries/keys.ts` |
-| Add | `src/lib/queries/__tests__/use-me.test.tsx` |
-| Modify | `app/_layout.tsx` — provider |
-| Modify | `app/(tabs)/settings.tsx` |
-| Modify | `components/layout/app-header.tsx` |
-| Modify | `components/dashboard/dashboard-context.tsx` |
-| Modify | `app/(tabs)/index.tsx` |
-| Modify | `app/(tabs)/family.tsx` |
-| Modify | `app/(tabs)/calculator.tsx` |
-| Modify | `components/family/shared-items-list.tsx` |
-| Modify | `src/lib/notifications/on-authenticated.ts` |
-| Modify | `src/lib/auth-bootstrap.ts` |
-| Modify | `docs/architecture.md` — data flow section |
+| Action | Path                                                           |
+| ------ | -------------------------------------------------------------- |
+| Add    | `src/lib/queries/query-client.ts`                              |
+| Add    | `src/lib/queries/use-me.ts`                                    |
+| Add    | `src/lib/queries/use-entries.ts` (Phase 2)                     |
+| Add    | `src/lib/queries/keys.ts`                                      |
+| Add    | `src/lib/queries/__tests__/use-me.test.tsx`                    |
+| Modify | `app/_layout.tsx` — provider                                   |
+| Modify | `app/(tabs)/settings.tsx`                                      |
+| Modify | `components/layout/app-header.tsx`                             |
+| Modify | `components/dashboard/dashboard-context.tsx`                   |
+| Modify | `app/(tabs)/index.tsx`                                         |
+| Modify | `app/(tabs)/family.tsx`                                        |
+| Modify | `app/(tabs)/calculator.tsx`                                    |
+| Modify | `components/family/shared-items-list.tsx`                      |
+| Modify | `src/lib/notifications/on-authenticated.ts`                    |
+| Modify | `src/lib/auth-bootstrap.ts`                                    |
+| Modify | `docs/architecture.md` — data flow section                     |
 | Modify | `docs/release-test-checklist.md` — add cache regression checks |
 
 ---
@@ -424,13 +424,13 @@ Do **not** switch global `cache: 'reload'` without auditing all endpoints. If pu
 
 ### Unit / integration tests
 
-| Area | Approach |
-| ---- | -------- |
-| `useMe` | Render hook with `QueryClientProvider` wrapper; mock `getMe`; assert single fetch across double mount with same key |
-| Settings | Update [`app/__tests__/settings.test.tsx`](../app/__tests__/settings.test.tsx) to wrap with query client; assert Avatar receives photo without second fetch |
-| App header | Update [`components/layout/app-header.test.tsx`](../components/layout/app-header.test.tsx) similarly |
-| Dashboard focus | Assert refocus calls day queries only, not `getMe`, when `me` is fresh |
-| Sign-out | Assert `queryClient.clear()` removes cached profile |
+| Area            | Approach                                                                                                                                                    |
+| --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `useMe`         | Render hook with `QueryClientProvider` wrapper; mock `getMe`; assert single fetch across double mount with same key                                         |
+| Settings        | Update [`app/__tests__/settings.test.tsx`](../app/__tests__/settings.test.tsx) to wrap with query client; assert Avatar receives photo without second fetch |
+| App header      | Update [`components/layout/app-header.test.tsx`](../components/layout/app-header.test.tsx) similarly                                                        |
+| Dashboard focus | Assert refocus calls day queries only, not `getMe`, when `me` is fresh                                                                                      |
+| Sign-out        | Assert `queryClient.clear()` removes cached profile                                                                                                         |
 
 ### Manual QA script
 
@@ -447,24 +447,24 @@ Add to [`docs/release-test-checklist.md`](release-test-checklist.md):
 
 ### Regression risks
 
-| Risk | Mitigation |
-| ---- | ---------- |
-| Stale profile after Settings save | Always `setQueryData` or `invalidateQueries` on `patchMe` response |
+| Risk                                     | Mitigation                                                            |
+| ---------------------------------------- | --------------------------------------------------------------------- |
+| Stale profile after Settings save        | Always `setQueryData` or `invalidateQueries` on `patchMe` response    |
 | Wrong calendar day after timezone change | Invalidate `me` and day queries when `notifications.timezone` changes |
-| Cross-user cache leak | Key all queries with `uid`; `clear()` on sign-out |
-| Dashboard totals stale | Keep short `staleTime` on entries/water/exercise |
+| Cross-user cache leak                    | Key all queries with `uid`; `clear()` on sign-out                     |
+| Dashboard totals stale                   | Keep short `staleTime` on entries/water/exercise                      |
 
 ---
 
 ## Rollout plan
 
-| Step | Description |
-| ---- | ----------- |
-| 1 | Land Phase 1 behind normal PR review; no feature flag required |
-| 2 | Dogfood on staging / dev build for one day; compare backend log volume |
-| 3 | Land Phase 2 Avatar and dashboard thinning |
-| 4 | Update architecture doc and release checklist |
-| 5 | Monitor Sentry for new error patterns post-release |
+| Step | Description                                                            |
+| ---- | ---------------------------------------------------------------------- |
+| 1    | Land Phase 1 behind normal PR review; no feature flag required         |
+| 2    | Dogfood on staging / dev build for one day; compare backend log volume |
+| 3    | Land Phase 2 Avatar and dashboard thinning                             |
+| 4    | Update architecture doc and release checklist                          |
+| 5    | Monitor Sentry for new error patterns post-release                     |
 
 Rollback: TanStack Query is additive; revert PR restores prior fetch behavior. No migration or schema changes.
 
@@ -472,12 +472,12 @@ Rollback: TanStack Query is additive; revert PR restores prior fetch behavior. N
 
 ## Success metrics
 
-| Metric | Baseline (estimated) | Target |
-| ------ | -------------------- | ------ |
-| `GET /me` per 10 tab switches | 8–15 | ≤ 2 |
-| Settings photo flash | Every visit | None after first load |
-| Dashboard refocus latency | Full `refreshAll` + token refresh | Day queries only; < 300ms cached |
-| Duplicate parallel `getMe` on mount | 2–4 | 1 (deduplicated) |
+| Metric                              | Baseline (estimated)              | Target                           |
+| ----------------------------------- | --------------------------------- | -------------------------------- |
+| `GET /me` per 10 tab switches       | 8–15                              | ≤ 2                              |
+| Settings photo flash                | Every visit                       | None after first load            |
+| Dashboard refocus latency           | Full `refreshAll` + token refresh | Day queries only; < 300ms cached |
+| Duplicate parallel `getMe` on mount | 2–4                               | 1 (deduplicated)                 |
 
 ---
 
@@ -492,11 +492,11 @@ Rollback: TanStack Query is additive; revert PR restores prior fetch behavior. N
 
 ## Decision log
 
-| Date | Decision | Rationale |
-| ---- | -------- | --------- |
-| 2026-05-26 | Adopt TanStack Query over manual cache | Industry standard; deduplication and invalidation built-in |
-| 2026-05-26 | Phase 1 scope: `useMe` + dashboard refresh split | Highest traffic endpoint; fixes reported photo flash |
-| 2026-05-26 | Do not change backend for Phase 1 | Client-side fixes sufficient for majority of issue |
+| Date       | Decision                                         | Rationale                                                  |
+| ---------- | ------------------------------------------------ | ---------------------------------------------------------- |
+| 2026-05-26 | Adopt TanStack Query over manual cache           | Industry standard; deduplication and invalidation built-in |
+| 2026-05-26 | Phase 1 scope: `useMe` + dashboard refresh split | Highest traffic endpoint; fixes reported photo flash       |
+| 2026-05-26 | Do not change backend for Phase 1                | Client-side fixes sufficient for majority of issue         |
 
 ---
 

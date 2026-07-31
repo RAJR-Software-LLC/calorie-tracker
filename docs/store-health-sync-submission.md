@@ -39,7 +39,7 @@ Adjust exact labels to match Apple's current questionnaire wording.
   - Test account credentials if login required
   - That HealthKit read access is requested only for workout import
 
-### Capabilities (already in `app.config.ts`)
+### Capabilities (already in `app.config.js`)
 
 - [ ] HealthKit capability enabled in provisioning profile for release builds.
 - [ ] `NSHealthShareUsageDescription` present (workout read rationale).
@@ -61,8 +61,8 @@ See [`health-policy-mapping.md`](health-policy-mapping.md). Do not use HealthKit
 
 When native sync is enabled, declare (align with actual behavior):
 
-| Data type    | Collected                           | Shared | Purpose           |
-| ------------ | ----------------------------------- | ------ | ----------------- |
+| Data type    | Collected                                                    | Shared | Purpose           |
+| ------------ | ------------------------------------------------------------ | ------ | ----------------- |
 | Fitness info | Yes (optional; user sync / optional background after opt-in) | No     | App functionality |
 | Health info  | Yes (optional; user sync / optional background after opt-in) | No     | App functionality |
 
@@ -72,7 +72,7 @@ When native sync is enabled, declare (align with actual behavior):
 
 ### Android manifest / permissions
 
-Verified in build (via `expo-health-connect` + `app.config.ts`):
+Verified in build (via `expo-health-connect` + `app.config.js`):
 
 - `android.permission.health.READ_EXERCISE`
 - `android.permission.health.READ_ACTIVE_CALORIES_BURNED`
