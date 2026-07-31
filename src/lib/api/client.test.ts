@@ -53,7 +53,12 @@ describe('apiRequest conditional GET', () => {
     const fetchMock = jest
       .fn()
       .mockResolvedValueOnce(
-        mockResponse({ status: 401, ok: false, statusText: 'Unauthorized', body: '{"error":"Unauthorized"}' })
+        mockResponse({
+          status: 401,
+          ok: false,
+          statusText: 'Unauthorized',
+          body: '{"error":"Unauthorized"}',
+        })
       )
       .mockResolvedValueOnce(
         mockResponse({
@@ -113,9 +118,7 @@ describe('apiRequest conditional GET', () => {
 
     const first = await apiRequest<{ name: string }>('/me');
     expect(first).toEqual({ name: 'Ada' });
-    expect(
-      getEtagEntry('user-1', 'GET', 'https://api.example.com/api/v1/me')?.etag
-    ).toBe('"me-1"');
+    expect(getEtagEntry('user-1', 'GET', 'https://api.example.com/api/v1/me')?.etag).toBe('"me-1"');
 
     const second = await apiRequest<{ name: string }>('/me');
     expect(second).toEqual({ name: 'Ada' });
@@ -163,10 +166,20 @@ describe('apiRequest conditional GET', () => {
     const fetchMock = jest
       .fn()
       .mockResolvedValueOnce(
-        mockResponse({ status: 401, ok: false, statusText: 'Unauthorized', body: '{"error":"Unauthorized"}' })
+        mockResponse({
+          status: 401,
+          ok: false,
+          statusText: 'Unauthorized',
+          body: '{"error":"Unauthorized"}',
+        })
       )
       .mockResolvedValueOnce(
-        mockResponse({ status: 401, ok: false, statusText: 'Unauthorized', body: '{"error":"Unauthorized"}' })
+        mockResponse({
+          status: 401,
+          ok: false,
+          statusText: 'Unauthorized',
+          body: '{"error":"Unauthorized"}',
+        })
       );
     global.fetch = fetchMock as unknown as typeof fetch;
 

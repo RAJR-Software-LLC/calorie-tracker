@@ -1,5 +1,14 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { AppState, Modal, Platform, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
+import {
+  AppState,
+  Modal,
+  Platform,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  Text,
+  View,
+} from 'react-native';
 import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import * as Linking from 'expo-linking';
@@ -379,7 +388,11 @@ export default function ExerciseScreen() {
       )}
 
       <View className="flex-row gap-2">
-        <Button className="flex-1" disabled={loading} onPress={() => void invalidateExerciseQueries()}>
+        <Button
+          className="flex-1"
+          disabled={loading}
+          onPress={() => void invalidateExerciseQueries()}
+        >
           {loading ? 'Loading...' : 'Refresh'}
         </Button>
         {exerciseEnabled ? (

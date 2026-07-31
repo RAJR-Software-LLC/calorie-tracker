@@ -10,16 +10,16 @@ Production client cache strategy for the Expo app: **TanStack Query v5** for ser
 
 Authenticated GETs return `Cache-Control: private, max-age=N, must-revalidate`, an `ETag`, and `Vary: Authorization`. Treat them as **private** only — never public/CDN-cacheable. Auth still runs on every request (including `304`).
 
-| Resource | Path | Typical `max-age` | Invalidate / refresh when |
-| --- | --- | --- | --- |
-| Profile / goals | `GET /me` | ~180s | `PATCH /me`, profile photo upload/complete/delete |
-| Saved foods | `GET /me/saved-items` | ~120s | POST/PATCH/DELETE saved-items |
-| Day entries | `GET /me/entries?date=` | ~30s | POST/DELETE entry for that date |
-| Day exercise | `GET /me/exercise?date=` | ~30s | POST/PATCH/DELETE/bulk exercise |
-| Day water | `GET /me/water?date=` | ~30s | PUT/PATCH water |
-| Family | `GET /families/:id` | ~120s | Create/join / membership changes |
-| Family shared items | `GET /families/:id/shared-items` | ~120s | POST shared-item |
-| Exercise presets | `GET /me/exercise/presets` | ~86400s | Catalog version bump / deploy |
+| Resource            | Path                             | Typical `max-age` | Invalidate / refresh when                         |
+| ------------------- | -------------------------------- | ----------------- | ------------------------------------------------- |
+| Profile / goals     | `GET /me`                        | ~180s             | `PATCH /me`, profile photo upload/complete/delete |
+| Saved foods         | `GET /me/saved-items`            | ~120s             | POST/PATCH/DELETE saved-items                     |
+| Day entries         | `GET /me/entries?date=`          | ~30s              | POST/DELETE entry for that date                   |
+| Day exercise        | `GET /me/exercise?date=`         | ~30s              | POST/PATCH/DELETE/bulk exercise                   |
+| Day water           | `GET /me/water?date=`            | ~30s              | PUT/PATCH water                                   |
+| Family              | `GET /families/:id`              | ~120s             | Create/join / membership changes                  |
+| Family shared items | `GET /families/:id/shared-items` | ~120s             | POST shared-item                                  |
+| Exercise presets    | `GET /me/exercise/presets`       | ~86400s           | Catalog version bump / deploy                     |
 
 **Not cached:** export, account delete, profile-photo upload URL sessions, push-token mutations, internal dispatch. Pass `conditional: false` on those GETs if needed.
 
@@ -29,14 +29,14 @@ Authenticated GETs return `Cache-Control: private, max-age=N, must-revalidate`, 
 
 In-memory store keyed by `` `${uid}|GET|${absoluteUrl}` `` holding `{ etag, body }`.
 
-| Event | Behavior |
-| --- | --- |
-| Authenticated GET `200` with `ETag` | Store etag + parsed body |
-| Later GET | Send `If-None-Match` |
-| `304` | **Do not** parse body; return stored body to TanStack Query |
-| `304` with empty cache | One unconditional retry, then error |
-| `401` | Existing force-refresh token retry — never a cache hit |
-| Sign-out | `queryClient.clear()` + `clearEtagCache()` |
+| Event                                                  | Behavior                                                                      |
+| ------------------------------------------------------ | ----------------------------------------------------------------------------- |
+| Authenticated GET `200` with `ETag`                    | Store etag + parsed body                                                      |
+| Later GET                                              | Send `If-None-Match`                                                          |
+| `304`                                                  | **Do not** parse body; return stored body to TanStack Query                   |
+| `304` with empty cache                                 | One unconditional retry, then error                                           |
+| `401`                                                  | Existing force-refresh token retry — never a cache hit                        |
+| Sign-out                                               | `queryClient.clear()` + `clearEtagCache()`                                    |
 | Profile photo error / `invalidateMe` / `updateMeCache` | `clearMeEtag(uid)` so the next `/me` cannot 304-loop on an expired signed URL |
 
 The map is **never** written to AsyncStorage (sensitive profile payloads). Presets may still use their versioned AsyncStorage envelope separately.
@@ -45,12 +45,12 @@ The map is **never** written to AsyncStorage (sensitive profile payloads). Prese
 
 ## TanStack Query `staleTime`
 
-| Query key | `staleTime` | Notes |
-| --- | --- | --- |
-| `me` | 10 min | Well under ~2h signed photo URL TTL |
-| `savedItems` / `family` / `familySharedItems` | 3–5 min | Invalidate on mutate |
-| Day `entries` / `water` / `exercise` (+ ranges) | 45s | Invalidate affected date key on write |
-| Presets | hours / versioned disk | Keep AsyncStorage envelope |
+| Query key                                       | `staleTime`            | Notes                                 |
+| ----------------------------------------------- | ---------------------- | ------------------------------------- |
+| `me`                                            | 10 min                 | Well under ~2h signed photo URL TTL   |
+| `savedItems` / `family` / `familySharedItems`   | 3–5 min                | Invalidate on mutate                  |
+| Day `entries` / `water` / `exercise` (+ ranges) | 45s                    | Invalidate affected date key on write |
+| Presets                                         | hours / versioned disk | Keep AsyncStorage envelope            |
 
 Global defaults: `refetchOnWindowFocus: false`, `gcTime` ~10–30 min, `retry: 1`.
 
@@ -79,12 +79,12 @@ Prefer `setQueryData` when the response body is enough; otherwise `invalidateQue
 
 ## Shared query keys (no duplicate fetches)
 
-| Surface | Keys / hooks |
-| --- | --- |
-| Dashboard | `useMe`, `useEntries`, `useWaterDaily`, `useExercise`, `useSavedItems`, `useFamilySharedItems` |
-| Exercise tab | Same `queryKeys.exercise` / `useExercise`; ranges via `useExerciseRange` |
-| Family | `useFamily` + `useFamilySharedItems`; share modal uses `useSavedItems` |
-| Calendar day modal | `useEntries(date)` |
+| Surface            | Keys / hooks                                                                                   |
+| ------------------ | ---------------------------------------------------------------------------------------------- |
+| Dashboard          | `useMe`, `useEntries`, `useWaterDaily`, `useExercise`, `useSavedItems`, `useFamilySharedItems` |
+| Exercise tab       | Same `queryKeys.exercise` / `useExercise`; ranges via `useExerciseRange`                       |
+| Family             | `useFamily` + `useFamilySharedItems`; share modal uses `useSavedItems`                         |
+| Calendar day modal | `useEntries(date)`                                                                             |
 
 ---
 

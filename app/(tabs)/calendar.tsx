@@ -27,9 +27,7 @@ export default function CalendarScreen() {
 
   return (
     <AppScreen
-      refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={() => void onRefresh()} />
-      }
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void onRefresh()} />}
     >
       <View className="gap-1">
         <Text className="text-lg font-semibold text-foreground dark:text-darkForeground">
