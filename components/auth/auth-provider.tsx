@@ -4,6 +4,7 @@ import { onAuthStateChanged, type User } from 'firebase/auth';
 
 import { getFirebaseAuth } from '@/lib/firebase';
 import { runNotificationStartup } from '@/lib/notifications/on-authenticated';
+import { queryClient } from '@/lib/queries/query-client';
 
 type AuthContextType = {
   user: User | null;
@@ -27,7 +28,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
     const unsub = onAuthStateChanged(auth, (u) => {
-      setUser(u);
+      setUser((prev) => {
+        if (prev && !u) {
+          queryClient.clear();
+        }
+        return u;
+      });
       setLoading(false);
       if (u) {
         void runNotificationStartup(u.uid);

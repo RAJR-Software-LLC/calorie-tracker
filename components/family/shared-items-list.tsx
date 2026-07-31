@@ -7,48 +7,27 @@ import { Avatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import {
-  getFamily,
-  getFamilySharedItems,
-  getMe,
-  getSavedItems,
-  postFamilySharedItem,
-} from '@/lib/api';
+import { getFamily, getFamilySharedItems, getSavedItems, postFamilySharedItem } from '@/lib/api';
+import { invalidateMe, useMeProfilePhoto } from '@/lib/queries';
+import { useQueryClient } from '@tanstack/react-query';
 import { logAppError, toUserErrorMessage } from '@/lib/app-errors';
 import { isKnownCalories } from '@/lib/utils/saved-items';
 import { showToast } from '@/lib/toast';
 import { useThemePalette } from '@/lib/use-theme-palette';
 
-import type {
-  FamilySharedItemWithId,
-  FamilyWithMemberProfiles,
-  SavedItemWithId,
-  UserProfilePhotoWithDownload,
-} from '@/types';
+import type { FamilySharedItemWithId, FamilyWithMemberProfiles, SavedItemWithId } from '@/types';
 
 type SharedItemsListProps = {
   familyId: string;
 };
 
-function toDownloadPhoto(profilePhoto: unknown): UserProfilePhotoWithDownload | null {
-  if (
-    profilePhoto &&
-    typeof profilePhoto === 'object' &&
-    'downloadUrl' in profilePhoto &&
-    typeof profilePhoto.downloadUrl === 'string' &&
-    profilePhoto.downloadUrl.length > 0
-  ) {
-    return profilePhoto as UserProfilePhotoWithDownload;
-  }
-  return null;
-}
-
 export function SharedItemsList({ familyId }: SharedItemsListProps) {
   const p = useThemePalette();
   const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const mePhoto = useMeProfilePhoto();
   const [sharedItems, setSharedItems] = useState<FamilySharedItemWithId[]>([]);
   const [family, setFamily] = useState<FamilyWithMemberProfiles | null>(null);
-  const [mePhoto, setMePhoto] = useState<UserProfilePhotoWithDownload | null>(null);
   const [loading, setLoading] = useState(true);
   const [shareOpen, setShareOpen] = useState(false);
   const hasRetriedAvatarRefreshRef = useRef(false);
@@ -59,14 +38,12 @@ export function SharedItemsList({ familyId }: SharedItemsListProps) {
       setLoading(true);
       hasRetriedAvatarRefreshRef.current = false;
       try {
-        const [items, familyData, me] = await Promise.all([
+        const [items, familyData] = await Promise.all([
           getFamilySharedItems(familyId),
           getFamily(familyId),
-          getMe(),
         ]);
         setSharedItems(items);
         setFamily(familyData);
-        setMePhoto(toDownloadPhoto(me?.profilePhoto));
       } finally {
         setLoading(false);
       }
@@ -79,16 +56,11 @@ export function SharedItemsList({ familyId }: SharedItemsListProps) {
     setFamily(familyData);
   }
 
-  async function refreshMePhoto() {
-    const me = await getMe();
-    setMePhoto(toDownloadPhoto(me?.profilePhoto));
-  }
-
   async function handleAvatarRefreshNeeded() {
     if (hasRetriedAvatarRefreshRef.current) return;
     hasRetriedAvatarRefreshRef.current = true;
     try {
-      await Promise.all([refreshFamily(), refreshMePhoto()]);
+      await Promise.all([refreshFamily(), invalidateMe(queryClient, user?.uid)]);
     } catch {
       // Keep existing avatar fallback UI if refresh fails.
     }
@@ -338,20 +310,20 @@ function ShareItemModal({
                     .filter((item) => isKnownCalories(item.defaultCalories))
                     .slice(0, 6)
                     .map((item) => (
-                    <Pressable
-                      key={item.id}
-                      className={`rounded-full border px-3 py-1.5 ${
-                        itemName === item.itemName
-                          ? 'border-primary bg-primary/5 dark:border-darkPrimary dark:bg-darkPrimary/5'
-                          : 'border-border dark:border-darkBorder'
-                      }`}
-                      onPress={() => selectMyItem(item)}
-                    >
-                      <Text className="text-xs font-medium text-foreground dark:text-darkForeground">
-                        {item.itemName}
-                      </Text>
-                    </Pressable>
-                  ))}
+                      <Pressable
+                        key={item.id}
+                        className={`rounded-full border px-3 py-1.5 ${
+                          itemName === item.itemName
+                            ? 'border-primary bg-primary/5 dark:border-darkPrimary dark:bg-darkPrimary/5'
+                            : 'border-border dark:border-darkBorder'
+                        }`}
+                        onPress={() => selectMyItem(item)}
+                      >
+                        <Text className="text-xs font-medium text-foreground dark:text-darkForeground">
+                          {item.itemName}
+                        </Text>
+                      </Pressable>
+                    ))}
                 </View>
               </View>
             ) : null}

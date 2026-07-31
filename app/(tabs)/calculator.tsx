@@ -9,7 +9,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { getMe, patchMe } from '@/lib/api';
+import { patchMe } from '@/lib/api';
+import { useMe } from '@/lib/queries';
 import { logAppError, toUserErrorMessage } from '@/lib/app-errors';
 import { showToast } from '@/lib/toast';
 import type { CalorieGoal } from '@/types';
@@ -19,6 +20,7 @@ type GoalMode = 'single' | 'range';
 
 export default function CalculatorScreen() {
   const { refreshAll } = useDashboard();
+  const { data: me } = useMe();
   const [tab, setTab] = useState<TabKey>('quick');
   const [maintenance, setMaintenance] = useState<number | null>(null);
   const [goalMode, setGoalMode] = useState<GoalMode>('single');
@@ -41,28 +43,17 @@ export default function CalculatorScreen() {
   const roundedMaintenance = maintenance != null ? Math.round(maintenance) : null;
 
   useEffect(() => {
-    let cancelled = false;
-    void (async () => {
-      try {
-        const me = await getMe();
-        if (cancelled || !me) return;
-        setCalculatorDefaults({
-          weightKg: me.profile.weightKg,
-          heightCm: me.profile.heightCm,
-          age: me.profile.age,
-          sex: me.profile.sex,
-          activityLevel: me.profile.activityLevel,
-          heightUnit: me.profile.heightUnit,
-          weightUnit: me.profile.weightUnit,
-        });
-      } catch (err) {
-        logAppError('calculator/getMeDefaults', err);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+    if (!me?.profile) return;
+    setCalculatorDefaults({
+      weightKg: me.profile.weightKg,
+      heightCm: me.profile.heightCm,
+      age: me.profile.age,
+      sex: me.profile.sex,
+      activityLevel: me.profile.activityLevel,
+      heightUnit: me.profile.heightUnit,
+      weightUnit: me.profile.weightUnit,
+    });
+  }, [me]);
 
   function parseIntegerInput(value: string): number | null {
     const trimmed = value.trim();

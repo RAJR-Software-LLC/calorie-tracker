@@ -11,8 +11,11 @@ import '../global.css';
 
 import { AuthProvider, useAuth } from '@/components/auth/auth-provider';
 import { useColorScheme } from '@/components/useColorScheme';
+import { queryClient } from '@/lib/queries/query-client';
+import { QueryClientProvider } from '@tanstack/react-query';
 import { installNotificationHandler, useNotificationTapRouter } from '@/lib/notifications/handler';
 import { initMonitoring } from '@/lib/monitoring';
+import { installExerciseBackgroundSyncTask } from '@/lib/exercise/native-sync/background-sync';
 import { useThemePalette } from '@/lib/use-theme-palette';
 
 export { ErrorBoundary } from 'expo-router';
@@ -34,6 +37,7 @@ export default function RootLayout() {
   useEffect(() => {
     initMonitoring();
     installNotificationHandler();
+    installExerciseBackgroundSyncTask();
   }, []);
 
   useEffect(() => {
@@ -54,7 +58,9 @@ export default function RootLayout() {
 
   return (
     <AuthProvider>
-      <RootLayoutNav />
+      <QueryClientProvider client={queryClient}>
+        <RootLayoutNav />
+      </QueryClientProvider>
     </AuthProvider>
   );
 }

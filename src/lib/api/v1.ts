@@ -3,6 +3,7 @@ import type {
   CalorieEntryWithId,
   CreateFamilyResponse,
   GetExercisePresetsResponse,
+  ExerciseSyncStateDocument,
   ExerciseWithId,
   FamilySharedItemWithId,
   FamilyWithMemberProfiles,
@@ -25,6 +26,7 @@ import type {
   PostPushTokenResponse,
   PatchSavedItemBody,
   PostSavedItemBody,
+  PutExerciseSyncStateBody,
   PutMeWaterBody,
   SavedItemWithId,
   WaterDailyWithId,
@@ -123,11 +125,18 @@ export async function getExerciseForDate(date: string): Promise<ExerciseWithId[]
   return apiRequest<ExerciseWithId[]>(`/me/exercise?${params.toString()}`);
 }
 
-export type ExerciseQuery = { date: string } | { startDate: string; endDate: string };
+export type ExerciseQuery =
+  | { date: string }
+  | { startDate: string; endDate: string }
+  | { updatedSince: string };
 
 export async function getExercises(query: ExerciseQuery): Promise<ExerciseWithId[]> {
   const params = new URLSearchParams(
-    'date' in query ? { date: query.date } : { startDate: query.startDate, endDate: query.endDate }
+    'date' in query
+      ? { date: query.date }
+      : 'updatedSince' in query
+        ? { updatedSince: query.updatedSince }
+        : { startDate: query.startDate, endDate: query.endDate }
   );
   return apiRequest<ExerciseWithId[]>(`/me/exercise?${params.toString()}`);
 }
@@ -143,8 +152,20 @@ export async function getExercisesByRange(
   return getExercises({ startDate, endDate });
 }
 
+export async function getExercisesUpdatedSince(updatedSince: string): Promise<ExerciseWithId[]> {
+  return getExercises({ updatedSince });
+}
+
 export async function getExercisePresets(): Promise<GetExercisePresetsResponse> {
   return apiRequest<GetExercisePresetsResponse>('/me/exercise/presets');
+}
+
+export async function getExerciseSyncState(): Promise<ExerciseSyncStateDocument> {
+  return apiRequest<ExerciseSyncStateDocument>('/me/exercise/sync-state');
+}
+
+export async function putExerciseSyncState(body: PutExerciseSyncStateBody): Promise<void> {
+  await apiRequest<void>('/me/exercise/sync-state', { method: 'PUT', json: body });
 }
 
 export async function postExercise(body: PostExerciseBody): Promise<{ id: string }> {

@@ -27,18 +27,21 @@ function todayDateStringFromIso(iso: string): string {
   return new Date(iso).toISOString().slice(0, 10);
 }
 
-function defaultSyncStartDate(): Date {
+function lookbackStartDate(lookbackDays: number): Date {
   const start = new Date();
-  start.setDate(start.getDate() - DEFAULT_LOOKBACK_DAYS);
+  start.setDate(start.getDate() - lookbackDays);
   return start;
 }
 
-function resolveSyncStartDate(cursor: NativeSyncCursor | null): Date {
+function resolveSyncStartDate(
+  cursor: NativeSyncCursor | null,
+  lookbackDays: number = DEFAULT_LOOKBACK_DAYS
+): Date {
   if (cursor?.value) {
     const parsed = new Date(cursor.value);
     if (!Number.isNaN(parsed.getTime())) return parsed;
   }
-  return defaultSyncStartDate();
+  return lookbackStartDate(lookbackDays);
 }
 
 function durationMinutesFromDates(start: Date, end: Date): number {
@@ -53,13 +56,16 @@ function sumActiveCaloriesForSession(args: {
   startTime: string;
   endTime: string;
   records: Array<{ startTime: string; endTime: string; energy: { inKilocalories: number } }>;
-}): number {
+}): number | undefined {
+  let matched = false;
   let total = 0;
   for (const record of args.records) {
     if (recordsOverlap(args.startTime, args.endTime, record.startTime, record.endTime)) {
+      matched = true;
       total += record.energy.inKilocalories;
     }
   }
+  if (!matched) return undefined;
   return Math.max(0, Math.round(total));
 }
 
@@ -123,9 +129,13 @@ async function ensureHealthConnectPermissions(): Promise<boolean> {
 
 async function readHealthConnectWorkouts(args: {
   cursor: NativeSyncCursor | null;
+  lookbackDays?: number;
 }): Promise<{ workouts: NativeWorkoutRecord[]; nextCursor: NativeSyncCursor }> {
   const endTime = new Date().toISOString();
-  const startTime = resolveSyncStartDate(args.cursor).toISOString();
+  const startTime = resolveSyncStartDate(
+    args.cursor,
+    args.lookbackDays ?? DEFAULT_LOOKBACK_DAYS
+  ).toISOString();
   const timeRangeFilter = {
     operator: 'between' as const,
     startTime,

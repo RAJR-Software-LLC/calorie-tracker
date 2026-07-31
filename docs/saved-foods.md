@@ -4,12 +4,12 @@ Personal saved foods are reusable meal shortcuts stored under `/api/v1/me/saved-
 
 ## User flows
 
-| Flow | Entry point | Behavior |
-| ---- | ----------- | -------- |
-| Create saved food | Dashboard → Log a meal → “Save to My Items” | `POST /me/saved-items` |
-| Manage saved foods | Settings → Saved foods | List, edit, delete personal items only |
-| Use suggestion | Log a meal combobox | Merged personal + family rows with badges |
-| Share to family | Family tab → Share an item | Requires numeric calories (not `'unknown'`) |
+| Flow               | Entry point                                 | Behavior                                    |
+| ------------------ | ------------------------------------------- | ------------------------------------------- |
+| Create saved food  | Dashboard → Log a meal → “Save to My Items” | `POST /me/saved-items`                      |
+| Manage saved foods | Settings → Saved foods                      | List, edit, delete personal items only      |
+| Use suggestion     | Log a meal combobox                         | Merged personal + family rows with badges   |
+| Share to family    | Family tab → Share an item                  | Requires numeric calories (not `'unknown'`) |
 
 ## API client
 
@@ -33,12 +33,12 @@ After successful edit/delete, the UI updates optimistically and silently re-fetc
 
 ## Error handling
 
-| Status | Message (exact) | UX |
-| ------ | ----------------- | -- |
-| 409 | `Saved item name already exists` | Inline name error; keep edit modal open |
-| 409 | `Saved item was modified, refresh and retry` | Toast + refresh list |
-| 404 | `Saved item not found` | Remove row + refresh |
-| 400 | `Missing or invalid If-Unmodified-Since header` | Same as stale |
+| Status | Message (exact)                                 | UX                                      |
+| ------ | ----------------------------------------------- | --------------------------------------- |
+| 409    | `Saved item name already exists`                | Inline name error; keep edit modal open |
+| 409    | `Saved item was modified, refresh and retry`    | Toast + refresh list                    |
+| 404    | `Saved item not found`                          | Remove row + refresh                    |
+| 400    | `Missing or invalid If-Unmodified-Since header` | Same as stale                           |
 
 ## `defaultCalories: 'unknown'`
 

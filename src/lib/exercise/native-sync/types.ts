@@ -10,7 +10,8 @@ export interface NativeWorkoutRecord {
   source: NativeSyncSource;
   date: DateString;
   name: string;
-  caloriesBurned: number;
+  /** Undefined when the OS did not report active energy for this workout. */
+  caloriesBurned?: number;
   startTime?: string;
   endTime?: string;
   durationMinutes?: number;
@@ -25,10 +26,16 @@ export interface NativeSyncCursor {
   value: string;
 }
 
+export type NativeLookbackDays = 7 | 30 | 90;
+
 export interface NativeHealthAdapter {
   source: NativeSyncSource;
   ensurePermissions(): Promise<boolean>;
-  readWorkouts(args: { cursor: NativeSyncCursor | null }): Promise<{
+  readWorkouts(args: {
+    cursor: NativeSyncCursor | null;
+    /** Used only when `cursor` is null (first sync / backfill). Defaults to 90. */
+    lookbackDays?: NativeLookbackDays;
+  }): Promise<{
     workouts: NativeWorkoutRecord[];
     nextCursor: NativeSyncCursor | null;
   }>;

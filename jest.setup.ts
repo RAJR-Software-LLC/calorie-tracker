@@ -55,6 +55,10 @@ jest.mock('expo-device', () => ({
   isDevice: true,
 }));
 
+jest.mock('expo-crypto', () => ({
+  randomUUID: jest.fn(() => '00000000-0000-4000-8000-000000000001'),
+}));
+
 jest.mock(
   'expo-constants',
   () => ({
@@ -108,4 +112,18 @@ jest.mock('react-native-health-connect', () => ({
     { accessType: 'read', recordType: 'ActiveCaloriesBurned' },
   ]),
   readRecords: jest.fn(async () => ({ records: [] })),
+}));
+
+jest.mock('expo-background-task', () => ({
+  BackgroundTaskResult: { Success: 1, Failed: 2 },
+  BackgroundTaskStatus: { Restricted: 1, Available: 2 },
+  getStatusAsync: jest.fn(async () => 2),
+  registerTaskAsync: jest.fn(async () => undefined),
+  unregisterTaskAsync: jest.fn(async () => undefined),
+}));
+
+jest.mock('expo-task-manager', () => ({
+  defineTask: jest.fn(),
+  isTaskDefined: jest.fn(() => false),
+  isTaskRegisteredAsync: jest.fn(async () => false),
 }));

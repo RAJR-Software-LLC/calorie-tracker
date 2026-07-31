@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 import {
   addMonths,
@@ -11,68 +11,67 @@ import {
   subDays,
   subMonths,
 } from 'date-fns';
+import { useQueryClient } from '@tanstack/react-query';
 
 import { useAuth } from '@/components/auth/auth-provider';
 import { DayDetailModal } from '@/components/calendar/day-detail-modal';
 import { WeeklyTrendChart } from '@/components/calendar/weekly-trend-chart';
-import { logAppError, toUserErrorMessage } from '@/lib/app-errors';
-import { getEntries, getMe } from '@/lib/api';
 import { getCalorieGoalUpperTarget } from '@/lib/calorie-goal';
 import { formatDate } from '@/lib/date';
-import { showToast } from '@/lib/toast';
+import { queryKeys, useEntriesRange, useMe } from '@/lib/queries';
 import { useThemePalette } from '@/lib/use-theme-palette';
 import type { CalorieGoal } from '@/types';
 
 export function CalorieCalendar() {
   const p = useThemePalette();
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [month, setMonth] = useState(new Date());
-  const [daySummaries, setDaySummaries] = useState<Record<string, { date: string; total: number }>>(
-    {}
-  );
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
-  const [calorieGoal, setCalorieGoal] = useState<CalorieGoal | null>(null);
-  const [loading, setLoading] = useState(true);
 
-  const loadMonth = useCallback(async () => {
-    if (!user) return;
-    setLoading(true);
-    try {
-      const monthStart = formatDate(startOfMonth(month));
-      const monthEnd = formatDate(endOfMonth(month));
-      const weekStart = formatDate(subDays(new Date(), 6));
-      const weekEnd = formatDate(new Date());
+  const monthStart = formatDate(startOfMonth(month));
+  const monthEnd = formatDate(endOfMonth(month));
+  const weekStart = formatDate(subDays(new Date(), 6));
+  const weekEnd = formatDate(new Date());
 
-      const [monthEntries, weekEntries, profile] = await Promise.all([
-        getEntries({ startDate: monthStart, endDate: monthEnd }),
-        getEntries({ startDate: weekStart, endDate: weekEnd }),
-        getMe(),
-      ]);
-      setCalorieGoal(profile?.calorieGoal ?? null);
+  const { data: profile } = useMe();
+  const monthEntriesQuery = useEntriesRange(monthStart, monthEnd);
+  const weekEntriesQuery = useEntriesRange(weekStart, weekEnd);
 
-      const grouped: Record<string, { date: string; total: number }> = {};
-      const seen = new Set<string>();
-      for (const entry of [...monthEntries, ...weekEntries]) {
-        if (seen.has(entry.id)) continue;
-        seen.add(entry.id);
-        const d = entry.date;
-        if (!grouped[d]) {
-          grouped[d] = { date: d, total: 0 };
-        }
-        grouped[d].total += entry.estimatedCalories || 0;
+  const calorieGoal: CalorieGoal | null = profile?.calorieGoal ?? null;
+  const loading =
+    !!user &&
+    (monthEntriesQuery.isPending || weekEntriesQuery.isPending) &&
+    monthEntriesQuery.data === undefined;
+
+  const daySummaries = useMemo(() => {
+    const monthEntries = monthEntriesQuery.data ?? [];
+    const weekEntries = weekEntriesQuery.data ?? [];
+    const grouped: Record<string, { date: string; total: number }> = {};
+    const seen = new Set<string>();
+    for (const entry of [...monthEntries, ...weekEntries]) {
+      if (seen.has(entry.id)) continue;
+      seen.add(entry.id);
+      const d = entry.date;
+      if (!grouped[d]) {
+        grouped[d] = { date: d, total: 0 };
       }
-      setDaySummaries(grouped);
-    } catch (err) {
-      logAppError('calendar/loadMonth', err);
-      showToast(toUserErrorMessage(err, "Couldn't load calendar data."), 'error');
-    } finally {
-      setLoading(false);
+      grouped[d].total += entry.estimatedCalories || 0;
     }
-  }, [user, month]);
+    return grouped;
+  }, [monthEntriesQuery.data, weekEntriesQuery.data]);
 
-  useEffect(() => {
-    void loadMonth();
-  }, [loadMonth]);
+  const reloadCalendar = useCallback(async () => {
+    if (!user) return;
+    await Promise.all([
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.entriesRange(user.uid, monthStart, monthEnd),
+      }),
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.entriesRange(user.uid, weekStart, weekEnd),
+      }),
+    ]);
+  }, [queryClient, user, monthStart, monthEnd, weekStart, weekEnd]);
 
   function getDayStatus(d: Date): 'on-track' | 'over' | 'none' {
     const dateStr = formatDate(d);
@@ -197,7 +196,7 @@ export function CalorieCalendar() {
         }}
         date={selectedDate || ''}
         goal={calorieGoal}
-        onEntryChange={loadMonth}
+        onEntryChange={reloadCalendar}
       />
     </View>
   );

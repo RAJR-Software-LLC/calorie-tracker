@@ -7,6 +7,7 @@ import { useDashboard } from '@/components/dashboard/dashboard-context';
 import { Button } from '@/components/ui/button';
 import { deleteExercise } from '@/lib/api';
 import { logAppError, toUserErrorMessage } from '@/lib/app-errors';
+import { formatExerciseCaloriesLabel } from '@/lib/exercise/calories-display';
 import { showToast } from '@/lib/toast';
 import { useThemePalette } from '@/lib/use-theme-palette';
 
@@ -19,17 +20,14 @@ export function ExerciseSection({ date: _date }: ExerciseSectionProps) {
   const router = useRouter();
   const { user } = useAuth();
   const { exercises, refreshExercises, habits } = useDashboard();
-
-  if (habits.exerciseTrackingEnabled === false) {
-    return null;
-  }
+  const exerciseEnabled = habits.exerciseTrackingEnabled !== false;
 
   function openExerciseTab(): void {
     router.push('/(tabs)/exercise');
   }
 
   async function handleDelete(exerciseId: string) {
-    if (!user) return;
+    if (!user || !exerciseEnabled) return;
     try {
       await deleteExercise(exerciseId);
       await refreshExercises();
@@ -55,53 +53,74 @@ export function ExerciseSection({ date: _date }: ExerciseSectionProps) {
           </Text>
           <ChevronRight size={16} color={p.mutedForeground} />
         </Pressable>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Add exercise on exercise tab"
-          className="flex-row items-center gap-1"
-          onPress={openExerciseTab}
-        >
-          <Plus size={16} color={p.primary} />
-          <Text className="text-sm font-medium text-primary dark:text-darkPrimary">Add</Text>
-        </Pressable>
+        {exerciseEnabled ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Add exercise on exercise tab"
+            className="flex-row items-center gap-1"
+            onPress={openExerciseTab}
+          >
+            <Plus size={16} color={p.primary} />
+            <Text className="text-sm font-medium text-primary dark:text-darkPrimary">Add</Text>
+          </Pressable>
+        ) : null}
       </View>
 
-      {exercises.length > 0 ? (
+      {!exerciseEnabled ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Enable exercise tracking in settings"
+          className="rounded-xl border border-border/50 bg-card px-4 py-3 dark:border-darkBorder dark:bg-darkCard"
+          onPress={() => router.push('/(tabs)/settings')}
+        >
+          <Text className="text-sm text-muted-foreground dark:text-darkMutedForeground">
+            Exercise tracking is disabled. Enable it in Settings to log or sync workouts.
+          </Text>
+        </Pressable>
+      ) : exercises.length > 0 ? (
         <View className="gap-2">
-          {exercises.map((ex) => (
-            <View
-              key={ex.id}
-              className="flex-row items-center justify-between rounded-xl border border-border/50 bg-card px-4 py-3 shadow-sm dark:border-darkBorder dark:bg-darkCard"
-            >
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={`Open exercise tab for ${ex.name}`}
-                className="min-w-0 flex-1 flex-row items-center gap-2"
-                onPress={openExerciseTab}
+          {exercises.map((ex) => {
+            const caloriesLabel = formatExerciseCaloriesLabel({
+              caloriesBurned: ex.caloriesBurned,
+              notes: ex.notes,
+            });
+            return (
+              <View
+                key={ex.id}
+                className="flex-row items-center justify-between rounded-xl border border-border/50 bg-card px-4 py-3 shadow-sm dark:border-darkBorder dark:bg-darkCard"
               >
-                <Dumbbell size={16} color={p.mutedForeground} />
-                <Text
-                  className="min-w-0 flex-1 text-sm font-medium text-foreground dark:text-darkForeground"
-                  numberOfLines={1}
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`Open exercise tab for ${ex.name}`}
+                  className="min-w-0 flex-1 flex-row items-center gap-2"
+                  onPress={openExerciseTab}
                 >
-                  {ex.name}
-                </Text>
-              </Pressable>
-              <View className="flex-row items-center gap-3">
-                <Text className="text-sm font-semibold text-primary dark:text-darkPrimary">
-                  -{ex.caloriesBurned} cal
-                </Text>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  accessibilityLabel={`Remove ${ex.name}`}
-                  onPress={() => void handleDelete(ex.id)}
-                >
-                  <Trash2 size={16} color={p.mutedForeground} />
-                </Button>
+                  <Dumbbell size={16} color={p.mutedForeground} />
+                  <Text
+                    className="min-w-0 flex-1 text-sm font-medium text-foreground dark:text-darkForeground"
+                    numberOfLines={1}
+                  >
+                    {ex.name}
+                  </Text>
+                </Pressable>
+                <View className="flex-row items-center gap-3">
+                  <Text className="text-sm font-semibold text-primary dark:text-darkPrimary">
+                    {caloriesLabel === 'Not reported'
+                      ? 'Not reported'
+                      : `-${ex.caloriesBurned} cal`}
+                  </Text>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    accessibilityLabel={`Remove ${ex.name}`}
+                    onPress={() => void handleDelete(ex.id)}
+                  >
+                    <Trash2 size={16} color={p.mutedForeground} />
+                  </Button>
+                </View>
               </View>
-            </View>
-          ))}
+            );
+          })}
         </View>
       ) : (
         <Pressable

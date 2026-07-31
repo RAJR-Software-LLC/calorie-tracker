@@ -16,7 +16,7 @@ function createEmptyReadAdapter(source: 'healthkit' | 'health_connect'): NativeH
     async ensurePermissions(): Promise<boolean> {
       return false;
     },
-    async readWorkouts(_args: { cursor: NativeSyncCursor | null }): Promise<{
+    async readWorkouts(_args: { cursor: NativeSyncCursor | null; lookbackDays?: number }): Promise<{
       workouts: NativeWorkoutRecord[];
       nextCursor: NativeSyncCursor;
     }> {

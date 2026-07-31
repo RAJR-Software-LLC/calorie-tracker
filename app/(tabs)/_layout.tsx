@@ -2,7 +2,7 @@ import { Tabs } from 'expo-router';
 import { Calculator, Calendar, Dumbbell, Home, Settings, Users } from 'lucide-react-native';
 import { Platform, useWindowDimensions, View } from 'react-native';
 
-import { DashboardProvider, useDashboard } from '@/components/dashboard/dashboard-context';
+import { DashboardProvider } from '@/components/dashboard/dashboard-context';
 import { useColorScheme } from '@/components/useColorScheme';
 import { dark, light } from '@/theme';
 
@@ -41,10 +41,8 @@ function TabLayoutContent() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
   const p = isDark ? dark : light;
-  const { habits } = useDashboard();
   const { width } = useWindowDimensions();
   const compactTabs = width < 390;
-  const exerciseEnabled = habits.exerciseTrackingEnabled !== false;
 
   return (
     <Tabs
@@ -124,7 +122,6 @@ function TabLayoutContent() {
         name="exercise"
         options={{
           title: 'Exercise',
-          href: exerciseEnabled ? undefined : null,
           tabBarIcon: ({ color, focused }) => (
             <TabIcon
               Icon={Dumbbell}

@@ -1,35 +1,30 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
-
 import { postExerciseBulk } from '@/lib/api';
 import { ApiError } from '@/lib/api/errors';
 import type { ExercisePreset } from '@/types';
 
 import { toPreparedSyncExercise } from './mapping';
-import type { NativeHealthAdapter, NativeSyncCursor, PreparedSyncExercise } from './types';
+import {
+  hydrateExerciseSyncState,
+  markSyncAttempt,
+  markSyncFailure,
+  markSyncSuccess,
+  resolveSyncCursor,
+} from './sync-state';
+import type {
+  NativeHealthAdapter,
+  NativeLookbackDays,
+  NativeSyncCursor,
+  PreparedSyncExercise,
+} from './types';
 
-const CURSOR_KEY_PREFIX = 'exerciseNativeSyncCursor';
 const MAX_BULK_SIZE = 100;
 const MAX_RETRIES = 4;
 
-function cursorKey(source: string): string {
-  return `${CURSOR_KEY_PREFIX}:${source}`;
-}
-
-async function readCursor(source: string): Promise<NativeSyncCursor | null> {
-  const raw = await AsyncStorage.getItem(cursorKey(source));
-  if (!raw) return null;
-  try {
-    const parsed = JSON.parse(raw) as { value?: unknown };
-    if (!parsed || typeof parsed.value !== 'string') return null;
-    return { value: parsed.value };
-  } catch {
-    return null;
+export class ExerciseTrackingDisabledError extends Error {
+  constructor(message = 'Exercise tracking is disabled') {
+    super(message);
+    this.name = 'ExerciseTrackingDisabledError';
   }
-}
-
-async function writeCursor(source: string, cursor: NativeSyncCursor | null): Promise<void> {
-  if (!cursor) return;
-  await AsyncStorage.setItem(cursorKey(source), JSON.stringify(cursor));
 }
 
 function chunk<T>(items: T[], size: number): T[][] {
@@ -40,8 +35,11 @@ function chunk<T>(items: T[], size: number): T[][] {
   return out;
 }
 
-function parseRetryAfterSeconds(error: unknown): number | null {
+function resolveRetryAfterSeconds(error: unknown): number | null {
   if (!(error instanceof ApiError)) return null;
+  if (typeof error.retryAfterSeconds === 'number') {
+    return error.retryAfterSeconds;
+  }
   const body = error.body;
   if (!body || typeof body !== 'object') return null;
   const retryAfter = (body as Record<string, unknown>)['retryAfter'];
@@ -57,18 +55,27 @@ function sleep(ms: number): Promise<void> {
   });
 }
 
+function isExerciseDisabledError(error: unknown): boolean {
+  return error instanceof ApiError && error.status === 403;
+}
+
 async function uploadChunkWithRetry(exercises: PreparedSyncExercise[]): Promise<void> {
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt += 1) {
     try {
       await postExerciseBulk({ exercises });
       return;
     } catch (error) {
+      if (isExerciseDisabledError(error)) {
+        throw new ExerciseTrackingDisabledError(
+          error instanceof ApiError ? error.message : 'Exercise tracking is disabled'
+        );
+      }
       if (!(error instanceof ApiError) || (error.status !== 429 && error.status < 500)) {
         throw error;
       }
       if (attempt === MAX_RETRIES) throw error;
 
-      const retryAfterSeconds = parseRetryAfterSeconds(error);
+      const retryAfterSeconds = resolveRetryAfterSeconds(error);
       const exponential = Math.min(2 ** attempt * 500, 8000);
       const jitter = Math.floor(Math.random() * 400);
       const delayMs =
@@ -95,35 +102,76 @@ export interface SyncNativeHealthResult {
   pulled: number;
   prepared: number;
   uploaded: number;
+  syncAttemptAt: string;
 }
 
 export async function syncNativeHealthAdapter(args: {
   adapter: NativeHealthAdapter;
   presets: ExercisePreset[];
+  /** First-sync lookback when no server/local cursor exists. */
+  lookbackDays?: NativeLookbackDays;
 }): Promise<SyncNativeHealthResult> {
   const { adapter, presets } = args;
+  const lookbackDays = args.lookbackDays ?? 90;
+
   const granted = await adapter.ensurePermissions();
   if (!granted) {
     throw new Error(`Permissions not granted for ${adapter.source}`);
   }
 
-  const cursor = await readCursor(adapter.source);
-  const { workouts, nextCursor } = await adapter.readWorkouts({ cursor });
-  const prepared = workouts
-    .map((workout) => toPreparedSyncExercise({ workout, presets }))
-    .filter((item): item is PreparedSyncExercise => item != null);
-  const deduped = dedupeByExternalIdentity(prepared);
-  const chunks = chunk(deduped, MAX_BULK_SIZE);
+  let syncAttemptAt = new Date().toISOString();
+  try {
+    const serverState = await hydrateExerciseSyncState();
+    syncAttemptAt = await markSyncAttempt();
 
-  for (const nextChunk of chunks) {
-    await uploadChunkWithRetry(nextChunk);
+    const cursor = await resolveSyncCursor({ source: adapter.source, serverState });
+    const { workouts, nextCursor } = await adapter.readWorkouts({
+      cursor,
+      lookbackDays: cursor ? undefined : lookbackDays,
+    });
+    const prepared = workouts
+      .map((workout) => toPreparedSyncExercise({ workout, presets }))
+      .filter((item): item is PreparedSyncExercise => item != null);
+    const deduped = dedupeByExternalIdentity(prepared);
+    const chunks = chunk(deduped, MAX_BULK_SIZE);
+
+    for (const nextChunk of chunks) {
+      await uploadChunkWithRetry(nextChunk);
+    }
+
+    const cursorToPersist: NativeSyncCursor = nextCursor ?? {
+      value: new Date().toISOString(),
+    };
+    await markSyncSuccess({ source: adapter.source, cursor: cursorToPersist });
+
+    return {
+      source: adapter.source,
+      pulled: workouts.length,
+      prepared: deduped.length,
+      uploaded: deduped.length,
+      syncAttemptAt,
+    };
+  } catch (error) {
+    if (isExerciseDisabledError(error) || error instanceof ExerciseTrackingDisabledError) {
+      try {
+        await markSyncFailure(
+          error instanceof Error ? error.message : 'Exercise tracking is disabled'
+        );
+      } catch {
+        // Best-effort; original 403 still surfaces to caller.
+      }
+      throw error instanceof ExerciseTrackingDisabledError
+        ? error
+        : new ExerciseTrackingDisabledError(
+            error instanceof Error ? error.message : 'Exercise tracking is disabled'
+          );
+    }
+
+    try {
+      await markSyncFailure(error instanceof Error ? error.message : 'Native sync failed');
+    } catch {
+      // Best-effort failure watermark.
+    }
+    throw error;
   }
-
-  await writeCursor(adapter.source, nextCursor);
-  return {
-    source: adapter.source,
-    pulled: workouts.length,
-    prepared: deduped.length,
-    uploaded: deduped.length,
-  };
 }

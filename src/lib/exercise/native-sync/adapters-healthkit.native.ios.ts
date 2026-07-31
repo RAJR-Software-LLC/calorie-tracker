@@ -19,22 +19,25 @@ function todayDateStringFromIso(iso: string): string {
   return new Date(iso).toISOString().slice(0, 10);
 }
 
-function defaultSyncStartDate(): Date {
+function lookbackStartDate(lookbackDays: number): Date {
   const start = new Date();
-  start.setDate(start.getDate() - DEFAULT_LOOKBACK_DAYS);
+  start.setDate(start.getDate() - lookbackDays);
   return start;
 }
 
-function resolveSyncStartDate(cursor: NativeSyncCursor | null): Date {
+function resolveSyncStartDate(
+  cursor: NativeSyncCursor | null,
+  lookbackDays: number = DEFAULT_LOOKBACK_DAYS
+): Date {
   if (cursor?.value) {
     const parsed = new Date(cursor.value);
     if (!Number.isNaN(parsed.getTime())) return parsed;
   }
-  return defaultSyncStartDate();
+  return lookbackStartDate(lookbackDays);
 }
 
-function energyToKcal(energy?: { unit: string; quantity: number }): number {
-  if (!energy) return 0;
+function energyToKcal(energy?: { unit: string; quantity: number }): number | undefined {
+  if (!energy) return undefined;
   const normalized = energy.unit.toLowerCase();
   if (normalized === 'kcal' || normalized === 'cal') return energy.quantity;
   if (normalized === 'kj') return energy.quantity / 4.184;
@@ -65,13 +68,14 @@ function mapHealthKitWorkout(workout: {
 }): NativeWorkoutRecord {
   const startIso = workout.startDate.toISOString();
   const endIso = workout.endDate.toISOString();
+  const energyKcal = energyToKcal(workout.totalEnergyBurned);
   return {
     externalId: workout.uuid,
     externalSource: 'apple_healthkit',
     source: 'healthkit',
     date: todayDateStringFromIso(startIso),
     name: formatHealthKitWorkoutName(workout.workoutActivityType),
-    caloriesBurned: Math.round(energyToKcal(workout.totalEnergyBurned)),
+    caloriesBurned: energyKcal === undefined ? undefined : Math.round(energyKcal),
     startTime: startIso,
     endTime: endIso,
     durationMinutes: durationMinutesFromDates(workout.startDate, workout.endDate),
@@ -88,9 +92,10 @@ async function ensureHealthKitPermissions(): Promise<boolean> {
 
 async function readHealthKitWorkouts(args: {
   cursor: NativeSyncCursor | null;
+  lookbackDays?: number;
 }): Promise<{ workouts: NativeWorkoutRecord[]; nextCursor: NativeSyncCursor }> {
   const endDate = new Date();
-  const startDate = resolveSyncStartDate(args.cursor);
+  const startDate = resolveSyncStartDate(args.cursor, args.lookbackDays ?? DEFAULT_LOOKBACK_DAYS);
   const samples = await queryWorkoutSamples({
     limit: -1,
     ascending: true,
