@@ -45,6 +45,7 @@ import {
   Droplets,
   LogOut,
   Mail,
+  MessageSquare,
   Shield,
   UtensilsCrossed,
 } from 'lucide-react-native';
@@ -870,6 +871,19 @@ export default function SettingsScreen() {
               />
             </>
           ) : null}
+        </CardContent>
+      </Card>
+
+      {/* Feedback */}
+      <Card>
+        <CardContent className="p-3">
+          <SettingsRow
+            icon={<MessageSquare size={20} color={p.primary} />}
+            label="Feedback"
+            value="Send feedback or report a problem"
+            onPress={() => router.push('/feedback')}
+            showChevron
+          />
         </CardContent>
       </Card>
 

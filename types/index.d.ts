@@ -309,6 +309,20 @@ export interface PutExerciseSyncStateBody {
   >;
 }
 
+export type ExerciseAuditAction = 'delete' | 'bulk_upsert';
+
+/** `users/{uid}/exerciseAudit/{id}` — lightweight write audit */
+export interface ExerciseAuditDocument {
+  action: ExerciseAuditAction;
+  actorUid: string;
+  requestId: string | null;
+  exerciseId?: string;
+  created?: number;
+  updated?: number;
+  skipped?: number;
+  at: ApiTimestamp | unknown;
+}
+
 /** `users/{uid}/waterDaily/{date}` */
 export interface WaterDailyDocument {
   date: DateString;
@@ -450,4 +464,69 @@ export interface CreateFamilyResponse {
 export interface JoinFamilyResponse {
   id: string;
   name: string;
+}
+
+export type FeedbackCategory = 'bug' | 'feature_request' | 'other';
+
+export type FeedbackStatus = 'open' | 'in_progress' | 'resolved' | 'closed';
+
+export type FeedbackPlatform = 'ios' | 'android' | 'web' | 'unknown';
+
+export type FeedbackCommentAuthorType = 'user' | 'ops';
+
+/** `feedback/{feedbackId}` */
+export interface FeedbackAttachment {
+  storagePath: string;
+  contentType: 'image/jpeg' | 'image/png' | 'image/webp';
+  sizeBytes: number;
+  createdAt: ApiTimestamp;
+  /** Ephemeral signed read URL; not stored in Firestore */
+  downloadUrl?: string;
+}
+
+export interface FeedbackDocument {
+  id: string;
+  userId: string;
+  category: FeedbackCategory;
+  message: string;
+  status: FeedbackStatus;
+  platform?: FeedbackPlatform;
+  appVersion?: string;
+  attachments: FeedbackAttachment[];
+  createdAt: ApiTimestamp;
+  updatedAt: ApiTimestamp;
+  deletedAt: ApiTimestamp | null;
+}
+
+/** `feedback/{feedbackId}/comments/{commentId}` */
+export interface FeedbackCommentDocument {
+  id: string;
+  authorType: FeedbackCommentAuthorType;
+  authorId: string;
+  body: string;
+  createdAt: ApiTimestamp;
+}
+
+export interface FeedbackDetail extends FeedbackDocument {
+  comments: FeedbackCommentDocument[];
+}
+
+export interface PostFeedbackBody {
+  category: FeedbackCategory;
+  message: string;
+  platform?: FeedbackPlatform;
+  appVersion?: string;
+}
+
+export interface PatchFeedbackBody {
+  category?: FeedbackCategory;
+  message?: string;
+}
+
+export interface PostFeedbackCommentBody {
+  body: string;
+}
+
+export interface PatchInternalFeedbackBody {
+  status: FeedbackStatus;
 }
