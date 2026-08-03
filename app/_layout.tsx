@@ -11,7 +11,7 @@ import '../global.css';
 
 import { AuthProvider, useAuth } from '@/components/auth/auth-provider';
 import { useColorScheme } from '@/components/useColorScheme';
-import { queryClient } from '@/lib/queries/query-client';
+import { queryClient, useAppStateRevalidate } from '@/lib/queries';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { installNotificationHandler, useNotificationTapRouter } from '@/lib/notifications/handler';
 import { initMonitoring } from '@/lib/monitoring';
@@ -72,6 +72,7 @@ function RootLayoutNav() {
   const segments = useSegments();
   const router = useRouter();
   useNotificationTapRouter(user, router);
+  useAppStateRevalidate(!!user);
 
   useEffect(() => {
     if (loading) return;

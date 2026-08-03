@@ -1,11 +1,13 @@
 import { AppHeader } from '@/components/layout/app-header';
-import { ScrollView, View, type ViewProps } from 'react-native';
+import { ScrollView, View, type RefreshControlProps, type ViewProps } from 'react-native';
 
 type AppScreenProps = ViewProps & {
   children: React.ReactNode;
   scroll?: boolean;
   showHeader?: boolean;
   forceLeafHeader?: boolean;
+  /** Passed to ScrollView when `scroll` is true (e.g. RefreshControl). */
+  refreshControl?: React.ReactElement<RefreshControlProps>;
 };
 
 const contentPad = {
@@ -23,6 +25,7 @@ export function AppScreen({
   scroll = true,
   showHeader = true,
   forceLeafHeader = false,
+  refreshControl,
   className,
   ...rest
 }: AppScreenProps) {
@@ -34,6 +37,7 @@ export function AppScreen({
           className="flex-1"
           contentContainerStyle={contentPad}
           keyboardShouldPersistTaps="handled"
+          refreshControl={refreshControl}
         >
           {children}
         </ScrollView>

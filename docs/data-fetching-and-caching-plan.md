@@ -2,9 +2,10 @@
 
 This document defines a formal plan to reduce redundant API traffic, eliminate visible reload flashes (notably the profile photo on Settings), and align the mobile app with industry-standard server-state management.
 
-**Status:** Implemented (Phases 1–2)  
+**Status:** Superseded for day-to-day reference by [`docs/client-caching-and-revalidation.md`](client-caching-and-revalidation.md) (TanStack Query + conditional GET / ETag / 304, focus/AppState/PTR). Keep this file for historical Phases 1–2 context.
+
 **Audience:** Mobile engineers, reviewers, release QA  
-**Related:** [`docs/architecture.md`](architecture.md), [`src/lib/api/client.ts`](../src/lib/api/client.ts), [`components/dashboard/dashboard-context.tsx`](../components/dashboard/dashboard-context.tsx)
+**Related:** [`docs/client-caching-and-revalidation.md`](client-caching-and-revalidation.md), [`docs/architecture.md`](architecture.md), [`src/lib/api/client.ts`](../src/lib/api/client.ts), [`components/dashboard/dashboard-context.tsx`](../components/dashboard/dashboard-context.tsx)
 
 ---
 

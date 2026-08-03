@@ -5,7 +5,7 @@ import { getSavedItems } from '@/lib/api';
 
 import { queryKeys } from './keys';
 
-const SAVED_ITEMS_STALE_TIME = 3 * 60_000;
+const SAVED_ITEMS_STALE_TIME = 4 * 60_000;
 const SAVED_ITEMS_GC_TIME = 15 * 60_000;
 
 export function useSavedItems() {

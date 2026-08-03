@@ -6,7 +6,7 @@ import { ApiError } from '@/lib/api/errors';
 
 import { queryKeys } from './keys';
 
-const FAMILY_SHARED_STALE_TIME = 3 * 60_000;
+const FAMILY_SHARED_STALE_TIME = 4 * 60_000;
 const FAMILY_SHARED_GC_TIME = 15 * 60_000;
 
 export function useFamilySharedItems(familyId: string | null | undefined) {

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -11,17 +11,19 @@ import {
 } from 'react-native';
 import { format, isToday, parseISO } from 'date-fns';
 import { Plus, Trash2, UtensilsCrossed } from 'lucide-react-native';
+import { useQueryClient } from '@tanstack/react-query';
 
 import { useAuth } from '@/components/auth/auth-provider';
 import { LogEntryModal } from '@/components/dashboard/log-entry-modal';
 import { Button } from '@/components/ui/button';
 import { logAppError, toUserErrorMessage } from '@/lib/app-errors';
-import { deleteEntry, getEntries } from '@/lib/api';
+import { deleteEntry } from '@/lib/api';
 import { formatCalorieGoal, getCalorieGoalUpperTarget } from '@/lib/calorie-goal';
+import { queryKeys, useEntries } from '@/lib/queries';
 import { showToast } from '@/lib/toast';
 import { useThemePalette } from '@/lib/use-theme-palette';
 
-import type { CalorieEntryWithId, CalorieGoal } from '@/types';
+import type { CalorieGoal } from '@/types';
 
 type DayDetailModalProps = {
   open: boolean;
@@ -40,35 +42,25 @@ export function DayDetailModal({
 }: DayDetailModalProps) {
   const p = useThemePalette();
   const { user } = useAuth();
-  const [entries, setEntries] = useState<CalorieEntryWithId[]>([]);
+  const queryClient = useQueryClient();
   const [logOpen, setLogOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
 
-  const loadEntries = useCallback(async () => {
+  const entriesQuery = useEntries(date);
+  const entries = open ? (entriesQuery.data ?? []) : [];
+  const loading = open && entriesQuery.isPending && entriesQuery.data === undefined;
+
+  const refreshDayEntries = useCallback(async () => {
     if (!user || !date) return;
-    setLoading(true);
-    try {
-      const data = await getEntries({ date });
-      setEntries(data);
-    } catch (err) {
-      logAppError('calendar/day-detail/loadEntries', err);
-      showToast(toUserErrorMessage(err, "Couldn't load entries for this day."), 'error');
-    } finally {
-      setLoading(false);
-    }
-  }, [user, date]);
-
-  useEffect(() => {
-    if (open && date) {
-      void loadEntries();
-    }
-  }, [open, date, loadEntries]);
+    await queryClient.invalidateQueries({
+      queryKey: queryKeys.entries(user.uid, date),
+    });
+  }, [queryClient, user, date]);
 
   async function handleDelete(entryId: string) {
     if (!user) return;
     try {
       await deleteEntry(entryId);
-      await loadEntries();
+      await refreshDayEntries();
       onEntryChange();
       showToast('Entry removed', 'success');
     } catch (err) {
@@ -183,7 +175,7 @@ export function DayDetailModal({
         onOpenChange={setLogOpen}
         date={date}
         onLogged={() => {
-          void loadEntries();
+          void refreshDayEntries();
           onEntryChange();
         }}
       />

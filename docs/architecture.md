@@ -15,20 +15,24 @@ flowchart LR
   Screens[app routes]
   Queries[src/lib/queries]
   Api[src/lib/api]
+  ETag[In-memory ETag map]
   Token[getFirebaseIdTokenForApi]
   Http[fetch to EXPO_PUBLIC_API_URL]
   Screens --> Queries
   Queries --> Api
   Api --> Token
+  Api --> ETag
   Api --> Http
 ```
 
 1. Screens and shared components read server state through TanStack Query hooks in [`src/lib/queries/`](../src/lib/queries/) (for example `useMe`, `useEntries`). Mutations update or invalidate the matching query keys.
 2. Query hooks call typed helpers in [`src/lib/api/v1.ts`](../src/lib/api/v1.ts) (or `apiRequest` in [`client.ts`](../src/lib/api/client.ts)).
-3. `apiRequest` prepends `/api/v1`, sets `Content-Type: application/json` when needed, and adds `Authorization: Bearer <token>` from [`getFirebaseIdTokenForApi`](../src/lib/firebase.ts).
+3. `apiRequest` prepends `/api/v1`, sets `Content-Type: application/json` when needed, adds `Authorization: Bearer <token>` from [`getFirebaseIdTokenForApi`](../src/lib/firebase.ts), and for authenticated GETs sends `If-None-Match` / honors `304` via the in-memory ETag map.
 4. The backend validates the token with Firebase Admin and returns JSON shaped like the types in [`types/index.d.ts`](../types/index.d.ts).
 
-`QueryClientProvider` wraps the app in [`app/_layout.tsx`](../app/_layout.tsx) inside `AuthProvider`. On sign-out, `queryClient.clear()` removes cached data for the previous user.
+`QueryClientProvider` wraps the app in [`app/_layout.tsx`](../app/_layout.tsx) inside `AuthProvider`. On sign-out, `queryClient.clear()` and `clearEtagCache()` remove cached data for the previous user.
+
+See [`docs/client-caching-and-revalidation.md`](client-caching-and-revalidation.md) for staleTimes, focus/AppState/pull-to-refresh, and the verification checklist.
 
 ## Routing
 
@@ -46,7 +50,8 @@ Deep links use the scheme from `app.config.js` (`calorietracker`).
 
 ## Related plans
 
-- [Data fetching and caching plan](data-fetching-and-caching-plan.md) — server-state management, TanStack Query adoption, and refetch reduction.
+- [Client caching and revalidation](client-caching-and-revalidation.md) — production cache policy (source of truth).
+- [Data fetching and caching plan](data-fetching-and-caching-plan.md) — historical TanStack Query adoption plan (Phases 1–2).
 
 ## Where to add features
 

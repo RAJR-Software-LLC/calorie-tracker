@@ -8,13 +8,17 @@
 
 ## High-Risk Flow Regression
 
-- Data cache (see [`docs/data-fetching-and-caching-plan.md`](data-fetching-and-caching-plan.md)):
+- Data cache (see [`docs/client-caching-and-revalidation.md`](client-caching-and-revalidation.md)):
   - Sign in with a profile photo; open Settings — photo appears immediately on revisit (no initials flash).
-  - Tab switch Home → Calendar → Settings → Family → Home (5 cycles); backend `GET /me` count stays low (≤ 2 per session when cache is fresh).
-  - Edit profile height → save → UI updates after a single refetch.
-  - Upload a new profile photo → avatar updates from mutation/cache without duplicate flashes.
-  - Background app ~30s, foreground — notifications still work; no burst of many `GET /me` calls.
-  - Sign out → sign in as a different user — no stale photo or profile from the prior account.
+  - Tab switch Home → Calendar → Settings → Family → Home (5 cycles); backend day GETs stay low while within `staleTime` (no spam on Dashboard re-focus).
+  - Background app ≥5 minutes, then foreground — stale active queries refetch; brief background does not burst GETs.
+  - Pull-to-refresh on Dashboard / Exercise / Family / Calendar / Settings refreshes the expected keys.
+  - Edit profile height → save → UI updates via `updateMeCache` without needless day refetches.
+  - Upload a new profile photo → avatar updates; expired photo URL triggers `invalidateMe` + ETag clear (no endless 304).
+  - Second `GET /me` with matching ETag → `304` and UI stays correct.
+  - Sign out → sign in as a different user — no stale photo, profile, or ETag from the prior account.
+  - Exercise tab and Dashboard share one exercise cache for the same date; Family uses RQ for family + shared-items.
+  - Presets still load offline from AsyncStorage; version bump still refreshes.
 - Auth:
   - Email/password login succeeds.
   - Sign out returns to login screen.
