@@ -56,7 +56,7 @@ Copy [.env.example](.env.example) to `.env` and adjust. Never commit secrets.
 | [src/lib/utils/](src/lib/utils/)           | Pure helpers (e.g. calorie calculators)                            |
 | [types/index.d.ts](types/index.d.ts)       | Shared API/domain types (keep in sync with backend)                |
 
-More detail: [docs/architecture.md](docs/architecture.md), [docs/types.md](docs/types.md), [docs/contributing.md](docs/contributing.md).
+More detail: [docs/architecture.md](docs/architecture.md), [docs/types.md](docs/types.md), [docs/calculator.md](docs/calculator.md), [docs/contributing.md](docs/contributing.md).
 
 ## Exercise tracking
 

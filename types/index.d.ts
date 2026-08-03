@@ -16,6 +16,10 @@ export type Sex = 'male' | 'female';
 
 export type GoalType = 'lose' | 'gain' | 'maintain';
 
+export type FormulaId = 'mifflin_st_jeor' | 'harris_benedict_revised' | 'who_fao_unu';
+
+export type CalorieGoalMode = 'single' | 'range';
+
 export interface CalorieGoalSingle {
   mode: 'single';
   target: number;
@@ -28,6 +32,81 @@ export interface CalorieGoalRange {
 }
 
 export type CalorieGoal = CalorieGoalSingle | CalorieGoalRange;
+
+export type CalculatorWarningSeverity = 'info' | 'warning';
+
+export interface CalculatorWarning {
+  code: string;
+  severity: CalculatorWarningSeverity;
+  message: string;
+  params?: Record<string, number | string>;
+}
+
+export interface CalculatorCitation {
+  id: string;
+  title: string;
+  doiOrUrl: string;
+}
+
+export interface CalculatorExplanationStep {
+  key: string;
+  label: string;
+  value: string;
+}
+
+/** Canonical inputs captured in a calculation snapshot / estimate. */
+export interface CalculatorInputs {
+  age: number;
+  sex: Sex;
+  heightCm: number;
+  weightKg: number;
+  activityLevel: ActivityLevel;
+}
+
+export interface FormulaCatalogEntry {
+  id: FormulaId;
+  name: string;
+  shortDescription: string;
+  isDefault: boolean;
+  isRecommended: boolean;
+  formulaVersion: string;
+  requiredInputs: Array<keyof CalculatorInputs>;
+  citations: CalculatorCitation[];
+  limitations: string;
+}
+
+export interface FormulaEstimate {
+  formulaId: FormulaId;
+  formulaVersion: string;
+  name: string;
+  isDefault: boolean;
+  isRecommended: boolean;
+  bmr: number;
+  activityMultiplier: number;
+  tdee: number;
+  goalType: GoalType;
+  recommendedCalorieGoal: CalorieGoal;
+  warnings: CalculatorWarning[];
+  citations: CalculatorCitation[];
+  explanationSteps: CalculatorExplanationStep[];
+  inputsFingerprint: string;
+}
+
+/** Persisted on `users/{uid}.calorieCalculation` after POST apply. */
+export interface CalorieCalculationSnapshot {
+  formulaId: FormulaId;
+  formulaVersion: string;
+  goalType: GoalType;
+  inputs: CalculatorInputs;
+  inputsFingerprint: string;
+  bmr: number;
+  activityMultiplier: number;
+  tdee: number;
+  recommendedCalorieGoal: CalorieGoal;
+  warnings: CalculatorWarning[];
+  citations: CalculatorCitation[];
+  calculatedAt: ApiTimestamp | unknown;
+}
 
 export interface UserProfileFields {
   heightCm: number | null;
@@ -138,6 +217,10 @@ export interface UserDocument {
   maintenanceCalories: number | null;
   calorieGoal: CalorieGoal | null;
   goalType: GoalType | null;
+  /** User-selected BMR formula; set by calculator apply (not PATCH /me). */
+  preferredFormulaId?: FormulaId | null;
+  /** Versioned server calculation snapshot; written only by calculator apply. */
+  calorieCalculation?: CalorieCalculationSnapshot | null;
   familyId: string | null;
   notifications: NotificationsSettings;
   habits?: HabitsSettings;
@@ -394,6 +477,51 @@ export interface PatchMeBody {
     waterGoalAmount?: number | null;
     waterGoalUnit?: WaterUnit | null;
   };
+}
+
+/** Optional anthropometric overrides for calculator estimate/apply (unit-aware). */
+export interface CalculatorProfileOverrides {
+  age?: number;
+  sex?: Sex;
+  activityLevel?: ActivityLevel;
+  height?: HeightInput;
+  weight?: WeightInput;
+}
+
+/** API: GET /api/v1/me/calculator/formulas */
+export interface GetCalculatorFormulasResponse {
+  defaultFormulaId: FormulaId;
+  formulas: FormulaCatalogEntry[];
+}
+
+/** API: POST /api/v1/me/calculator/estimate */
+export interface PostCalculatorEstimateBody {
+  goalType: GoalType;
+  formulaId?: FormulaId;
+  calorieGoalMode?: CalorieGoalMode;
+  profile?: CalculatorProfileOverrides;
+}
+
+export interface PostCalculatorEstimateResponse {
+  defaultFormulaId: FormulaId;
+  inputs: CalculatorInputs;
+  results: FormulaEstimate[];
+}
+
+/** API: POST /api/v1/me/calculator/apply */
+export interface PostCalculatorApplyBody {
+  formulaId: FormulaId;
+  goalType: GoalType;
+  calorieGoalMode?: CalorieGoalMode;
+  profile?: CalculatorProfileOverrides;
+}
+
+export interface PostCalculatorApplyResponse {
+  preferredFormulaId: FormulaId;
+  maintenanceCalories: number;
+  calorieGoal: CalorieGoal;
+  goalType: GoalType;
+  calorieCalculation: CalorieCalculationSnapshot;
 }
 
 export interface PostEntryBody {

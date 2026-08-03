@@ -1,13 +1,15 @@
-import { mifflinStJeor, quickEstimate } from './calories';
+import { cmToFeetInches, feetInchesToCm, kgToLbs, lbsToKg } from './calories';
 
-describe('calories utils', () => {
-  it('quickEstimate rounds weight times activity factor', () => {
-    expect(quickEstimate(150, 'moderate')).toBe(2100);
+describe('calories display helpers', () => {
+  it('converts pounds and kilograms', () => {
+    expect(lbsToKg(220)).toBeCloseTo(99.79, 1);
+    expect(kgToLbs(100)).toBeCloseTo(220.46, 1);
   });
 
-  it('mifflinStJeor matches known formula for male moderate', () => {
-    const tdee = mifflinStJeor(70, 175, 30, 'male', 'moderate');
-    expect(tdee).toBeGreaterThan(2000);
-    expect(tdee).toBeLessThan(3000);
+  it('converts height units', () => {
+    const { feet, inches } = cmToFeetInches(180);
+    expect(feet).toBeGreaterThanOrEqual(5);
+    expect(feetInchesToCm(5, 11)).toBeCloseTo(180.34, 0);
+    expect(inches).toBeGreaterThanOrEqual(0);
   });
 });

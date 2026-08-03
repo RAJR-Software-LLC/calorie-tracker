@@ -19,6 +19,22 @@ jest.mock('@/components/auth/auth-provider', () => ({
 jest.mock('@/lib/api', () => ({
   getMe: () => mockGetMe(),
   patchMe: (...args: unknown[]) => mockPatchMe(...args),
+  getCalculatorFormulas: jest.fn(async () => ({
+    defaultFormulaId: 'mifflin_st_jeor',
+    formulas: [
+      {
+        id: 'mifflin_st_jeor',
+        name: 'Mifflin-St Jeor',
+        shortDescription: 'Recommended',
+        isDefault: true,
+        isRecommended: true,
+        formulaVersion: '2026.08.1',
+        requiredInputs: [],
+        citations: [],
+        limitations: '',
+      },
+    ],
+  })),
 }));
 
 jest.mock('@/components/layout/app-screen', () => ({
@@ -163,7 +179,7 @@ describe('SettingsScreen profile editing', () => {
     await waitFor(() => expect(mockGetMe).toHaveBeenCalled());
     expandProfileForEditing();
     expect(screen.getByText('Weight Goal')).toBeTruthy();
-    expect(screen.getByText('Lose weight (coming soon)')).toBeTruthy();
+    expect(screen.getByText('Lose weight')).toBeTruthy();
     expect(screen.getByText('Legal Disclosures')).toBeTruthy();
   });
 

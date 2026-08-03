@@ -5,6 +5,7 @@ import type {
   FeedbackDetail,
   FeedbackDocument,
   FeedbackStatus,
+  GetCalculatorFormulasResponse,
   GetExercisePresetsResponse,
   ExerciseSyncStateDocument,
   ExerciseWithId,
@@ -17,6 +18,10 @@ import type {
   PatchFeedbackBody,
   PatchMeBody,
   PatchMeWaterBody,
+  PostCalculatorApplyBody,
+  PostCalculatorApplyResponse,
+  PostCalculatorEstimateBody,
+  PostCalculatorEstimateResponse,
   PostEntryBody,
   PostExerciseBulkBody,
   PostExerciseBody,
@@ -44,6 +49,7 @@ import type {
 } from '@/types';
 
 import { apiRequest } from './client';
+import { withRetryAfter429 } from './retry-after-429';
 import { withWater429Retry } from './water-429-retry';
 
 export async function getMe(): Promise<GetMeResponse> {
@@ -52,6 +58,34 @@ export async function getMe(): Promise<GetMeResponse> {
 
 export async function patchMe(body: PatchMeBody): Promise<GetMeResponse> {
   return apiRequest<GetMeResponse>('/me', { method: 'PATCH', json: body });
+}
+
+export async function getCalculatorFormulas(): Promise<GetCalculatorFormulasResponse> {
+  return withRetryAfter429(() =>
+    apiRequest<GetCalculatorFormulasResponse>('/me/calculator/formulas')
+  );
+}
+
+export async function postCalculatorEstimate(
+  body: PostCalculatorEstimateBody
+): Promise<PostCalculatorEstimateResponse> {
+  return withRetryAfter429(() =>
+    apiRequest<PostCalculatorEstimateResponse>('/me/calculator/estimate', {
+      method: 'POST',
+      json: body,
+    })
+  );
+}
+
+export async function postCalculatorApply(
+  body: PostCalculatorApplyBody
+): Promise<PostCalculatorApplyResponse> {
+  return withRetryAfter429(() =>
+    apiRequest<PostCalculatorApplyResponse>('/me/calculator/apply', {
+      method: 'POST',
+      json: body,
+    })
+  );
 }
 
 export async function postProfilePhotoUploadUrl(

@@ -36,6 +36,48 @@ function humanizeAuthCode(code: string): string {
   return slug.replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
+function labelForCalculatorField(field: string): string {
+  switch (field) {
+    case 'age':
+      return 'age';
+    case 'sex':
+      return 'sex';
+    case 'heightCm':
+    case 'height':
+      return 'height';
+    case 'weightKg':
+    case 'weight':
+      return 'weight';
+    case 'activityLevel':
+      return 'activity level';
+    case 'goalType':
+      return 'goal type';
+    case 'formulaId':
+      return 'formula';
+    default:
+      return field;
+  }
+}
+
+function formatMissingCalculatorFields(fields: string[]): string {
+  const labels = fields.map(labelForCalculatorField);
+  if (labels.length === 1) return `Add your ${labels[0]} to continue.`;
+  if (labels.length === 2) return `Add your ${labels[0]} and ${labels[1]} to continue.`;
+  const head = labels.slice(0, -1).join(', ');
+  return `Add your ${head}, and ${labels[labels.length - 1]} to continue.`;
+}
+
+/** Extract `missingFields` from calculator incomplete-input 400 bodies. */
+export function getCalculatorMissingFields(err: unknown): string[] | null {
+  if (!(err instanceof ApiError) || err.status !== 400) return null;
+  const body = err.body;
+  if (typeof body !== 'object' || body === null || !('missingFields' in body)) return null;
+  const fields = (body as { missingFields?: unknown }).missingFields;
+  if (!Array.isArray(fields) || fields.length === 0) return null;
+  const strings = fields.filter((f): f is string => typeof f === 'string');
+  return strings.length > 0 ? strings : null;
+}
+
 function apiErrorUserMessage(err: ApiError): string {
   switch (err.status) {
     case 401:
@@ -63,6 +105,18 @@ function apiErrorUserMessage(err: ApiError): string {
         return 'Something went wrong on our server. Please try again later.';
       }
       if (err.status === 400) {
+        const missing = getCalculatorMissingFields(err);
+        if (missing) return formatMissingCalculatorFields(missing);
+        const body = err.body;
+        if (typeof body === 'object' && body !== null && 'error' in body) {
+          const apiError = (body as { error?: unknown }).error;
+          if (apiError === 'Incomplete calculator inputs') {
+            return 'Complete your profile to calculate calories.';
+          }
+          if (apiError === 'Unknown formulaId') {
+            return 'That formula is no longer available. Choose another formula.';
+          }
+        }
         const m = err.message.trim();
         if (m.length > 0 && m.length <= 120) return m;
         return 'Invalid request. Please check your input.';
