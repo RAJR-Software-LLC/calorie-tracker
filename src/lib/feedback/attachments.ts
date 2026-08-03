@@ -81,7 +81,7 @@ type PutAttemptSummary = {
 };
 
 /** Signed PUT targets from our API — reject anything outside Google Cloud Storage. */
-export function assertAllowedSignedUploadUrl(uploadUrl: string): void {
+export function parseAllowedSignedUploadUrl(uploadUrl: string): URL {
   let parsed: URL;
   try {
     parsed = new URL(uploadUrl);
@@ -99,6 +99,7 @@ export function assertAllowedSignedUploadUrl(uploadUrl: string): void {
   if (!allowed) {
     throw new FeedbackAttachmentError('unexpected', 'Invalid upload URL. Please try again.');
   }
+  return parsed;
 }
 
 async function attemptSignedPut(
@@ -108,9 +109,11 @@ async function attemptSignedPut(
   attempt: string,
   bodyType: 'blob' | 'arrayBuffer'
 ): Promise<{ response?: Response; summary: PutAttemptSummary }> {
-  assertAllowedSignedUploadUrl(uploadUrl);
+  const allowed = parseAllowedSignedUploadUrl(uploadUrl);
+  // Reconstruct from allowlisted host parts so the PUT target is not a raw untrusted string.
+  const safeUploadUrl = `https://${allowed.hostname}${allowed.pathname}${allowed.search}`;
   try {
-    const response = await fetch(uploadUrl, { method: 'PUT', headers, body });
+    const response = await fetch(safeUploadUrl, { method: 'PUT', headers, body });
     return {
       response,
       summary: {

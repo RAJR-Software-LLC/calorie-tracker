@@ -63,7 +63,9 @@ describe('feedback flow', () => {
       </TestQueryProvider>
     );
 
-    await waitFor(() => expect(screen.getByText('No reports yet')).toBeTruthy());
+    await waitFor(() => {
+      expect(screen.getByText('No reports yet')).toBeTruthy();
+    });
     fireEvent.press(screen.getByText('New report'));
     expect(mockPush).toHaveBeenCalledWith('/feedback-new');
   });

@@ -3,10 +3,10 @@ import * as ImageManipulator from 'expo-image-manipulator';
 
 import { ApiError } from '@/lib/api/errors';
 import {
-  assertAllowedSignedUploadUrl,
   FeedbackAttachmentError,
   isFeedbackMediaLibraryPermissionDenied,
   isLikelyOfflineError,
+  parseAllowedSignedUploadUrl,
   pickFeedbackImageFromLibrary,
   toUserFeedbackAttachmentMessage,
   uploadFeedbackAttachment,
@@ -236,15 +236,15 @@ describe('helpers', () => {
   });
 
   it('allows only https Google Cloud Storage upload hosts', () => {
-    expect(() =>
-      assertAllowedSignedUploadUrl(
+    expect(
+      parseAllowedSignedUploadUrl(
         'https://storage.googleapis.com/bucket/object?X-Goog-Signature=abc'
-      )
-    ).not.toThrow();
-    expect(() => assertAllowedSignedUploadUrl('https://evil.example/put')).toThrow(
+      ).hostname
+    ).toBe('storage.googleapis.com');
+    expect(() => parseAllowedSignedUploadUrl('https://evil.example/put')).toThrow(
       FeedbackAttachmentError
     );
-    expect(() => assertAllowedSignedUploadUrl('http://storage.googleapis.com/bucket/x')).toThrow(
+    expect(() => parseAllowedSignedUploadUrl('http://storage.googleapis.com/bucket/x')).toThrow(
       FeedbackAttachmentError
     );
   });

@@ -33,7 +33,7 @@ import {
   type LocalFeedbackImage,
 } from '@/lib/feedback/attachments';
 import { isFeedbackEditable } from '@/lib/feedback/editable';
-import { FEEDBACK_CATEGORY_LABELS } from '@/lib/feedback/labels';
+import { feedbackCategoryLabel } from '@/lib/feedback/labels';
 import {
   useDeleteFeedbackMutation,
   useFeedbackDetail,
@@ -414,7 +414,7 @@ export default function FeedbackDetailScreen() {
       />
       <View className="flex-row items-center justify-between gap-2">
         <Text className="text-lg font-semibold text-foreground dark:text-darkForeground">
-          {FEEDBACK_CATEGORY_LABELS[detail.category]}
+          {feedbackCategoryLabel(detail.category)}
         </Text>
         <FeedbackStatusBadge status={detail.status} />
       </View>
@@ -441,7 +441,9 @@ export default function FeedbackDetailScreen() {
             <Button
               variant="outline"
               className="flex-1"
-              onPress={() => setEditing(false)}
+              onPress={() => {
+                setEditing(false);
+              }}
               disabled={patchMutation.isPending}
             >
               Cancel
@@ -489,9 +491,9 @@ export default function FeedbackDetailScreen() {
               attachments={[]}
               localUris={retryImages.map((img) => img.uri)}
               editable
-              onRemoveLocal={(index) =>
-                setRetryImages((prev) => prev.filter((_, i) => i !== index))
-              }
+              onRemoveLocal={(index) => {
+                setRetryImages((prev) => prev.filter((_, i) => i !== index));
+              }}
             />
             <FeedbackAddScreenshotButton
               onPress={() => void addRetryImage()}

@@ -1,7 +1,7 @@
 import { Pressable, Text, View } from 'react-native';
 
 import { FeedbackStatusBadge } from '@/components/feedback/feedback-status-badge';
-import { FEEDBACK_CATEGORY_LABELS } from '@/lib/feedback/labels';
+import { feedbackCategoryLabel } from '@/lib/feedback/labels';
 import type { FeedbackDocument } from '@/types';
 
 type Props = {
@@ -33,7 +33,7 @@ export function FeedbackListItem({ item, onPress }: Props) {
     >
       <View className="flex-row items-center justify-between gap-2">
         <Text className="text-sm font-semibold text-foreground dark:text-darkForeground">
-          {FEEDBACK_CATEGORY_LABELS[item.category]}
+          {feedbackCategoryLabel(item.category)}
         </Text>
         <FeedbackStatusBadge status={item.status} />
       </View>

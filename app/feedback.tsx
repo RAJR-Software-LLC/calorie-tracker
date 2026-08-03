@@ -93,7 +93,9 @@ export default function FeedbackListScreen() {
               key={filter.key}
               accessibilityRole="button"
               accessibilityState={{ selected }}
-              onPress={() => setStatusFilter(filter.key)}
+              onPress={() => {
+                setStatusFilter(filter.key);
+              }}
               className={`rounded-xl px-3 py-2 ${
                 selected
                   ? 'bg-primary dark:bg-darkPrimary'
@@ -159,7 +161,9 @@ export default function FeedbackListScreen() {
               />
               <Pressable
                 accessibilityRole="button"
-                onPress={() => confirmDeleteFeedback(item.id, deleteMutation.mutate)}
+                onPress={() => {
+                  confirmDeleteFeedback(item.id, deleteMutation.mutate);
+                }}
                 className="self-end px-1 py-1"
               >
                 <Text className="text-xs font-medium text-destructive dark:text-darkDestructiveForeground">

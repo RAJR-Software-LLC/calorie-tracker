@@ -131,10 +131,9 @@ async function submitNewFeedback(depsRef: MutableRefObject<FeedbackNewDeps>): Pr
       const until = Date.now() + seconds * 1000;
       deps.setRateLimitedUntil(until);
       if (deps.rateLimitTimer.current) clearTimeout(deps.rateLimitTimer.current);
-      deps.rateLimitTimer.current = setTimeout(
-        () => deps.setRateLimitedUntil(null),
-        seconds * 1000
-      );
+      deps.rateLimitTimer.current = setTimeout(() => {
+        deps.setRateLimitedUntil(null);
+      }, seconds * 1000);
       deps.setFormError(`Too many reports. Try again in about ${seconds} seconds.`);
       return;
     }
@@ -235,7 +234,9 @@ export default function FeedbackNewScreen() {
         onMessageChange={setMessage}
         images={images}
         onAddImage={() => void onAddImage()}
-        onRemoveImage={(index) => setImages((prev) => prev.filter((_, i) => i !== index))}
+        onRemoveImage={(index) => {
+          setImages((prev) => prev.filter((_, i) => i !== index));
+        }}
         imageProgress={imageProgress}
         error={formError}
         disabled={submitting || rateLimited}

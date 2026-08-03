@@ -18,7 +18,7 @@ export function FeedbackAttachmentGallery({
   onRemoveLocal,
   editable,
 }: Props) {
-  if ((attachments?.length ?? 0) === 0 && (localUris?.length ?? 0) === 0) {
+  if (attachments.length === 0 && (localUris?.length ?? 0) === 0) {
     return null;
   }
 
@@ -61,7 +61,9 @@ export function FeedbackAttachmentGallery({
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Remove screenshot"
-              onPress={() => onRemoveLocal(index)}
+              onPress={() => {
+                onRemoveLocal(index);
+              }}
               className="absolute -right-1 -top-1 h-6 w-6 items-center justify-center rounded-full bg-destructive dark:bg-darkDestructive"
             >
               <Text className="text-xs font-bold text-white">×</Text>

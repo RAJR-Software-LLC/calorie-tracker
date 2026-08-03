@@ -1,6 +1,6 @@
 import { Pressable, Text, View } from 'react-native';
 
-import { FEEDBACK_CATEGORIES, FEEDBACK_CATEGORY_LABELS } from '@/lib/feedback/labels';
+import { FEEDBACK_CATEGORIES, feedbackCategoryLabel } from '@/lib/feedback/labels';
 import type { FeedbackCategory } from '@/types';
 
 type Props = {
@@ -20,7 +20,9 @@ export function FeedbackCategoryChips({ value, onChange, disabled }: Props) {
             accessibilityRole="button"
             accessibilityState={{ selected, disabled: !!disabled }}
             disabled={disabled}
-            onPress={() => onChange(category)}
+            onPress={() => {
+              onChange(category);
+            }}
             className={`rounded-xl px-3 py-2 ${
               selected
                 ? 'bg-primary dark:bg-darkPrimary'
@@ -34,7 +36,7 @@ export function FeedbackCategoryChips({ value, onChange, disabled }: Props) {
                   : 'text-foreground dark:text-darkForeground'
               }`}
             >
-              {FEEDBACK_CATEGORY_LABELS[category]}
+              {feedbackCategoryLabel(category)}
             </Text>
           </Pressable>
         );
