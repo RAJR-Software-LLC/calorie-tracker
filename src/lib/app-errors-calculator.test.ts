@@ -1,0 +1,19 @@
+import { ApiError } from '@/lib/api/errors';
+
+import { getCalculatorMissingFields, toUserErrorMessage } from './app-errors';
+
+describe('calculator error mapping', () => {
+  it('extracts missingFields', () => {
+    const err = new ApiError(400, 'Incomplete', {
+      error: 'Incomplete calculator inputs',
+      missingFields: ['age', 'sex'],
+    });
+    expect(getCalculatorMissingFields(err)).toEqual(['age', 'sex']);
+    expect(toUserErrorMessage(err, 'fallback')).toContain('age');
+  });
+
+  it('maps unknown formulaId', () => {
+    const err = new ApiError(400, 'Unknown', { error: 'Unknown formulaId', formulaId: 'x' });
+    expect(toUserErrorMessage(err, 'fallback')).toMatch(/formula/i);
+  });
+});

@@ -1,4 +1,6 @@
 import { useAuth } from '@/components/auth/auth-provider';
+import { CustomOverrideBanner } from '@/components/calculator/custom-override-banner';
+import { StaleSnapshotBanner } from '@/components/calculator/stale-snapshot-banner';
 import { ExternalLink } from '@/components/ExternalLink';
 import { AppScreen } from '@/components/layout/app-screen';
 import { HabitsSettings } from '@/components/settings/habits-settings';
@@ -12,6 +14,7 @@ import { SegmentedControl } from '@/components/ui/segmented-control';
 import { patchMe } from '@/lib/api';
 import { ApiError } from '@/lib/api/errors';
 import { logAppError } from '@/lib/app-errors';
+import { isCustomCalorieOverride, isSnapshotStale } from '@/lib/calculator';
 import { formatCalorieGoal } from '@/lib/calorie-goal';
 import { getLegalLinks } from '@/lib/env';
 import { signOutUser } from '@/lib/firebase-auth';
@@ -22,7 +25,13 @@ import {
   toUserProfilePhotoMessage,
   uploadProfilePhoto,
 } from '@/lib/profile-photo/upload';
-import { invalidateMe, queryKeys, updateMeCache, useMe } from '@/lib/queries';
+import {
+  invalidateMe,
+  queryKeys,
+  updateMeCache,
+  useCalculatorFormulas,
+  useMe,
+} from '@/lib/queries';
 import { showToast } from '@/lib/toast';
 import { useThemePalette } from '@/lib/use-theme-palette';
 import { useQueryClient } from '@tanstack/react-query';
@@ -193,6 +202,14 @@ export default function SettingsScreen() {
   const legalLinks = getLegalLinks();
   const goalDisplay = formatCalorieGoal(profile?.calorieGoal ?? null);
   const goalTypeDisplay = formatGoalType(profile?.goalType);
+  const { data: formulasCatalog } = useCalculatorFormulas({ enabled: !!user && showProfile });
+  const catalogVersion = formulasCatalog?.formulas[0]?.formulaVersion ?? null;
+  const snapshotStale = isSnapshotStale(
+    profile?.calorieCalculation,
+    profile?.profile,
+    catalogVersion
+  );
+  const customOverride = isCustomCalorieOverride(profile);
   const syncProfileInputs = useCallback((me: GetMeResponse) => {
     if (!me?.profile) {
       setHeightUnit('cm');
@@ -617,7 +634,32 @@ export default function SettingsScreen() {
                 showChevron
               />
               <SettingsDivider />
-              <SettingsRow label="Weight Goal" value={`${goalTypeDisplay} (coming soon)`} />
+              <SettingsRow
+                label="Weight Goal"
+                value={goalTypeDisplay}
+                onPress={() => router.push('/(tabs)/calculator')}
+                showChevron
+              />
+              {snapshotStale ? (
+                <>
+                  <SettingsDivider />
+                  <View className="py-3">
+                    <StaleSnapshotBanner
+                      onRecalculate={() => router.push('/(tabs)/calculator')}
+                    />
+                  </View>
+                </>
+              ) : null}
+              {customOverride && !snapshotStale ? (
+                <>
+                  <SettingsDivider />
+                  <View className="py-3">
+                    <CustomOverrideBanner
+                      onRecalculate={() => router.push('/(tabs)/calculator')}
+                    />
+                  </View>
+                </>
+              ) : null}
               <SettingsDivider />
               <View className="py-3">
                 <View className="mb-2 flex-row items-center justify-between">

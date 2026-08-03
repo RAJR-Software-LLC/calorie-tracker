@@ -1,6 +1,7 @@
 /** Hierarchical TanStack Query keys — always include `uid` for user-scoped data. */
 export const queryKeys = {
   me: (uid?: string) => ['me', uid] as const,
+  calculatorFormulas: (uid?: string) => ['calculatorFormulas', uid] as const,
   entries: (uid?: string, date?: string) => ['entries', uid, date] as const,
   entriesRange: (uid?: string, start?: string, end?: string) =>
     ['entries', uid, 'range', start, end] as const,

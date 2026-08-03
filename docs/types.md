@@ -12,7 +12,7 @@ Backend types are copied into [`types/index.d.ts`](../types/index.d.ts) via `npm
 
 | Type                                                                                   | Meaning                                                                                                                                                |
 | -------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `UserDocument`                                                                         | Profile row for the signed-in user (`GET/PATCH /api/v1/me`). Includes `profile`, goals, `familyId`, `notifications`, optional `habits`.                |
+| `UserDocument`                                                                         | Profile row for the signed-in user (`GET/PATCH /api/v1/me`). Includes `profile`, goals, optional `preferredFormulaId` / `calorieCalculation`, `familyId`, `notifications`, optional `habits`. See [`docs/calculator.md`](calculator.md). |
 | `HabitsSettings` / `UserHabits` (client alias)                                         | Optional habits under `PATCH /api/v1/me` (`exercise` / `water` toggles, water units & goals).                                                          |
 | `WaterDailyDocument` / `WaterDailyWithId`                                              | Daily water row; `GET/PUT/PATCH /api/v1/me/water`.                                                                                                     |
 | `CalorieEntryDocument` / `CalorieEntryWithId`                                          | Food log line items; list + create + delete under `/api/v1/me/entries`.                                                                                |
@@ -27,6 +27,7 @@ Backend types are copied into [`types/index.d.ts`](../types/index.d.ts) via `npm
 ## Enums
 
 - `ActivityLevel`, `Sex`, `GoalType`: same string unions as backend validation (Zod) and Firestore.
+- `FormulaId`, `CalorieGoalMode`, `CalculatorWarningSeverity`: calorie calculator catalog / estimate / apply.
 - `ExerciseIntensity`, `ExercisePresetCategory`, `ExerciseSource`, `ExerciseExternalSource`: exercise logging and native sync.
 
 ## Request/response helpers
@@ -34,7 +35,8 @@ Backend types are copied into [`types/index.d.ts`](../types/index.d.ts) via `npm
 | Type                                                               | Endpoint                                                                                                |
 | ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------- | ----- |
 | `GetMeResponse`                                                    | `GET /api/v1/me` — `UserDocument                                                                        | null` |
-| `PatchMeBody`                                                      | `PATCH /api/v1/me` — partial update; `notifications` merges; optional `habits`                          |
+| `PatchMeBody`                                                      | `PATCH /api/v1/me` — partial update; `notifications` merges; optional `habits`. Does **not** accept `calorieCalculation` / `preferredFormulaId`. |
+| `GetCalculatorFormulasResponse`, `PostCalculatorEstimateBody` / `Response`, `PostCalculatorApplyBody` / `Response` | `/api/v1/me/calculator/*` — see [`docs/calculator.md`](calculator.md) |
 | `GetWaterDailyQuery`, `PutWaterDailyBody`, `PatchWaterDailyBody`   | Water daily read / idempotent set / delta update (client aliases: `PutMeWaterBody`, `PatchMeWaterBody`) |
 | `PostEntryBody`, `PostSavedItemBody`, `PostExerciseBody`           | POST bodies for entries, saved items, exercise                                                          |
 | `PatchExerciseBody`                                                | PATCH body for `/api/v1/me/exercise/:id` (includes duration/distance/start/end/HR/steps)                |
