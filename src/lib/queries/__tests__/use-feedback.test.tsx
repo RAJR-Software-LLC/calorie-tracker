@@ -5,7 +5,11 @@ import type { ReactNode } from 'react';
 import { getFeedbackDetail, getFeedbackList } from '@/lib/api';
 import { queryKeys } from '@/lib/queries/keys';
 import { TestQueryProvider, createTestQueryClient } from '@/lib/queries/test-utils';
-import { useFeedbackDetail, useFeedbackList } from '@/lib/queries/use-feedback';
+import {
+  removeFeedbackFromListCaches,
+  useFeedbackDetail,
+  useFeedbackList,
+} from '@/lib/queries/use-feedback';
 import type { FeedbackDetail, FeedbackDocument } from '@/types';
 
 jest.mock('@/components/auth/auth-provider', () => ({
@@ -85,5 +89,20 @@ describe('useFeedbackList / useFeedbackDetail', () => {
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(mockGetDetail).toHaveBeenCalledWith('fb-1');
     expect(result.current.data?.message).toBe('Broken button');
+  });
+
+  it('removeFeedbackFromListCaches updates list caches without touching detail', async () => {
+    const client = createTestQueryClient();
+    const listKey = queryKeys.feedbackList('user-1', 'all');
+    const detailKey = queryKeys.feedbackDetail('user-1', 'fb-1');
+    const detail = { ...makeDoc(), comments: [] } satisfies FeedbackDetail;
+
+    client.setQueryData(listKey, [makeDoc({ id: 'fb-1' }), makeDoc({ id: 'fb-2' })]);
+    client.setQueryData(detailKey, detail);
+
+    removeFeedbackFromListCaches(client, 'user-1', 'fb-1');
+
+    expect(client.getQueryData<FeedbackDocument[]>(listKey)?.map((d) => d.id)).toEqual(['fb-2']);
+    expect(client.getQueryData(detailKey)).toEqual(detail);
   });
 });

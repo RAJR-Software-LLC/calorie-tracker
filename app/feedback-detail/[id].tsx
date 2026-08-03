@@ -1,5 +1,13 @@
 import { Stack, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type Dispatch,
+  type MutableRefObject,
+  type SetStateAction,
+} from 'react';
 import { ActivityIndicator, Alert, Pressable, Text, TextInput, View } from 'react-native';
 
 import { FeedbackAddScreenshotButton } from '@/components/feedback/feedback-add-screenshot-button';
@@ -34,7 +42,230 @@ import {
 } from '@/lib/queries';
 import { showToast } from '@/lib/toast';
 import { useThemePalette } from '@/lib/use-theme-palette';
-import type { FeedbackCategory } from '@/types';
+import type { FeedbackCategory, FeedbackDetail } from '@/types';
+
+type DetailQuery = ReturnType<typeof useFeedbackDetail>;
+type PatchMutation = ReturnType<typeof usePatchFeedbackMutation>;
+type CommentMutation = ReturnType<typeof usePostFeedbackCommentMutation>;
+type DeleteMutation = ReturnType<typeof useDeleteFeedbackMutation>;
+
+type FeedbackDetailDeps = {
+  feedbackId: string | undefined;
+  detail: FeedbackDetail | undefined;
+  editable: boolean;
+  editCategory: FeedbackCategory | null;
+  editMessage: string;
+  commentBody: string;
+  retryImages: LocalFeedbackImage[];
+  detailQuery: DetailQuery;
+  patchMutation: PatchMutation;
+  commentMutation: CommentMutation;
+  deleteMutation: DeleteMutation;
+  router: ReturnType<typeof useRouter>;
+  leaveNotFound: () => void;
+  setEditing: (value: boolean) => void;
+  setEditCategory: (value: FeedbackCategory | null) => void;
+  setEditMessage: (value: string) => void;
+  setEditError: (value: string | null) => void;
+  setCommentBody: (value: string) => void;
+  setCommentError: (value: string | null) => void;
+  setRetryImages: Dispatch<SetStateAction<LocalFeedbackImage[]>>;
+  setUploadingRetry: (value: boolean) => void;
+  setPhotoPermissionDenied: (value: boolean) => void;
+};
+
+function startEditFeedback(depsRef: MutableRefObject<FeedbackDetailDeps>): void {
+  const deps = depsRef.current;
+  if (!deps.detail || !deps.editable) return;
+  deps.setEditCategory(deps.detail.category);
+  deps.setEditMessage(deps.detail.message);
+  deps.setEditError(null);
+  deps.setEditing(true);
+}
+
+async function saveEditFeedback(depsRef: MutableRefObject<FeedbackDetailDeps>): Promise<void> {
+  const deps = depsRef.current;
+  if (!deps.feedbackId || !deps.detail) return;
+  deps.setEditError(null);
+  const trimmed = deps.editMessage.trim();
+  if (!deps.editCategory) {
+    deps.setEditError('Choose a category.');
+    return;
+  }
+  if (trimmed.length < 1) {
+    deps.setEditError('Enter a message.');
+    return;
+  }
+  if (trimmed.length > FEEDBACK_MESSAGE_MAX_CHARS) {
+    deps.setEditError(`Message must be at most ${FEEDBACK_MESSAGE_MAX_CHARS} characters.`);
+    return;
+  }
+
+  const body: { category?: FeedbackCategory; message?: string } = {};
+  if (deps.editCategory !== deps.detail.category) body.category = deps.editCategory;
+  if (trimmed !== deps.detail.message) body.message = trimmed;
+  if (!body.category && !body.message) {
+    deps.setEditing(false);
+    return;
+  }
+
+  try {
+    await deps.patchMutation.mutateAsync(body);
+    deps.setEditing(false);
+    showToast('Report updated', 'success');
+  } catch (err) {
+    logAppError('feedback.patch', err, { feedbackId: deps.feedbackId });
+    if (err instanceof ApiError && err.status === 409) {
+      deps.setEditError('This report can no longer be edited.');
+      deps.setEditing(false);
+      void deps.detailQuery.refetch();
+      showToast('This report can no longer be edited.', 'error');
+      return;
+    }
+    if (err instanceof ApiError && err.status === 404) {
+      deps.leaveNotFound();
+      return;
+    }
+    if (err instanceof ApiError && err.status === 400) {
+      deps.setEditError(toUserErrorMessage(err, 'Check your message and try again.'));
+      return;
+    }
+    showToast(toUserErrorMessage(err, "Couldn't update report"), 'error');
+  }
+}
+
+async function sendFeedbackComment(depsRef: MutableRefObject<FeedbackDetailDeps>): Promise<void> {
+  const deps = depsRef.current;
+  if (!deps.feedbackId || !deps.editable) return;
+  deps.setCommentError(null);
+  const trimmed = deps.commentBody.trim();
+  if (!trimmed) {
+    deps.setCommentError('Enter a comment.');
+    return;
+  }
+  if (trimmed.length > 2000) {
+    deps.setCommentError('Comment must be at most 2000 characters.');
+    return;
+  }
+  try {
+    await deps.commentMutation.mutateAsync({ body: trimmed });
+    deps.setCommentBody('');
+    showToast('Comment added', 'success');
+  } catch (err) {
+    logAppError('feedback.comment', err, { feedbackId: deps.feedbackId });
+    if (isLikelyOfflineError(err)) {
+      deps.setCommentError('Connect to the internet to send a comment.');
+      return;
+    }
+    if (err instanceof ApiError && err.status === 409) {
+      deps.setCommentError('This report can no longer accept comments.');
+      void deps.detailQuery.refetch();
+      showToast('This report can no longer accept comments.', 'error');
+      return;
+    }
+    if (err instanceof ApiError && err.status === 404) {
+      deps.leaveNotFound();
+      return;
+    }
+    if (err instanceof ApiError && err.status === 400) {
+      deps.setCommentError(toUserErrorMessage(err, 'Check your comment and try again.'));
+      return;
+    }
+    showToast(toUserErrorMessage(err, "Couldn't add comment"), 'error');
+  }
+}
+
+function confirmDeleteFeedback(depsRef: MutableRefObject<FeedbackDetailDeps>): void {
+  const deps = depsRef.current;
+  if (!deps.feedbackId) return;
+  const feedbackId = deps.feedbackId;
+  Alert.alert('Delete report?', 'This removes the report from your list. You cannot undo this.', [
+    { text: 'Cancel', style: 'cancel' },
+    {
+      text: 'Delete',
+      style: 'destructive',
+      onPress: () => {
+        deps.deleteMutation.mutate(feedbackId, {
+          onError: (err) => {
+            logAppError('feedback.delete', err, { feedbackId });
+            if (err instanceof ApiError && err.status === 404) {
+              deps.leaveNotFound();
+              return;
+            }
+            showToast(toUserErrorMessage(err, "Couldn't delete report"), 'error');
+          },
+          onSuccess: () => {
+            showToast('Report deleted', 'success');
+            deps.router.replace('/feedback');
+          },
+        });
+      },
+    },
+  ]);
+}
+
+async function addRetryFeedbackImage(depsRef: MutableRefObject<FeedbackDetailDeps>): Promise<void> {
+  const deps = depsRef.current;
+  if (!deps.detail || !deps.editable) return;
+  const remaining = FEEDBACK_ATTACHMENT_MAX_COUNT - (deps.detail.attachments?.length ?? 0);
+  if (remaining <= 0) {
+    showToast('You can attach up to 3 screenshots per report.', 'error');
+    return;
+  }
+  try {
+    const picked = await pickFeedbackImageFromLibrary();
+    deps.setPhotoPermissionDenied(false);
+    if (!picked) return;
+    deps.setRetryImages((prev) => {
+      if (prev.length >= remaining) {
+        showToast('You can attach up to 3 screenshots per report.', 'error');
+        return prev;
+      }
+      return [...prev, picked];
+    });
+  } catch (err) {
+    logAppError('feedback.pickImage', err);
+    if (err instanceof FeedbackAttachmentError && err.code === 'permission-denied') {
+      deps.setPhotoPermissionDenied(true);
+      return;
+    }
+    showToast(toUserFeedbackAttachmentMessage(err), 'error');
+  }
+}
+
+async function uploadRetryFeedbackImages(
+  depsRef: MutableRefObject<FeedbackDetailDeps>
+): Promise<void> {
+  const deps = depsRef.current;
+  if (!deps.feedbackId || deps.retryImages.length === 0) return;
+  deps.setUploadingRetry(true);
+  const remaining: LocalFeedbackImage[] = [];
+  let failures = 0;
+  for (const image of deps.retryImages) {
+    try {
+      await uploadFeedbackAttachment(deps.feedbackId, image);
+    } catch (err) {
+      failures += 1;
+      remaining.push(image);
+      logAppError('feedback.retryUpload', err, {
+        feedbackId: deps.feedbackId,
+        localId: image.localId,
+      });
+      if (err instanceof ApiError && err.status === 409) {
+        showToast('You can attach up to 3 screenshots per report.', 'error');
+        break;
+      }
+    }
+  }
+  deps.setRetryImages(remaining);
+  deps.setUploadingRetry(false);
+  void deps.detailQuery.refetch();
+  if (failures === 0) {
+    showToast('Screenshots uploaded', 'success');
+  } else {
+    showToast('Some screenshots failed to upload. You can try again.', 'error');
+  }
+}
 
 export default function FeedbackDetailScreen() {
   const router = useRouter();
@@ -58,14 +289,6 @@ export default function FeedbackDetailScreen() {
   const [photoPermissionDenied, setPhotoPermissionDenied] = useState(false);
 
   const refetchDetail = detailQuery.refetch;
-
-  useFocusEffect(
-    useCallback(() => {
-      void refetchDetail();
-      void isFeedbackMediaLibraryPermissionDenied().then(setPhotoPermissionDenied);
-    }, [refetchDetail])
-  );
-
   const detail = detailQuery.data;
   const editable = detail ? isFeedbackEditable(detail.status) : false;
 
@@ -73,6 +296,62 @@ export default function FeedbackDetailScreen() {
     showToast('That report is no longer available.', 'error');
     router.replace('/feedback');
   }, [router]);
+
+  const depsRef = useRef<FeedbackDetailDeps>({
+    feedbackId,
+    detail,
+    editable,
+    editCategory,
+    editMessage,
+    commentBody,
+    retryImages,
+    detailQuery,
+    patchMutation,
+    commentMutation,
+    deleteMutation,
+    router,
+    leaveNotFound,
+    setEditing,
+    setEditCategory,
+    setEditMessage,
+    setEditError,
+    setCommentBody,
+    setCommentError,
+    setRetryImages,
+    setUploadingRetry,
+    setPhotoPermissionDenied,
+  });
+  depsRef.current = {
+    feedbackId,
+    detail,
+    editable,
+    editCategory,
+    editMessage,
+    commentBody,
+    retryImages,
+    detailQuery,
+    patchMutation,
+    commentMutation,
+    deleteMutation,
+    router,
+    leaveNotFound,
+    setEditing,
+    setEditCategory,
+    setEditMessage,
+    setEditError,
+    setCommentBody,
+    setCommentError,
+    setRetryImages,
+    setUploadingRetry,
+    setPhotoPermissionDenied,
+  };
+
+  useFocusEffect(
+    useCallback(() => {
+      void refetchDetail();
+      void isFeedbackMediaLibraryPermissionDenied().then(setPhotoPermissionDenied);
+    }, [refetchDetail])
+  );
 
   useEffect(() => {
     if (!detailQuery.isError) return;
@@ -82,186 +361,12 @@ export default function FeedbackDetailScreen() {
     }
   }, [detailQuery.isError, detailQuery.error, leaveNotFound]);
 
-  const startEdit = () => {
-    if (!detail || !editable) return;
-    setEditCategory(detail.category);
-    setEditMessage(detail.message);
-    setEditError(null);
-    setEditing(true);
-  };
-
-  const saveEdit = async () => {
-    if (!feedbackId || !detail) return;
-    setEditError(null);
-    const trimmed = editMessage.trim();
-    if (!editCategory) {
-      setEditError('Choose a category.');
-      return;
-    }
-    if (trimmed.length < 1) {
-      setEditError('Enter a message.');
-      return;
-    }
-    if (trimmed.length > FEEDBACK_MESSAGE_MAX_CHARS) {
-      setEditError(`Message must be at most ${FEEDBACK_MESSAGE_MAX_CHARS} characters.`);
-      return;
-    }
-
-    const body: { category?: FeedbackCategory; message?: string } = {};
-    if (editCategory !== detail.category) body.category = editCategory;
-    if (trimmed !== detail.message) body.message = trimmed;
-    if (!body.category && !body.message) {
-      setEditing(false);
-      return;
-    }
-
-    try {
-      await patchMutation.mutateAsync(body);
-      setEditing(false);
-      showToast('Report updated', 'success');
-    } catch (err) {
-      logAppError('feedback.patch', err, { feedbackId });
-      if (err instanceof ApiError && err.status === 409) {
-        setEditError('This report can no longer be edited.');
-        setEditing(false);
-        void detailQuery.refetch();
-        showToast('This report can no longer be edited.', 'error');
-        return;
-      }
-      if (err instanceof ApiError && err.status === 404) {
-        leaveNotFound();
-        return;
-      }
-      if (err instanceof ApiError && err.status === 400) {
-        setEditError(toUserErrorMessage(err, 'Check your message and try again.'));
-        return;
-      }
-      showToast(toUserErrorMessage(err, "Couldn't update report"), 'error');
-    }
-  };
-
-  const sendComment = async () => {
-    if (!feedbackId || !editable) return;
-    setCommentError(null);
-    const trimmed = commentBody.trim();
-    if (!trimmed) {
-      setCommentError('Enter a comment.');
-      return;
-    }
-    if (trimmed.length > 2000) {
-      setCommentError('Comment must be at most 2000 characters.');
-      return;
-    }
-    try {
-      await commentMutation.mutateAsync({ body: trimmed });
-      setCommentBody('');
-      showToast('Comment added', 'success');
-    } catch (err) {
-      logAppError('feedback.comment', err, { feedbackId });
-      if (isLikelyOfflineError(err)) {
-        setCommentError('Connect to the internet to send a comment.');
-        return;
-      }
-      if (err instanceof ApiError && err.status === 409) {
-        setCommentError('This report can no longer accept comments.');
-        void detailQuery.refetch();
-        showToast('This report can no longer accept comments.', 'error');
-        return;
-      }
-      if (err instanceof ApiError && err.status === 404) {
-        leaveNotFound();
-        return;
-      }
-      if (err instanceof ApiError && err.status === 400) {
-        setCommentError(toUserErrorMessage(err, 'Check your comment and try again.'));
-        return;
-      }
-      showToast(toUserErrorMessage(err, "Couldn't add comment"), 'error');
-    }
-  };
-
-  const confirmDelete = () => {
-    if (!feedbackId) return;
-    Alert.alert('Delete report?', 'This removes the report from your list. You cannot undo this.', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Delete',
-        style: 'destructive',
-        onPress: () => {
-          deleteMutation.mutate(feedbackId, {
-            onError: (err) => {
-              logAppError('feedback.delete', err, { feedbackId });
-              if (err instanceof ApiError && err.status === 404) {
-                leaveNotFound();
-                return;
-              }
-              showToast(toUserErrorMessage(err, "Couldn't delete report"), 'error');
-            },
-            onSuccess: () => {
-              showToast('Report deleted', 'success');
-              router.replace('/feedback');
-            },
-          });
-        },
-      },
-    ]);
-  };
-
-  const addRetryImage = async () => {
-    if (!detail || !editable) return;
-    const remaining = FEEDBACK_ATTACHMENT_MAX_COUNT - (detail.attachments?.length ?? 0);
-    if (remaining <= 0) {
-      showToast('You can attach up to 3 screenshots per report.', 'error');
-      return;
-    }
-    try {
-      const picked = await pickFeedbackImageFromLibrary();
-      setPhotoPermissionDenied(false);
-      if (!picked) return;
-      setRetryImages((prev) => {
-        if (prev.length >= remaining) {
-          showToast('You can attach up to 3 screenshots per report.', 'error');
-          return prev;
-        }
-        return [...prev, picked];
-      });
-    } catch (err) {
-      logAppError('feedback.pickImage', err);
-      if (err instanceof FeedbackAttachmentError && err.code === 'permission-denied') {
-        setPhotoPermissionDenied(true);
-        return;
-      }
-      showToast(toUserFeedbackAttachmentMessage(err), 'error');
-    }
-  };
-
-  const uploadRetries = async () => {
-    if (!feedbackId || retryImages.length === 0) return;
-    setUploadingRetry(true);
-    const remaining: LocalFeedbackImage[] = [];
-    let failures = 0;
-    for (const image of retryImages) {
-      try {
-        await uploadFeedbackAttachment(feedbackId, image);
-      } catch (err) {
-        failures += 1;
-        remaining.push(image);
-        logAppError('feedback.retryUpload', err, { feedbackId, localId: image.localId });
-        if (err instanceof ApiError && err.status === 409) {
-          showToast('You can attach up to 3 screenshots per report.', 'error');
-          break;
-        }
-      }
-    }
-    setRetryImages(remaining);
-    setUploadingRetry(false);
-    void detailQuery.refetch();
-    if (failures === 0) {
-      showToast('Screenshots uploaded', 'success');
-    } else {
-      showToast('Some screenshots failed to upload. You can try again.', 'error');
-    }
-  };
+  const startEdit = startEditFeedback.bind(null, depsRef);
+  const saveEdit = saveEditFeedback.bind(null, depsRef);
+  const sendComment = sendFeedbackComment.bind(null, depsRef);
+  const confirmDelete = confirmDeleteFeedback.bind(null, depsRef);
+  const addRetryImage = addRetryFeedbackImage.bind(null, depsRef);
+  const uploadRetries = uploadRetryFeedbackImages.bind(null, depsRef);
 
   if (!feedbackId) {
     return (

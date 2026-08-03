@@ -1,3 +1,4 @@
+import * as Crypto from 'expo-crypto';
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
 import * as ImagePicker from 'expo-image-picker';
 
@@ -79,6 +80,27 @@ type PutAttemptSummary = {
   networkError?: string;
 };
 
+/** Signed PUT targets from our API — reject anything outside Google Cloud Storage. */
+export function assertAllowedSignedUploadUrl(uploadUrl: string): void {
+  let parsed: URL;
+  try {
+    parsed = new URL(uploadUrl);
+  } catch {
+    throw new FeedbackAttachmentError('unexpected', 'Invalid upload URL. Please try again.');
+  }
+  if (parsed.protocol !== 'https:') {
+    throw new FeedbackAttachmentError('unexpected', 'Invalid upload URL. Please try again.');
+  }
+  const host = parsed.hostname.toLowerCase();
+  const allowed =
+    host === 'storage.googleapis.com' ||
+    host.endsWith('.storage.googleapis.com') ||
+    host === 'storage.cloud.google.com';
+  if (!allowed) {
+    throw new FeedbackAttachmentError('unexpected', 'Invalid upload URL. Please try again.');
+  }
+}
+
 async function attemptSignedPut(
   uploadUrl: string,
   body: Blob | ArrayBuffer,
@@ -86,6 +108,7 @@ async function attemptSignedPut(
   attempt: string,
   bodyType: 'blob' | 'arrayBuffer'
 ): Promise<{ response?: Response; summary: PutAttemptSummary }> {
+  assertAllowedSignedUploadUrl(uploadUrl);
   try {
     const response = await fetch(uploadUrl, { method: 'PUT', headers, body });
     return {
@@ -221,7 +244,7 @@ export async function pickFeedbackImageFromLibrary(): Promise<LocalFeedbackImage
   if (!uri) return null;
 
   return {
-    localId: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+    localId: Crypto.randomUUID(),
     uri,
     contentType: 'image/jpeg',
   };

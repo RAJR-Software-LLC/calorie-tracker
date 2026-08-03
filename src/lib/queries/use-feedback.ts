@@ -24,6 +24,22 @@ import { queryKeys } from './keys';
 const FEEDBACK_STALE_TIME = 60_000;
 const FEEDBACK_GC_TIME = 10 * 60_000;
 
+/** Matches list caches only — `feedbackRoot` also prefixes detail queries. */
+function feedbackListQueryFilter(uid: string | undefined) {
+  return {
+    queryKey: queryKeys.feedbackRoot(uid),
+    predicate: (query: { queryKey: readonly unknown[] }) => query.queryKey[2] === 'list',
+  };
+}
+
+function removeIdFromFeedbackList(
+  old: FeedbackDocument[] | undefined,
+  feedbackId: string
+): FeedbackDocument[] | undefined {
+  if (!Array.isArray(old)) return old;
+  return old.filter((item) => item.id !== feedbackId);
+}
+
 export function useFeedbackList(status?: FeedbackStatus | 'all') {
   const { user } = useAuth();
   const filter: FeedbackStatus | undefined = status && status !== 'all' ? status : undefined;
@@ -97,10 +113,7 @@ export function useDeleteFeedbackMutation() {
   return useMutation({
     mutationFn: (feedbackId: string) => deleteFeedback(feedbackId),
     onSuccess: (_data, feedbackId) => {
-      queryClient.setQueriesData<FeedbackDocument[]>(
-        { queryKey: queryKeys.feedbackRoot(user?.uid) },
-        (old) => (old ? old.filter((item) => item.id !== feedbackId) : old)
-      );
+      removeFeedbackFromListCaches(queryClient, user?.uid, feedbackId);
       queryClient.removeQueries({
         queryKey: queryKeys.feedbackDetail(user?.uid, feedbackId),
       });
@@ -128,9 +141,8 @@ export function removeFeedbackFromListCaches(
   uid: string | undefined,
   feedbackId: string
 ): void {
-  queryClient.setQueriesData<FeedbackDocument[]>(
-    { queryKey: queryKeys.feedbackRoot(uid) },
-    (old) => (old ? old.filter((item) => item.id !== feedbackId) : old)
+  queryClient.setQueriesData<FeedbackDocument[]>(feedbackListQueryFilter(uid), (old) =>
+    removeIdFromFeedbackList(old, feedbackId)
   );
 }
 

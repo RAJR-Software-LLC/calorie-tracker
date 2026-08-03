@@ -3,6 +3,7 @@ import * as ImageManipulator from 'expo-image-manipulator';
 
 import { ApiError } from '@/lib/api/errors';
 import {
+  assertAllowedSignedUploadUrl,
   FeedbackAttachmentError,
   isFeedbackMediaLibraryPermissionDenied,
   isLikelyOfflineError,
@@ -121,7 +122,7 @@ describe('uploadFeedbackAttachment', () => {
 
   it('runs upload-url → PUT → complete with server storagePath', async () => {
     api.postFeedbackAttachmentUploadUrl.mockResolvedValue({
-      uploadUrl: 'https://signed.example/put',
+      uploadUrl: 'https://storage.googleapis.com/bucket/object?X-Goog-Signature=abc',
       storagePath: 'feedback-attachments/u1/fb-1/abc.jpg',
       contentType: 'image/jpeg',
       expiresAt: '2099-01-01T00:00:00.000Z',
@@ -175,7 +176,7 @@ describe('uploadFeedbackAttachments', () => {
         throw new ApiError(400, 'bad image');
       }
       return {
-        uploadUrl: 'https://signed.example/put',
+        uploadUrl: 'https://storage.googleapis.com/bucket/object?X-Goog-Signature=abc',
         storagePath: `feedback-attachments/u1/fb-1/${call}.jpg`,
         contentType: 'image/jpeg',
         expiresAt: '2099-01-01T00:00:00.000Z',
@@ -232,5 +233,19 @@ describe('helpers', () => {
     expect(isLikelyOfflineError(new TypeError('Network request failed'))).toBe(true);
     expect(isLikelyOfflineError(new Error('offline'))).toBe(true);
     expect(isLikelyOfflineError(new Error('validation'))).toBe(false);
+  });
+
+  it('allows only https Google Cloud Storage upload hosts', () => {
+    expect(() =>
+      assertAllowedSignedUploadUrl(
+        'https://storage.googleapis.com/bucket/object?X-Goog-Signature=abc'
+      )
+    ).not.toThrow();
+    expect(() => assertAllowedSignedUploadUrl('https://evil.example/put')).toThrow(
+      FeedbackAttachmentError
+    );
+    expect(() => assertAllowedSignedUploadUrl('http://storage.googleapis.com/bucket/x')).toThrow(
+      FeedbackAttachmentError
+    );
   });
 });

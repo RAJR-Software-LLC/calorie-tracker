@@ -50,7 +50,7 @@ export function FeedbackAttachmentGallery({
         );
       })}
       {localUris?.map((uri, index) => (
-        <View key={`local-${uri}-${index}`} className="relative">
+        <View key={uri} className="relative">
           <Image
             source={{ uri }}
             accessibilityLabel="Selected screenshot"
