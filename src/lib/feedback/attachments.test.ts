@@ -235,15 +235,18 @@ describe('helpers', () => {
     expect(isLikelyOfflineError(new Error('validation'))).toBe(false);
   });
 
-  it('allows only https Google Cloud Storage upload hosts', () => {
+  it('allows only https path-style storage.googleapis.com upload URLs', () => {
     expect(
       parseAllowedSignedUploadUrl(
         'https://storage.googleapis.com/bucket/object?X-Goog-Signature=abc'
-      ).hostname
-    ).toBe('storage.googleapis.com');
+      )
+    ).toEqual({ pathname: '/bucket/object', search: '?X-Goog-Signature=abc' });
     expect(() => parseAllowedSignedUploadUrl('https://evil.example/put')).toThrow(
       FeedbackAttachmentError
     );
+    expect(() =>
+      parseAllowedSignedUploadUrl('https://bucket.storage.googleapis.com/object')
+    ).toThrow(FeedbackAttachmentError);
     expect(() => parseAllowedSignedUploadUrl('http://storage.googleapis.com/bucket/x')).toThrow(
       FeedbackAttachmentError
     );

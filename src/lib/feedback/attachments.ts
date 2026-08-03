@@ -80,8 +80,13 @@ type PutAttemptSummary = {
   networkError?: string;
 };
 
-/** Signed PUT targets from our API — reject anything outside Google Cloud Storage. */
-export function parseAllowedSignedUploadUrl(uploadUrl: string): URL {
+const GCS_SIGNED_PUT_HOST = 'storage.googleapis.com' as const;
+
+/** Signed PUT targets from our API — only path-style `storage.googleapis.com` URLs. */
+export function parseAllowedSignedUploadUrl(uploadUrl: string): {
+  pathname: string;
+  search: string;
+} {
   let parsed: URL;
   try {
     parsed = new URL(uploadUrl);
@@ -91,15 +96,10 @@ export function parseAllowedSignedUploadUrl(uploadUrl: string): URL {
   if (parsed.protocol !== 'https:') {
     throw new FeedbackAttachmentError('unexpected', 'Invalid upload URL. Please try again.');
   }
-  const host = parsed.hostname.toLowerCase();
-  const allowed =
-    host === 'storage.googleapis.com' ||
-    host.endsWith('.storage.googleapis.com') ||
-    host === 'storage.cloud.google.com';
-  if (!allowed) {
+  if (parsed.hostname.toLowerCase() !== GCS_SIGNED_PUT_HOST) {
     throw new FeedbackAttachmentError('unexpected', 'Invalid upload URL. Please try again.');
   }
-  return parsed;
+  return { pathname: parsed.pathname, search: parsed.search };
 }
 
 async function attemptSignedPut(
@@ -109,12 +109,13 @@ async function attemptSignedPut(
   attempt: string,
   bodyType: 'blob' | 'arrayBuffer'
 ): Promise<{ response?: Response; summary: PutAttemptSummary }> {
-  const allowed = parseAllowedSignedUploadUrl(uploadUrl);
-  // Host already allowlisted to Google Cloud Storage; rebuild URL from parsed parts.
-  const safeUploadUrl = `https://${allowed.hostname}${allowed.pathname}${allowed.search}`;
+  const { pathname, search } = parseAllowedSignedUploadUrl(uploadUrl);
   try {
-    // nosemgrep: javascript.lang.security.audit.network.ssrf - upload URL host allowlisted above
-    const response = await fetch(safeUploadUrl, { method: 'PUT', headers, body });
+    const response = await fetch(`https://${GCS_SIGNED_PUT_HOST}${pathname}${search}`, {
+      method: 'PUT',
+      headers,
+      body,
+    });
     return {
       response,
       summary: {
