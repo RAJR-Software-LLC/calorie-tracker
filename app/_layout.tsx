@@ -72,7 +72,12 @@ function RootLayoutNav() {
   const { user, loading } = useAuth();
   const segments = useSegments();
   const router = useRouter();
-  const { data: me, isLoading: meLoading, isError: meError, isFetched: meFetched } = useMe({
+  const {
+    data: me,
+    isLoading: meLoading,
+    isError: meError,
+    isFetched: meFetched,
+  } = useMe({
     enabled: !!user,
   });
   useNotificationTapRouter(user, router);

@@ -1,8 +1,4 @@
-import {
-  buildApplyBody,
-  buildEstimateBody,
-  getMissingCalculatorFields,
-} from './inputs';
+import { buildApplyBody, buildEstimateBody, getMissingCalculatorFields } from './inputs';
 
 describe('getMissingCalculatorFields', () => {
   it('lists all fields when profile is null', () => {

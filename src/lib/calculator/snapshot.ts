@@ -69,7 +69,5 @@ export function isCustomCalorieOverride(me: GetMeResponse | null | undefined): b
 /** Users who still need the first-run goals onboarding. */
 export function needsGoalsOnboarding(me: GetMeResponse | null | undefined): boolean {
   if (!me) return false;
-  return (
-    me.calorieCalculation == null && me.calorieGoal == null && me.maintenanceCalories == null
-  );
+  return me.calorieCalculation == null && me.calorieGoal == null && me.maintenanceCalories == null;
 }

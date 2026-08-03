@@ -92,7 +92,12 @@ export default function GoalsOnboardingScreen() {
                   onSelect={flow.setSelectedFormulaId}
                 />
               ))}
-              <Button variant="outline" onPress={() => setStep('profile')}>
+              <Button
+                variant="outline"
+                onPress={() => {
+                  setStep('profile');
+                }}
+              >
                 Edit stats
               </Button>
             </CardContent>

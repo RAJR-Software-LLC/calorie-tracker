@@ -19,7 +19,9 @@ export function FormulaExplanation({ steps, citations }: FormulaExplanationProps
   return (
     <View className="rounded-xl border border-border dark:border-darkBorder">
       <Pressable
-        onPress={() => setOpen((v) => !v)}
+        onPress={() => {
+          setOpen((v) => !v);
+        }}
         accessibilityRole="button"
         accessibilityState={{ expanded: open }}
         className="flex-row items-center justify-between px-4 py-3 active:opacity-80"

@@ -13,11 +13,7 @@ jest.mock('@/lib/api', () => ({
   postCalculatorEstimate: jest.fn(),
 }));
 
-import {
-  getCalculatorFormulas,
-  getMe,
-  postCalculatorApply,
-} from '@/lib/api';
+import { getCalculatorFormulas, getMe, postCalculatorApply } from '@/lib/api';
 import { queryKeys } from '@/lib/queries/keys';
 import { useCalculatorApply, useCalculatorFormulas } from '@/lib/queries/use-calculator';
 

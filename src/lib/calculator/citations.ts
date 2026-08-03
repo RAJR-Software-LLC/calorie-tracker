@@ -1,7 +1,12 @@
 import { Linking } from 'react-native';
 
+function isLocalDevHttpHost(hostname: string): boolean {
+  const host = hostname.toLowerCase();
+  return host === 'localhost' || host === '127.0.0.1' || host === '[::1]' || host === '::1';
+}
+
 /**
- * Open a citation DOI/URL. Only https (and http for local/dev DOIs rewritten) are allowed.
+ * Open a citation DOI/URL. Only https is allowed in production; http is limited to local/dev hosts.
  */
 export async function openCitationUrl(doiOrUrl: string): Promise<boolean> {
   const trimmed = doiOrUrl.trim();
@@ -21,7 +26,9 @@ export async function openCitationUrl(doiOrUrl: string): Promise<boolean> {
     return false;
   }
 
-  if (url.protocol !== 'https:' && url.protocol !== 'http:') {
+  const isHttps = url.protocol === 'https:';
+  const isLocalHttp = url.protocol === 'http:' && isLocalDevHttpHost(url.hostname);
+  if (!isHttps && !isLocalHttp) {
     return false;
   }
 

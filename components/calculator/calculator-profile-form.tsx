@@ -46,7 +46,9 @@ export function CalculatorProfileForm({
           placeholder="e.g. 30"
           value={value.age}
           editable={!disabled}
-          onChangeText={(age) => patch({ age })}
+          onChangeText={(age) => {
+            patch({ age });
+          }}
         />
       </View>
 
@@ -59,7 +61,9 @@ export function CalculatorProfileForm({
               <Pressable
                 key={sex}
                 disabled={disabled}
-                onPress={() => patch({ sex: sex as Sex })}
+                onPress={() => {
+                  patch({ sex: sex as Sex });
+                }}
                 accessibilityRole="button"
                 accessibilityState={{ selected }}
                 className={`flex-1 rounded-lg border py-2.5 ${
@@ -93,7 +97,9 @@ export function CalculatorProfileForm({
           <Label>Height</Label>
           <SegmentedControl
             value={value.heightUnit}
-            onChange={(heightUnit) => patch({ heightUnit })}
+            onChange={(heightUnit) => {
+              patch({ heightUnit });
+            }}
             options={[
               { value: 'cm', label: 'cm' },
               { value: 'ft_in', label: 'ft/in' },
@@ -107,7 +113,9 @@ export function CalculatorProfileForm({
             placeholder="e.g. 170"
             value={value.heightCm}
             editable={!disabled}
-            onChangeText={(heightCm) => patch({ heightCm })}
+            onChangeText={(heightCm) => {
+              patch({ heightCm });
+            }}
           />
         ) : (
           <View className="flex-row gap-2">
@@ -117,7 +125,9 @@ export function CalculatorProfileForm({
                 placeholder="ft"
                 value={value.heightFeet}
                 editable={!disabled}
-                onChangeText={(heightFeet) => patch({ heightFeet })}
+                onChangeText={(heightFeet) => {
+                  patch({ heightFeet });
+                }}
               />
             </View>
             <View className="flex-1">
@@ -126,7 +136,9 @@ export function CalculatorProfileForm({
                 placeholder="in"
                 value={value.heightInches}
                 editable={!disabled}
-                onChangeText={(heightInches) => patch({ heightInches })}
+                onChangeText={(heightInches) => {
+                  patch({ heightInches });
+                }}
               />
             </View>
           </View>
@@ -138,7 +150,9 @@ export function CalculatorProfileForm({
           <Label>Weight</Label>
           <SegmentedControl
             value={value.weightUnit}
-            onChange={(weightUnit) => patch({ weightUnit })}
+            onChange={(weightUnit) => {
+              patch({ weightUnit });
+            }}
             options={[
               { value: 'kg', label: 'kg' },
               { value: 'lb', label: 'lb' },
@@ -151,7 +165,9 @@ export function CalculatorProfileForm({
           placeholder={value.weightUnit === 'kg' ? 'e.g. 70' : 'e.g. 154'}
           value={value.weight}
           editable={!disabled}
-          onChangeText={(weight) => patch({ weight })}
+          onChangeText={(weight) => {
+            patch({ weight });
+          }}
         />
       </View>
 
@@ -164,7 +180,9 @@ export function CalculatorProfileForm({
               <Pressable
                 key={option.value}
                 disabled={disabled}
-                onPress={() => patch({ activityLevel: option.value })}
+                onPress={() => {
+                  patch({ activityLevel: option.value });
+                }}
                 className={`rounded-lg border px-3 py-2.5 ${
                   selected
                     ? 'border-primary bg-primary/5 dark:border-darkPrimary dark:bg-darkPrimary/10'
@@ -192,7 +210,9 @@ export function CalculatorProfileForm({
             <Label>Weight goal</Label>
             <SegmentedControl
               value={value.goalType}
-              onChange={(goalType) => patch({ goalType: goalType as GoalType })}
+              onChange={(goalType) => {
+                patch({ goalType: goalType as GoalType });
+              }}
               options={GOAL_OPTIONS}
             />
           </View>
@@ -200,9 +220,9 @@ export function CalculatorProfileForm({
             <Label>Calorie goal mode</Label>
             <SegmentedControl
               value={value.calorieGoalMode}
-              onChange={(calorieGoalMode) =>
-                patch({ calorieGoalMode: calorieGoalMode as 'single' | 'range' })
-              }
+              onChange={(calorieGoalMode) => {
+                patch({ calorieGoalMode: calorieGoalMode as 'single' | 'range' });
+              }}
               options={[
                 { value: 'single', label: 'Single' },
                 { value: 'range', label: 'Range' },

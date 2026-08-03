@@ -6,13 +6,13 @@ Backend contract: sibling repo `calorie-tracker-backend/docs/calculator.md` and 
 
 ## Ownership
 
-| Concern | Owner |
-| --- | --- |
-| BMR, TDEE, activity multipliers, recommended goals | Backend `POST …/estimate` and `POST …/apply` |
-| Formula catalog + citations | `GET …/formulas` |
-| Persist snapshot + goals | Apply only (`calorieCalculation`, `preferredFormulaId`, `maintenanceCalories`, `calorieGoal`, `goalType`) |
-| Display helpers (units, goal formatting) | Client (`profile-measurements`, `calorie-goal`, display-only `calories.ts`) |
-| Manual goal override | Optional `PATCH /me` (`calorieGoal` / `maintenanceCalories` / `goalType` only) |
+| Concern                                            | Owner                                                                                                     |
+| -------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| BMR, TDEE, activity multipliers, recommended goals | Backend `POST …/estimate` and `POST …/apply`                                                              |
+| Formula catalog + citations                        | `GET …/formulas`                                                                                          |
+| Persist snapshot + goals                           | Apply only (`calorieCalculation`, `preferredFormulaId`, `maintenanceCalories`, `calorieGoal`, `goalType`) |
+| Display helpers (units, goal formatting)           | Client (`profile-measurements`, `calorie-goal`, display-only `calories.ts`)                               |
+| Manual goal override                               | Optional `PATCH /me` (`calorieGoal` / `maintenanceCalories` / `goalType` only)                            |
 
 **Do not** send `calorieCalculation` or `preferredFormulaId` on `PATCH /me` (API rejects unknown/strict keys).
 
@@ -20,24 +20,24 @@ Backend contract: sibling repo `calorie-tracker-backend/docs/calculator.md` and 
 
 Base: `/api/v1/me/calculator`
 
-| Method | Path | Purpose |
-| --- | --- | --- |
-| `GET` | `/formulas` | Catalog + `defaultFormulaId` (`mifflin_st_jeor`) |
+| Method | Path        | Purpose                                                |
+| ------ | ----------- | ------------------------------------------------------ |
+| `GET`  | `/formulas` | Catalog + `defaultFormulaId` (`mifflin_st_jeor`)       |
 | `POST` | `/estimate` | Preview (no write). Omit `formulaId` for all formulas. |
-| `POST` | `/apply` | Persist snapshot and sync maintenance/goal |
+| `POST` | `/apply`    | Persist snapshot and sync maintenance/goal             |
 
 After apply, refetch `GET /me` (ETag changes) via `useCalculatorApply` → `updateMeCache`.
 
 ## Client modules
 
-| Path | Role |
-| --- | --- |
-| [`src/lib/api/v1.ts`](../src/lib/api/v1.ts) | `getCalculatorFormulas`, `postCalculatorEstimate`, `postCalculatorApply` (+ 429 retry) |
-| [`src/lib/queries/use-calculator.ts`](../src/lib/queries/use-calculator.ts) | TanStack Query hooks |
-| [`src/lib/calculator/`](../src/lib/calculator/) | Stale/override detection, missing fields, body builders, safe citation links |
-| [`components/calculator/`](../components/calculator/) | Catalog, estimate cards, warnings, explanations, banners, profile form |
-| [`app/(tabs)/calculator.tsx`](../app/(tabs)/calculator.tsx) | Settings / change-formula UX |
-| [`app/(onboarding)/goals.tsx`](../app/(onboarding)/goals.tsx) | First-run goals flow |
+| Path                                                                        | Role                                                                                   |
+| --------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| [`src/lib/api/v1.ts`](../src/lib/api/v1.ts)                                 | `getCalculatorFormulas`, `postCalculatorEstimate`, `postCalculatorApply` (+ 429 retry) |
+| [`src/lib/queries/use-calculator.ts`](../src/lib/queries/use-calculator.ts) | TanStack Query hooks                                                                   |
+| [`src/lib/calculator/`](../src/lib/calculator/)                             | Stale/override detection, missing fields, body builders, safe citation links           |
+| [`components/calculator/`](../components/calculator/)                       | Catalog, estimate cards, warnings, explanations, banners, profile form                 |
+| [`app/(tabs)/calculator.tsx`](<../app/(tabs)/calculator.tsx>)               | Settings / change-formula UX                                                           |
+| [`app/(onboarding)/goals.tsx`](<../app/(onboarding)/goals.tsx>)             | First-run goals flow                                                                   |
 
 ## Caching
 
@@ -64,13 +64,13 @@ Height/weight on estimate/apply overrides and `PATCH /me` use the same shapes as
 
 ## Errors
 
-| Status | Shape / behavior |
-| --- | --- |
-| `400` validation | `{ error: 'Validation failed', details }` |
-| `400` incomplete | `{ error: 'Incomplete calculator inputs', missingFields }` → field list in UI |
-| `400` unknown formula | Fall back to catalog default selection |
-| `401` | Re-auth |
-| `429` | Honor `Retry-After` via `withRetryAfter429` |
+| Status                | Shape / behavior                                                              |
+| --------------------- | ----------------------------------------------------------------------------- |
+| `400` validation      | `{ error: 'Validation failed', details }`                                     |
+| `400` incomplete      | `{ error: 'Incomplete calculator inputs', missingFields }` → field list in UI |
+| `400` unknown formula | Fall back to catalog default selection                                        |
+| `401`                 | Re-auth                                                                       |
+| `429`                 | Honor `Retry-After` via `withRetryAfter429`                                   |
 
 Soft `warnings` on estimates are **non-blocking**. Apply stays enabled. Future legal ack gates can plug into [`CalculatorWarnings`](../components/calculator/calculator-warnings.tsx) without treating warnings as hard errors by default.
 

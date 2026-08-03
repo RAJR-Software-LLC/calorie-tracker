@@ -62,7 +62,7 @@ Deep links use the scheme from `app.config.js` (`calorietracker`).
 | New stack screen      | Under `app/` with a `_layout.tsx` group as needed                                                                                                     |
 | API call              | Add a function in `src/lib/api/v1.ts` using `apiRequest` and types from `@/types`                                                                     |
 | Habits / water        | Types in `types/index.d.ts`; UI in Settings + Dashboard; see [`docs/water-and-habits.md`](water-and-habits.md)                                        |
-| Calorie calculator    | Backend-owned formulas via `/me/calculator/*`; UI in Calculator tab + onboarding; see [`docs/calculator.md`](calculator.md)                          |
+| Calorie calculator    | Backend-owned formulas via `/me/calculator/*`; UI in Calculator tab + onboarding; see [`docs/calculator.md`](calculator.md)                           |
 | Saved foods           | API in `src/lib/api/v1.ts`; utils in `src/lib/utils/saved-items.ts`; Settings modal + dashboard combobox; see [`docs/saved-foods.md`](saved-foods.md) |
 | In-app feedback       | Settings → `app/feedback.tsx` (+ `feedback-new`, `feedback-detail`); API in `src/lib/api/v1.ts`; see [`docs/feedback.md`](feedback.md)                |
 | Business logic        | Prefer `src/lib/utils/` or feature folders under `src/`                                                                                               |

@@ -645,9 +645,7 @@ export default function SettingsScreen() {
                 <>
                   <SettingsDivider />
                   <View className="py-3">
-                    <StaleSnapshotBanner
-                      onRecalculate={() => router.push('/(tabs)/calculator')}
-                    />
+                    <StaleSnapshotBanner onRecalculate={() => router.push('/(tabs)/calculator')} />
                   </View>
                 </>
               ) : null}
@@ -655,9 +653,7 @@ export default function SettingsScreen() {
                 <>
                   <SettingsDivider />
                   <View className="py-3">
-                    <CustomOverrideBanner
-                      onRecalculate={() => router.push('/(tabs)/calculator')}
-                    />
+                    <CustomOverrideBanner onRecalculate={() => router.push('/(tabs)/calculator')} />
                   </View>
                 </>
               ) : null}

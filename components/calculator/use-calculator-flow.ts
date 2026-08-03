@@ -155,19 +155,16 @@ export function useCalculatorFlow(options?: { persistProfileBeforeEstimate?: boo
           setEstimateError(toUserErrorMessage(err, 'Complete your profile to estimate calories.'));
         } else {
           setEstimateError(
-            toUserErrorMessage(err, 'Could not estimate calories. Check your connection and try again.')
+            toUserErrorMessage(
+              err,
+              'Could not estimate calories. Check your connection and try again.'
+            )
           );
         }
         return null;
       }
     },
-    [
-      form,
-      persistProfileBeforeEstimate,
-      estimateMutation,
-      selectedFormulaId,
-      user?.uid,
-    ]
+    [form, persistProfileBeforeEstimate, estimateMutation, selectedFormulaId, user?.uid]
   );
 
   const runApply = useCallback(async () => {

@@ -7,11 +7,7 @@ jest.mock('./retry-after-429', () => ({
 }));
 
 import { apiRequest } from './client';
-import {
-  getCalculatorFormulas,
-  postCalculatorApply,
-  postCalculatorEstimate,
-} from './v1';
+import { getCalculatorFormulas, postCalculatorApply, postCalculatorEstimate } from './v1';
 
 const mockedRequest = apiRequest as jest.MockedFunction<typeof apiRequest>;
 
@@ -27,7 +23,11 @@ describe('calculator API clients', () => {
   });
 
   it('POST estimate', async () => {
-    mockedRequest.mockResolvedValue({ defaultFormulaId: 'mifflin_st_jeor', inputs: {}, results: [] });
+    mockedRequest.mockResolvedValue({
+      defaultFormulaId: 'mifflin_st_jeor',
+      inputs: {},
+      results: [],
+    });
     await postCalculatorEstimate({ goalType: 'lose' });
     expect(mockedRequest).toHaveBeenCalledWith('/me/calculator/estimate', {
       method: 'POST',

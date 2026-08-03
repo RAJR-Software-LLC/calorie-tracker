@@ -74,7 +74,8 @@ export function getCalculatorMissingFields(err: unknown): string[] | null {
   if (typeof body !== 'object' || body === null || !('missingFields' in body)) return null;
   const fields = (body as { missingFields?: unknown }).missingFields;
   if (!Array.isArray(fields) || fields.length === 0) return null;
-  return fields.filter((f): f is string => typeof f === 'string');
+  const strings = fields.filter((f): f is string => typeof f === 'string');
+  return strings.length > 0 ? strings : null;
 }
 
 function apiErrorUserMessage(err: ApiError): string {

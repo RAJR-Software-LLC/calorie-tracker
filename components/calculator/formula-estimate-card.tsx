@@ -14,7 +14,9 @@ export function FormulaEstimateCard({ estimate, selected, onSelect }: FormulaEst
 
   return (
     <Pressable
-      onPress={() => onSelect(estimate.formulaId)}
+      onPress={() => {
+        onSelect(estimate.formulaId);
+      }}
       accessibilityRole="button"
       accessibilityState={{ selected }}
       className={`rounded-xl border px-4 py-3 active:opacity-90 ${

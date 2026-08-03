@@ -43,11 +43,7 @@ describe('FormulaCatalogList', () => {
   it('shows three formulas and Recommended on Mifflin', () => {
     const onSelect = jest.fn();
     render(
-      <FormulaCatalogList
-        formulas={formulas}
-        selectedId="mifflin_st_jeor"
-        onSelect={onSelect}
-      />
+      <FormulaCatalogList formulas={formulas} selectedId="mifflin_st_jeor" onSelect={onSelect} />
     );
     expect(screen.getByText('Mifflin-St Jeor')).toBeTruthy();
     expect(screen.getByText('Harris-Benedict')).toBeTruthy();

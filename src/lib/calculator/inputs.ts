@@ -11,10 +11,7 @@ import type {
   WeightUnit,
 } from '@/types';
 
-import {
-  buildHeightPatch,
-  buildWeightPatch,
-} from '@/lib/utils/profile-measurements';
+import { buildHeightPatch, buildWeightPatch } from '@/lib/utils/profile-measurements';
 
 export const REQUIRED_CALCULATOR_INPUT_KEYS = [
   'age',
@@ -113,9 +110,10 @@ export function formValuesFromProfile(
   };
 }
 
-export function buildProfileOverridesFromForm(
-  form: CalculatorFormValues
-): { overrides: CalculatorProfileOverrides | null; errors: string[] } {
+export function buildProfileOverridesFromForm(form: CalculatorFormValues): {
+  overrides: CalculatorProfileOverrides | null;
+  errors: string[];
+} {
   const errors: string[] = [];
   const overrides: CalculatorProfileOverrides = {};
 

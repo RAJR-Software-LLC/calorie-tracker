@@ -16,7 +16,9 @@ export function FormulaCatalogList({ formulas, selectedId, onSelect }: FormulaCa
         return (
           <Pressable
             key={formula.id}
-            onPress={() => onSelect(formula.id)}
+            onPress={() => {
+              onSelect(formula.id);
+            }}
             accessibilityRole="button"
             accessibilityState={{ selected }}
             accessibilityLabel={`${formula.name}${formula.isRecommended ? ', recommended' : ''}`}

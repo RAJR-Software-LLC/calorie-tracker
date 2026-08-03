@@ -217,7 +217,12 @@ export default function CalculatorScreen() {
 
       <Card>
         <CardHeader>
-          <Pressable onPress={() => setShowManual((v) => !v)} accessibilityRole="button">
+          <Pressable
+            onPress={() => {
+              setShowManual((v) => !v);
+            }}
+            accessibilityRole="button"
+          >
             <CardTitle className="text-base">
               Manual goal override {showManual ? '▾' : '▸'}
             </CardTitle>
@@ -232,7 +237,9 @@ export default function CalculatorScreen() {
               {(['single', 'range'] as const).map((mode) => (
                 <Pressable
                   key={mode}
-                  onPress={() => setManualMode(mode)}
+                  onPress={() => {
+                    setManualMode(mode);
+                  }}
                   className={`flex-1 rounded-lg py-2.5 ${
                     manualMode === mode ? 'bg-primary dark:bg-darkPrimary' : ''
                   }`}

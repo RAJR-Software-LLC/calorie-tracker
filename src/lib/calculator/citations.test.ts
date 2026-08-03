@@ -28,4 +28,14 @@ describe('openCitationUrl', () => {
     await expect(openCitationUrl('javascript:alert(1)')).resolves.toBe(false);
     expect(Linking.openURL).not.toHaveBeenCalled();
   });
+
+  it('allows http only for local/dev hosts', async () => {
+    await expect(openCitationUrl('http://localhost:3000/doc')).resolves.toBe(true);
+    expect(Linking.openURL).toHaveBeenCalledWith('http://localhost:3000/doc');
+  });
+
+  it('rejects non-local http URLs', async () => {
+    await expect(openCitationUrl('http://example.com/doc')).resolves.toBe(false);
+    expect(Linking.openURL).not.toHaveBeenCalled();
+  });
 });

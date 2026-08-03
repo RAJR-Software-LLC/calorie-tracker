@@ -7,11 +7,7 @@ import {
   postCalculatorApply,
   postCalculatorEstimate,
 } from '@/lib/api';
-import type {
-  GetMeResponse,
-  PostCalculatorApplyBody,
-  PostCalculatorEstimateBody,
-} from '@/types';
+import type { GetMeResponse, PostCalculatorApplyBody, PostCalculatorEstimateBody } from '@/types';
 
 import { queryKeys } from './keys';
 import { updateMeCache } from './use-me';
