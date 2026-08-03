@@ -51,6 +51,32 @@ export interface PostProfilePhotoCompleteBody {
   storagePath: string;
 }
 
+/** Feedback screenshot upload content types (same set as profile photos). */
+export type FeedbackAttachmentContentType = 'image/jpeg' | 'image/png' | 'image/webp';
+
+export interface PostFeedbackAttachmentUploadUrlBody {
+  contentType: FeedbackAttachmentContentType;
+}
+
+export interface PostFeedbackAttachmentUploadUrlResponse {
+  uploadUrl: string;
+  storagePath: string;
+  contentType: FeedbackAttachmentContentType;
+  expiresAt: string;
+}
+
+export interface PostFeedbackAttachmentCompleteBody {
+  storagePath: string;
+}
+
+export interface PostFeedbackResponse {
+  id: string;
+}
+
+export interface PostFeedbackCommentResponse {
+  id: string;
+}
+
 export interface PostPushTokenResponse {
   id: string;
 }

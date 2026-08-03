@@ -82,6 +82,7 @@ jest.mock(
 jest.mock('@react-native-community/datetimepicker', () => 'DateTimePicker');
 
 jest.mock('expo-image-picker', () => ({
+  getMediaLibraryPermissionsAsync: jest.fn(async () => ({ status: 'undetermined' })),
   requestMediaLibraryPermissionsAsync: jest.fn(async () => ({ status: 'undetermined' })),
   launchImageLibraryAsync: jest.fn(async () => ({ canceled: true, assets: null })),
 }));

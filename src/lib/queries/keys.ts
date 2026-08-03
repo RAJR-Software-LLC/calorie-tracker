@@ -15,4 +15,10 @@ export const queryKeys = {
   family: (uid?: string, familyId?: string | null) => ['family', uid, familyId] as const,
   familySharedItems: (uid?: string, familyId?: string | null) =>
     ['familySharedItems', uid, familyId] as const,
+  /** Prefix for invalidating all feedback queries for a user. */
+  feedbackRoot: (uid?: string) => ['feedback', uid] as const,
+  feedbackList: (uid?: string, status: string = 'all') =>
+    ['feedback', uid, 'list', status] as const,
+  feedbackDetail: (uid?: string, feedbackId?: string) =>
+    ['feedback', uid, 'detail', feedbackId] as const,
 };

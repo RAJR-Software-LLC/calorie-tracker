@@ -64,5 +64,6 @@ Deep links use the scheme from `app.config.js` (`calorietracker`).
 | Habits / water        | Types in `types/index.d.ts`; UI in Settings + Dashboard; see [`docs/water-and-habits.md`](water-and-habits.md)                                        |
 | Calorie calculator    | Backend-owned formulas via `/me/calculator/*`; UI in Calculator tab + onboarding; see [`docs/calculator.md`](calculator.md)                          |
 | Saved foods           | API in `src/lib/api/v1.ts`; utils in `src/lib/utils/saved-items.ts`; Settings modal + dashboard combobox; see [`docs/saved-foods.md`](saved-foods.md) |
+| In-app feedback       | Settings → `app/feedback.tsx` (+ `feedback-new`, `feedback-detail`); API in `src/lib/api/v1.ts`; see [`docs/feedback.md`](feedback.md)                |
 | Business logic        | Prefer `src/lib/utils/` or feature folders under `src/`                                                                                               |
 | Styling               | Tailwind classes via `className`; extend theme in `tailwind.config.js`                                                                                |

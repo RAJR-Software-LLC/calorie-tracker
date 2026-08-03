@@ -2,6 +2,9 @@ import type {
   BulkExerciseResult,
   CalorieEntryWithId,
   CreateFamilyResponse,
+  FeedbackDetail,
+  FeedbackDocument,
+  FeedbackStatus,
   GetCalculatorFormulasResponse,
   GetExercisePresetsResponse,
   ExerciseSyncStateDocument,
@@ -12,6 +15,7 @@ import type {
   GetWaterDailyQuery,
   JoinFamilyResponse,
   PatchExerciseBody,
+  PatchFeedbackBody,
   PatchMeBody,
   PatchMeWaterBody,
   PostCalculatorApplyBody,
@@ -23,6 +27,13 @@ import type {
   PostExerciseBody,
   PostFamilyBody,
   PostFamilySharedItemBody,
+  PostFeedbackAttachmentCompleteBody,
+  PostFeedbackAttachmentUploadUrlBody,
+  PostFeedbackAttachmentUploadUrlResponse,
+  PostFeedbackBody,
+  PostFeedbackCommentBody,
+  PostFeedbackCommentResponse,
+  PostFeedbackResponse,
   PostJoinFamilyBody,
   PostProfilePhotoCompleteBody,
   PostProfilePhotoUploadUrlBody,
@@ -266,6 +277,68 @@ export async function postFamilySharedItem(
   body: PostFamilySharedItemBody
 ): Promise<{ id: string }> {
   return apiRequest<{ id: string }>(`/families/${encodeURIComponent(familyId)}/shared-items`, {
+    method: 'POST',
+    json: body,
+  });
+}
+
+export type FeedbackListQuery = {
+  status?: FeedbackStatus;
+};
+
+export async function getFeedbackList(query?: FeedbackListQuery): Promise<FeedbackDocument[]> {
+  const params = new URLSearchParams();
+  if (query?.status) params.set('status', query.status);
+  const qs = params.toString();
+  return apiRequest<FeedbackDocument[]>(qs ? `/me/feedback?${qs}` : '/me/feedback');
+}
+
+export async function postFeedback(body: PostFeedbackBody): Promise<PostFeedbackResponse> {
+  return apiRequest<PostFeedbackResponse>('/me/feedback', { method: 'POST', json: body });
+}
+
+export async function getFeedbackDetail(feedbackId: string): Promise<FeedbackDetail> {
+  return apiRequest<FeedbackDetail>(`/me/feedback/${encodeURIComponent(feedbackId)}`);
+}
+
+export async function patchFeedback(feedbackId: string, body: PatchFeedbackBody): Promise<void> {
+  await apiRequest<void>(`/me/feedback/${encodeURIComponent(feedbackId)}`, {
+    method: 'PATCH',
+    json: body,
+  });
+}
+
+export async function deleteFeedback(feedbackId: string): Promise<void> {
+  await apiRequest<void>(`/me/feedback/${encodeURIComponent(feedbackId)}`, {
+    method: 'DELETE',
+  });
+}
+
+export async function postFeedbackComment(
+  feedbackId: string,
+  body: PostFeedbackCommentBody
+): Promise<PostFeedbackCommentResponse> {
+  return apiRequest<PostFeedbackCommentResponse>(
+    `/me/feedback/${encodeURIComponent(feedbackId)}/comments`,
+    { method: 'POST', json: body }
+  );
+}
+
+export async function postFeedbackAttachmentUploadUrl(
+  feedbackId: string,
+  body: PostFeedbackAttachmentUploadUrlBody
+): Promise<PostFeedbackAttachmentUploadUrlResponse> {
+  return apiRequest<PostFeedbackAttachmentUploadUrlResponse>(
+    `/me/feedback/${encodeURIComponent(feedbackId)}/attachments/upload-url`,
+    { method: 'POST', json: body }
+  );
+}
+
+export async function postFeedbackAttachmentComplete(
+  feedbackId: string,
+  body: PostFeedbackAttachmentCompleteBody
+): Promise<void> {
+  await apiRequest<void>(`/me/feedback/${encodeURIComponent(feedbackId)}/attachments/complete`, {
     method: 'POST',
     json: body,
   });

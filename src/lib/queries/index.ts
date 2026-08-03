@@ -14,3 +14,12 @@ export { useExercise, useExerciseRange } from './use-exercise';
 export { useSavedItems } from './use-saved-items';
 export { useFamily } from './use-family';
 export { useFamilySharedItems } from './use-family-shared-items';
+export {
+  useCreateFeedbackMutation,
+  useDeleteFeedbackMutation,
+  useFeedbackDetail,
+  useFeedbackList,
+  useInvalidateFeedback,
+  usePatchFeedbackMutation,
+  usePostFeedbackCommentMutation,
+} from './use-feedback';

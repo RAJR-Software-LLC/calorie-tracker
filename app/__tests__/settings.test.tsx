@@ -183,6 +183,14 @@ describe('SettingsScreen profile editing', () => {
     expect(screen.getByText('Legal Disclosures')).toBeTruthy();
   });
 
+  it('navigates to Feedback from settings row', async () => {
+    renderSettings();
+
+    await waitFor(() => expect(mockGetMe).toHaveBeenCalled());
+    fireEvent.press(screen.getByText('Feedback'));
+    expect(mockPush).toHaveBeenCalledWith('/feedback');
+  });
+
   it('saves unit-aware anthropometric profile fields from settings form', async () => {
     renderSettings();
 
