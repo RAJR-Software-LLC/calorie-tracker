@@ -188,7 +188,8 @@ async function blobFromLocalUri(uri: string): Promise<Blob> {
   return res.blob();
 }
 
-async function putToSignedUploadUrl(
+/** Shared signed GCS PUT (profile photos + feedback attachments). */
+export async function putToSignedUploadUrl(
   uploadUrl: string,
   contentType: string,
   body: Blob

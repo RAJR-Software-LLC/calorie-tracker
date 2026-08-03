@@ -236,11 +236,8 @@ describe('helpers', () => {
   });
 
   it('allows only https path-style storage.googleapis.com upload URLs', () => {
-    expect(
-      parseAllowedSignedUploadUrl(
-        'https://storage.googleapis.com/bucket/object?X-Goog-Signature=abc'
-      )
-    ).toEqual({ pathname: '/bucket/object', search: '?X-Goog-Signature=abc' });
+    const url = 'https://storage.googleapis.com/bucket/object?X-Goog-Signature=abc';
+    expect(parseAllowedSignedUploadUrl(url)).toBe(url);
     expect(() => parseAllowedSignedUploadUrl('https://evil.example/put')).toThrow(
       FeedbackAttachmentError
     );

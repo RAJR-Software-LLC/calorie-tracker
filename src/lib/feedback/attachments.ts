@@ -5,6 +5,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { postFeedbackAttachmentComplete, postFeedbackAttachmentUploadUrl } from '@/lib/api';
 import { ApiError } from '@/lib/api/errors';
 import { toUserErrorMessage } from '@/lib/app-errors';
+import { putToSignedUploadUrl } from '@/lib/profile-photo/upload';
 import type { FeedbackAttachmentContentType } from '@/types';
 
 export const FEEDBACK_ATTACHMENT_MAX_BYTES = 5 * 1024 * 1024;
@@ -71,22 +72,10 @@ function uploadUrlFingerprint(uploadUrl: string): Record<string, unknown> {
   }
 }
 
-type PutAttemptSummary = {
-  attempt: string;
-  bodyType: 'blob' | 'arrayBuffer';
-  headers: string[];
-  ok: boolean;
-  status?: number;
-  networkError?: string;
-};
-
 const GCS_SIGNED_PUT_HOST = 'storage.googleapis.com' as const;
 
 /** Signed PUT targets from our API — only path-style `storage.googleapis.com` URLs. */
-export function parseAllowedSignedUploadUrl(uploadUrl: string): {
-  pathname: string;
-  search: string;
-} {
+export function parseAllowedSignedUploadUrl(uploadUrl: string): string {
   let parsed: URL;
   try {
     parsed = new URL(uploadUrl);
@@ -99,80 +88,7 @@ export function parseAllowedSignedUploadUrl(uploadUrl: string): {
   if (parsed.hostname.toLowerCase() !== GCS_SIGNED_PUT_HOST) {
     throw new FeedbackAttachmentError('unexpected', 'Invalid upload URL. Please try again.');
   }
-  return { pathname: parsed.pathname, search: parsed.search };
-}
-
-async function attemptSignedPut(
-  uploadUrl: string,
-  body: Blob | ArrayBuffer,
-  headers: Record<string, string>,
-  attempt: string,
-  bodyType: 'blob' | 'arrayBuffer'
-): Promise<{ response?: Response; summary: PutAttemptSummary }> {
-  const { pathname, search } = parseAllowedSignedUploadUrl(uploadUrl);
-  try {
-    const response = await fetch(`https://${GCS_SIGNED_PUT_HOST}${pathname}${search}`, {
-      method: 'PUT',
-      headers,
-      body,
-    });
-    return {
-      response,
-      summary: {
-        attempt,
-        bodyType,
-        headers: Object.keys(headers),
-        ok: response.ok,
-        status: response.status,
-      },
-    };
-  } catch (err) {
-    return {
-      response: undefined,
-      summary: {
-        attempt,
-        bodyType,
-        headers: Object.keys(headers),
-        ok: false,
-        networkError: err instanceof Error ? err.message : 'unknown-network-error',
-      },
-    };
-  }
-}
-
-async function putToSignedUploadUrl(
-  uploadUrl: string,
-  contentType: string,
-  body: Blob
-): Promise<{ response?: Response; attempts: PutAttemptSummary[] }> {
-  const attempts: PutAttemptSummary[] = [];
-  const first = await attemptSignedPut(
-    uploadUrl,
-    body,
-    { 'Content-Type': contentType },
-    'blob-content-type',
-    'blob'
-  );
-  attempts.push(first.summary);
-  if (first.response?.ok) {
-    return { response: first.response, attempts };
-  }
-
-  const arrayBufferFn = (body as Blob & { arrayBuffer?: () => Promise<ArrayBuffer> }).arrayBuffer;
-  if (typeof arrayBufferFn !== 'function') {
-    return { response: first.response, attempts };
-  }
-
-  const bodyBytes = await arrayBufferFn.call(body);
-  const second = await attemptSignedPut(
-    uploadUrl,
-    bodyBytes,
-    { 'Content-Type': contentType },
-    'arraybuffer-content-type',
-    'arrayBuffer'
-  );
-  attempts.push(second.summary);
-  return { response: second.response, attempts };
+  return uploadUrl;
 }
 
 function assertFreshUploadUrl(expiresAtIso: string): void {
@@ -282,8 +198,9 @@ export async function uploadFeedbackAttachment(
   const contentType: FeedbackAttachmentContentType = 'image/jpeg';
   const session = await postFeedbackAttachmentUploadUrl(feedbackId, { contentType });
   assertFreshUploadUrl(session.expiresAt);
+  const uploadUrl = parseAllowedSignedUploadUrl(session.uploadUrl);
 
-  const put = await putToSignedUploadUrl(session.uploadUrl, session.contentType, blob);
+  const put = await putToSignedUploadUrl(uploadUrl, session.contentType, blob);
   const putRes = put.response;
 
   if (!putRes?.ok) {
